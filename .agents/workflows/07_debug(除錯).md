@@ -29,7 +29,7 @@ When triggered:
 4. Execute the CLI delegation following `delegation-strategy` §3 (operate-then-abandon)
 5. Inform the Director: 「CLI 程式碼診斷已啟動。完成後請通知我繼續。」
 6. **Wait** for the Director to confirm CLI has finished
-7. Read the diagnosis report: `view_file` on `{project_root}/.agents/logs/diagnosis_report.md`
+7. Read the diagnosis report: `view_file` on `{agents_dir}/logs/diagnosis_report.md`
 8. Follow `code-diagnosis` §4 review guide to validate CLI's findings
 9. Incorporate validated findings into §2 Root Cause Translation
 

@@ -49,6 +49,11 @@ All workflows that modify physical project source code MUST follow this lifecycl
   2. **Interface Layer (介面層)**: All Director-facing outputs (reports, summaries, confirmations, conversations). Language: Traditional Chinese with business-level descriptions. MUST be designed in the Director's language FROM THE START — not translated after the fact.
   3. **Bridge Layer (橋接層)**: Shared references (memory skill descriptions, episodic log, audit trail). Language: Bilingual (English structure + Chinese descriptions).
 - **Interface Layer Enforcement**: Before producing ANY Director-facing output, the Agent MUST verify that the output contains ZERO raw code identifiers (field names, variable names, file paths without context). If technical terms are necessary, they MUST be accompanied by a plain-language explanation.
+- **Change Description Format (變更描述格式規範)**: All change descriptions appearing in implementation plans, task summaries, audit logs, and completion reports MUST follow this format:
+  - **Required**: `功能模組名稱 — 商業行為描述` (e.g., 斜線選單功能 — 移除標題節點型別判斷)
+  - **Forbidden**: `FileName.tsx — add/remove $codeIdentifier` (e.g., SlashCommandPlugin.tsx — 移除 $isHeadingNode)
+  - The Agent MUST infer the business-level module name and action from the file content and diff context. This is an AI responsibility, NOT a Director maintenance burden.
+  - File paths MAY still appear in the Instruction Layer (AI-internal plans) and in clickable `[file](file:///path)` links, but the surrounding description text MUST use business language.
 - **Forbidden Vocabulary Mapping (禁用詞彙對照表)**:
 
   | ❌ Raw Code Identifier | ✅ Business Description |

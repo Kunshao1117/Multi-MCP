@@ -3,7 +3,7 @@ name: mem-_system
 description: >
   專案記憶：Multi-MCP Gateway 系統層級資訊（技術堆疊、主機環境、部署設定）。
   Use when: 任何涉及 系統架構/技術堆疊/部署/MCP 伺服器管理 的任務。
-last_updated: 2026-03-27T04:49:00+08:00
+last_updated: 2026-03-28T09:48:30+08:00
 status: stable
 staleness: 0
 ---
@@ -83,6 +83,7 @@ staleness: 0
 - L03: Gateway 掃描 8+ 個 MCP 時，遠端伺服器可能超時但不影響本地 MCP 註冊
 - L04: npx 首次下載新套件時掃描易超時（registry 記錄 0 工具），需先手動 `npx -y <pkg> --help` 預下載後再 rescan
 - L05: 社群維護的 A11y MCP（@mseep/a11y-mcp、accessibility-mcp）在 Gateway 掃描時回傳 0 工具，可能是 MCP 協議實作不完整或初始化逾時
+- L06: devDependencies 的間接依賴漏洞（如 picomatch ReDoS、path-to-regexp ReDoS）不影響生產執行期，可安全透過 `npm audit fix` 自動塸除，尌後跟蹤 `npm test` 確認零迴歸
 
 ## Relations
 - mem-gateway-core

@@ -13,6 +13,10 @@ memory_awareness: full
 - Scan for hardcoded API keys, orphaned files, and unused dependencies.
 
 ## 2. Memory Skill System Initialization Check
+- Resolve two independent paths and store as variables for the entire workflow:
+  - `workspace_root` = the IDE workspace directory (contains `.agents/` and `.gemini/`). CLI starts here.
+  - `project_root` = the source code root (contains `package.json` / `src/`). May be `workspace_root` itself or a subdirectory.
+  - `agents_dir` = `workspace_root/.agents`
 - Detect the project source code root directory within the workspace. Store as `project_root`.
 - If no `mem-*` skills exist in `.agents/skills/`:
   - Prompt the Director to run `/02_blueprint` to initialize the memory skill system.
@@ -47,18 +51,23 @@ Follow the `code-audit` skill §1 procedures:
 
 1. Read `mem-_system/SKILL.md` to determine the tech stack.
 2. Read all active `mem-*` skills' `## Tracked Files` to compile the full file paths list.
-3. Construct the CLI task prompt using the template in `code-audit` skill §1.
-4. Execute the **operate-then-abandon** pattern:
-   - `run_command`: `gemini` (start CLI in interactive mode at `project_root`)
-   - `send_command_input`: Send the constructed prompt text
+3. Construct the CLI task prompt:
+   - Load `delegation-strategy` skill's `references/cli-prompt-skeleton.md` as骨架
+   - Load `code-audit` skill's `references/scan-task-prompt.md` 填入掃描任務區塊
+   - Load `code-audit` skill's `references/scan-report-template.md` 填入輸出格式
+   - Fill variables: `{project_root}`, `{agents_dir}`, `{file_paths_list}`, `{memory_skill_list}`
+4. **Write to file** (檔案傳令): `write_to_file` → `{agents_dir}/logs/cli_task.md`
+5. Execute the **operate-then-abandon** pattern:
+   - `run_command`: `gemini` (start CLI in interactive mode, Cwd = workspace root)
+   - `send_command_input`: `請讀取 {agents_dir}/logs/cli_task.md 並執行其中定義的任務`
    - `send_command_input`: Send `\n` (Enter key, as a **separate** call)
    - **Abandon**: Do NOT read further terminal output.
-5. Inform the Director: 「CLI 掃描已啟動，CLI 會詢問 MCP 工具執行權限，請選擇 "Allow all server tools for this session"。掃描完成後請通知我繼續。」
-6. **Wait** for the Director to confirm the scan is complete before proceeding.
+6. Inform the Director: 「CLI 掃描已啟動，CLI 會詢問 MCP 工具執行權限，請選擇 "Allow all server tools for this session"。掃描完成後請通知我繼續。」
+7. **Wait** for the Director to confirm the scan is complete before proceeding.
 
 ### Step 2: Read Scan Report (讀取掃描報告)
 
-1. `view_file` on `{project_root}/.agents/logs/scan_report.md`.
+1. `view_file` on `{agents_dir}/logs/scan_report.md`.
 2. Parse the report following the format defined in `code-audit` skill §2.
 3. Extract key metrics: error/warning counts, critical vulnerabilities, top violated rules.
 

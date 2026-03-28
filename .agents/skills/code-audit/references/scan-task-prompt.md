@@ -12,7 +12,7 @@
 ```
 ### 1. ESLint 程式碼品質掃描（優先用專案本地工具）
 優先使用 run_shell_command 執行：
-cd {project_root} && npx eslint --format json .
+cd {project_root}; npx eslint --format json .
 如果專案沒有安裝 ESLint，則改用 MCP 工具：
 gateway__call_tool 呼叫 eslint__lint-files，傳入檔案路徑：
 {file_paths_list}
@@ -27,7 +27,7 @@ gateway__call_tool 呼叫 eslint__lint-files，傳入檔案路徑：
 統計：漏洞總數 / 前 5 項最嚴重的依賴漏洞
 
 ### 4. TypeScript 型別檢查（僅限 TS 專案）
-執行：cd {project_root} && npx tsc --noEmit
+執行：cd {project_root}; npx tsc --noEmit
 統計錯誤總數和前 10 項錯誤。
 
 ### 5. 代辦標記統計

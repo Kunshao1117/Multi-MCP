@@ -1,6 +1,8 @@
 {
   "command": "node",
   "args": [
-    "d:/cartridge_system/dist/mcp-server.js"
+    "d:/cartridge_system/dist/mcp-server.js",
+    "--workspace",
+    "d:/cartridge_system"
   ]
 }
