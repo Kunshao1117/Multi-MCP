@@ -1,0 +1,8 @@
+{
+  "command": "npx",
+  "args": [
+    "-y",
+    "@shmaxi/excel-mcp-server",
+    "stdio"
+  ]
+}

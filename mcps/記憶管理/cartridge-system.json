@@ -1,0 +1,6 @@
+{
+  "command": "node",
+  "args": [
+    "d:/cartridge_system/dist/mcp-server.js"
+  ]
+}

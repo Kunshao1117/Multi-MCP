@@ -1,0 +1,188 @@
+{
+  "version": 1,
+  "lastScanned": "2026-03-28T00:32:54.785Z",
+  "cartridges": {
+    "mem-cli": {
+      "skillPath": ".agents\\skills\\mem-cli\\SKILL.md",
+      "trackedFiles": [
+        "src/cli.ts",
+        "src/cli/shared.ts",
+        "src/cli/source-detector.ts",
+        "src/cli/install-flow.ts",
+        "src/cli/auth-manager.ts",
+        "src/cli/category-manager.ts",
+        "src/cli/mcp-manager.ts",
+        "src/cli/dashboard.ts",
+        "src/cli/marketplace.ts",
+        "src/cli/health-check.ts",
+        "src/cli/tool-browser.ts",
+        "src/cli/import-export.ts",
+        "src/cli/version-check.ts",
+        "mcp-catalog.json",
+        "console.ps1"
+      ],
+      "staleness": 0,
+      "lastUpdated": "2026-03-27T23:48:00.000Z",
+      "pendingChanges": []
+    },
+    "mem-gateway-core": {
+      "skillPath": ".agents\\skills\\mem-gateway-core\\SKILL.md",
+      "trackedFiles": [
+        "src/index.ts",
+        "src/types.ts",
+        "src/logger.ts",
+        "src/config-loader.ts",
+        "src/credential-store.ts",
+        "src/gateway-server.ts",
+        "src/process-pool.ts",
+        "src/tool-router.ts",
+        "src/auth-guides.ts",
+        "src/registry.ts",
+        "src/registry.test.ts",
+        "src/config-loader.test.ts",
+        "src/tool-router.test.ts",
+        "src/process-pool.test.ts"
+      ],
+      "staleness": 0,
+      "lastUpdated": "2026-03-28T00:19:00.000Z",
+      "pendingChanges": []
+    },
+    "mem-_system": {
+      "skillPath": ".agents\\skills\\mem-_system\\SKILL.md",
+      "trackedFiles": [
+        "package.json",
+        "tsconfig.json",
+        "gateway.config.json",
+        ".gitignore",
+        "mcps/程式碼品質/eslint.json",
+        "mcps/安全掃描/snyk.json",
+        "mcps/資料處理/excel.json",
+        "mcps/錯誤監控/sentry.json",
+        "mcps/網頁測試/playwright.json",
+        "mcps/網頁測試/a11y.json"
+      ],
+      "staleness": 0,
+      "lastUpdated": "2026-03-26T20:49:00.000Z",
+      "pendingChanges": []
+    }
+  },
+  "fileMap": {
+    "src/cli.ts": [
+      "mem-cli"
+    ],
+    "src/cli/shared.ts": [
+      "mem-cli"
+    ],
+    "src/cli/source-detector.ts": [
+      "mem-cli"
+    ],
+    "src/cli/install-flow.ts": [
+      "mem-cli"
+    ],
+    "src/cli/auth-manager.ts": [
+      "mem-cli"
+    ],
+    "src/cli/category-manager.ts": [
+      "mem-cli"
+    ],
+    "src/cli/mcp-manager.ts": [
+      "mem-cli"
+    ],
+    "src/cli/dashboard.ts": [
+      "mem-cli"
+    ],
+    "src/cli/marketplace.ts": [
+      "mem-cli"
+    ],
+    "src/cli/health-check.ts": [
+      "mem-cli"
+    ],
+    "src/cli/tool-browser.ts": [
+      "mem-cli"
+    ],
+    "src/cli/import-export.ts": [
+      "mem-cli"
+    ],
+    "src/cli/version-check.ts": [
+      "mem-cli"
+    ],
+    "mcp-catalog.json": [
+      "mem-cli"
+    ],
+    "console.ps1": [
+      "mem-cli"
+    ],
+    "src/index.ts": [
+      "mem-gateway-core"
+    ],
+    "src/types.ts": [
+      "mem-gateway-core"
+    ],
+    "src/logger.ts": [
+      "mem-gateway-core"
+    ],
+    "src/config-loader.ts": [
+      "mem-gateway-core"
+    ],
+    "src/credential-store.ts": [
+      "mem-gateway-core"
+    ],
+    "src/gateway-server.ts": [
+      "mem-gateway-core"
+    ],
+    "src/process-pool.ts": [
+      "mem-gateway-core"
+    ],
+    "src/tool-router.ts": [
+      "mem-gateway-core"
+    ],
+    "src/auth-guides.ts": [
+      "mem-gateway-core"
+    ],
+    "src/registry.ts": [
+      "mem-gateway-core"
+    ],
+    "src/registry.test.ts": [
+      "mem-gateway-core"
+    ],
+    "src/config-loader.test.ts": [
+      "mem-gateway-core"
+    ],
+    "src/tool-router.test.ts": [
+      "mem-gateway-core"
+    ],
+    "src/process-pool.test.ts": [
+      "mem-gateway-core"
+    ],
+    "package.json": [
+      "mem-_system"
+    ],
+    "tsconfig.json": [
+      "mem-_system"
+    ],
+    "gateway.config.json": [
+      "mem-_system"
+    ],
+    ".gitignore": [
+      "mem-_system"
+    ],
+    "mcps/程式碼品質/eslint.json": [
+      "mem-_system"
+    ],
+    "mcps/安全掃描/snyk.json": [
+      "mem-_system"
+    ],
+    "mcps/資料處理/excel.json": [
+      "mem-_system"
+    ],
+    "mcps/錯誤監控/sentry.json": [
+      "mem-_system"
+    ],
+    "mcps/網頁測試/playwright.json": [
+      "mem-_system"
+    ],
+    "mcps/網頁測試/a11y.json": [
+      "mem-_system"
+    ]
+  }
+}

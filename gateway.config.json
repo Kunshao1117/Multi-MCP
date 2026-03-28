@@ -1,0 +1,11 @@
+{
+  "gateway": {
+    "idle_timeout_ms": 300000,
+    "startup_timeout_ms": 60000,
+    "max_retries": 3,
+    "log_level": "info",
+    "env_file": "gateway.env",
+    "health_check_on_start": false,
+    "mcps_dir": "mcps"
+  }
+}

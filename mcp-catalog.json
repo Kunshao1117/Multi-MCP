@@ -1,0 +1,59 @@
+{
+  "version": "1.0.0",
+  "categories": {
+    "資料庫管理": [
+      {
+        "name": "supabase",
+        "package": "@supabase/mcp-server-supabase",
+        "description": "Supabase 官方 MCP — 資料庫查詢、專案管理、邊緣函式部署",
+        "authRequired": true
+      }
+    ],
+    "開發工具": [
+      {
+        "name": "github",
+        "package": "@modelcontextprotocol/server-github",
+        "description": "GitHub 官方 MCP — 倉庫/Issue/PR 管理、程式碼搜尋",
+        "authRequired": true
+      },
+      {
+        "name": "eslint",
+        "package": "@eslint/mcp",
+        "description": "ESLint MCP — 程式碼品質掃描與修復建議",
+        "authRequired": false
+      }
+    ],
+    "雲端服務": [
+      {
+        "name": "sentry",
+        "package": "@sentry/mcp-server-node",
+        "description": "Sentry 錯誤監控 — 問題追蹤、效能分析",
+        "authRequired": true
+      }
+    ],
+    "AI 輔助": [
+      {
+        "name": "sequentialthinking",
+        "package": "@modelcontextprotocol/server-sequential-thinking",
+        "description": "深度推理輔助 — 結構化思考鏈",
+        "authRequired": false
+      }
+    ],
+    "資料處理": [
+      {
+        "name": "excel",
+        "package": "@anthropic/excel-mcp-server",
+        "description": "Excel 檔案讀寫 — 試算表操作與資料處理",
+        "authRequired": false
+      }
+    ],
+    "測試工具": [
+      {
+        "name": "playwright",
+        "package": "@playwright/mcp",
+        "description": "Playwright 瀏覽器自動化 — 網頁測試與操作",
+        "authRequired": false
+      }
+    ]
+  }
+}

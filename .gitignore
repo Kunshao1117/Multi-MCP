@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Credentials (NEVER commit)
+gateway.env
+credentials.json
+
+# Generated files
+registry.json
+
+# IDE
+.idea/
+.vscode/
+*.swp
