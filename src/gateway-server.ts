@@ -74,14 +74,15 @@ const GATEWAY_TOOLS = [
   },
   {
     name: `${GATEWAY_TOOL_PREFIX}${NAMESPACE_SEPARATOR}call_tool`,
-    description: '呼叫透過 search_tools 找到的工具。name 為完整的命名空間名稱（如 supabase__list_tables），arguments 為工具參數。',
+    description: '呼叫透過 search_tools 找到的工具。name 為完整的命名空間名稱，arguments 為工具參數，workspace 為當前專案的絕對路徑（必填，AI 應從對話上下文中推斷）。',
     inputSchema: {
       type: 'object' as const,
       properties: {
         name: { type: 'string', description: '完整的工具名稱（含命名空間前綴）' },
         arguments: { type: 'object', description: '傳給工具的參數物件' },
+        workspace: { type: 'string', description: '當前操作的目標專案絕對路徑，例如 d:\\BartenderMap' },
       },
-      required: ['name', 'arguments'],
+      required: ['name', 'arguments', 'workspace'],
     },
   },
   {
@@ -124,9 +125,10 @@ export class GatewayServer {
   constructor(
     private readonly config: GatewayConfig,
     private readonly registry: ToolRegistry,
+    private readonly initWorkspace: string | null = null,
   ) {
     this.processPool = new ProcessPool(config);
-    this.toolRouter = new ToolRouter(registry, this.processPool, config);
+    this.toolRouter = new ToolRouter(registry, this.processPool, config, initWorkspace);
 
     // 動態產生 search_tools 描述（含分類總表）
     const summaries = generateCategorySummary(registry, config.categories ?? {});

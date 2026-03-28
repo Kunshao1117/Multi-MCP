@@ -21,7 +21,11 @@ export class ToolRouter {
     private registry: ToolRegistry,
     private readonly processPool: ProcessPool,
     private readonly config: GatewayConfig,
-  ) {}
+    initWorkspace: string | null = null,
+  ) {
+    // 若啟動時已偵測到工作目錄，直接初始化
+    this.workspacePath = initWorkspace;
+  }
 
   /** 熱替換集成表（掃描後呼叫） */
   updateRegistry(newRegistry: ToolRegistry): void {
@@ -202,8 +206,16 @@ export class ToolRouter {
       case 'call_tool': {
         const toolName = args.name as string;
         const toolArgs = (args.arguments ?? {}) as Record<string, unknown>;
+        const callWorkspace = args.workspace as string | undefined;
         if (!toolName) throw new Error('缺少 name 參數');
-        return await this.route(toolName, toolArgs);
+        // 本次呼叫暫時套用 workspace，結束後自動還原（不污染全局狀態）
+        const previousWorkspace = this.workspacePath;
+        if (callWorkspace) this.workspacePath = callWorkspace;
+        try {
+          return await this.route(toolName, toolArgs);
+        } finally {
+          this.workspacePath = previousWorkspace;
+        }
       }
 
       case 'list_server_tools': {

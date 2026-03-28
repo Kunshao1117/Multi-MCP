@@ -19,6 +19,11 @@ import { loadRegistry, scanAndGenerateRegistry } from './registry.js';
 import { GatewayServer } from './gateway-server.js';
 import { setLogLevel, createLogger } from './logger.js';
 
+// 在 process.chdir 覆蓋前，先擷取 IDE 注入的原始專案目錄
+const IDE_WORKSPACE_ENVS = ['INIT_CWD', 'VSCODE_CWD', 'WORKSPACE_ROOT'] as const;
+const detectedWorkspace: string | null =
+  IDE_WORKSPACE_ENVS.map((k) => process.env[k] ?? '').find(Boolean) ?? null;
+
 // 自動定位專案根目錄（腳本在 dist/ 或 src/ 下，往上一層即為專案根）
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -31,6 +36,9 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const isScanMode = args.includes('--scan');
   const configPath = args.find((a) => a.startsWith('--config='))?.split('=')[1];
+  const cliWorkspace = args.find((a) => a.startsWith('--workspace='))?.split('=').slice(1).join('=') ?? null;
+  // CLI 參數優先於環境變數偵測
+  const initWorkspace = cliWorkspace ?? detectedWorkspace;
 
   try {
     // 載入設定（含 gateway.env 認證檔案）
@@ -48,7 +56,10 @@ async function main(): Promise<void> {
       // === 伺服器模式 ===
       logger.info('=== Multi-MCP Gateway: 伺服器模式 ===');
       const registry = loadRegistry();
-      const server = new GatewayServer(config, registry);
+      const server = new GatewayServer(config, registry, initWorkspace);
+      if (initWorkspace) {
+        logger.info('工作目錄已自動偵測', { workspace: initWorkspace, source: cliWorkspace ? 'cli-arg' : 'env-var' });
+      }
       await server.start();
     }
   } catch (err) {
