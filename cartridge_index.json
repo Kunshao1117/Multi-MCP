@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastScanned": "2026-03-28T01:41:32.252Z",
+  "lastScanned": "2026-03-28T02:43:23.405Z",
   "cartridges": {
     "mem-cli": {
       "skillPath": ".agents\\skills\\mem-cli\\SKILL.md",
@@ -43,9 +43,25 @@
         "src/tool-router.test.ts",
         "src/process-pool.test.ts"
       ],
-      "staleness": 0,
+      "staleness": 30,
       "lastUpdated": "2026-03-28T00:19:00.000Z",
-      "pendingChanges": []
+      "pendingChanges": [
+        {
+          "filePath": "src/gateway-server.ts",
+          "eventType": "change",
+          "timestamp": "2026-03-28T02:50:05.227Z"
+        },
+        {
+          "filePath": "src/tool-router.ts",
+          "eventType": "change",
+          "timestamp": "2026-03-28T02:50:07.215Z"
+        },
+        {
+          "filePath": "src/tool-router.test.ts",
+          "eventType": "change",
+          "timestamp": "2026-03-28T02:50:28.369Z"
+        }
+      ]
     },
     "mem-_system": {
       "skillPath": ".agents\\skills\\mem-_system\\SKILL.md",
@@ -62,7 +78,7 @@
         "mcps/網頁測試/a11y.json"
       ],
       "staleness": 0,
-      "lastUpdated": "2026-03-26T20:49:00.000Z",
+      "lastUpdated": "2026-03-28T01:48:30.000Z",
       "pendingChanges": []
     }
   },

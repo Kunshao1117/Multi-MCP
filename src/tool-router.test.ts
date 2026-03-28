@@ -275,3 +275,38 @@ describe('coerceArgs — 參數型別容錯強轉', () => {
   });
 });
 
+// ═══════════════════════════════════
+// 工作目錄管理
+// ═══════════════════════════════════
+
+describe('route — 工作目錄管理', () => {
+  let pool: ReturnType<typeof createMockPool>;
+  let router: ToolRouter;
+
+  beforeEach(() => {
+    pool = createMockPool();
+    router = new ToolRouter(createTestRegistry(), pool, createTestConfig());
+  });
+
+  it('未設定時 get_workspace 回傳提示訊息', async () => {
+    const result = await router.route('gateway__get_workspace', {}) as { content: Array<{ text: string }> };
+    expect(result.content[0].text).toContain('尚未設定');
+  });
+
+  it('設定工作目錄成功', async () => {
+    const result = await router.route('gateway__set_workspace', { path: 'd:\\BartenderMap' }) as { content: Array<{ text: string }> };
+    expect(result.content[0].text).toContain('工作目錄已設定');
+    expect(result.content[0].text).toContain('d:\\BartenderMap');
+  });
+
+  it('設定後 get_workspace 回傳正確路徑', async () => {
+    await router.route('gateway__set_workspace', { path: 'd:\\BartenderMap' });
+    const result = await router.route('gateway__get_workspace', {}) as { content: Array<{ text: string }> };
+    expect(result.content[0].text).toContain('d:\\BartenderMap');
+  });
+
+  it('缺少 path 參數時拋錯', async () => {
+    await expect(router.route('gateway__set_workspace', {})).rejects.toThrow('path');
+  });
+});
+

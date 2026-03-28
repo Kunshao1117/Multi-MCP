@@ -1,7 +1,7 @@
 /**
  * Multi-MCP Gateway — 閘道器主體
  * 使用 MCP SDK 建立 Server，聚合所有下游工具並處理請求
- * 含 6 個管理工具（基本 3 + 認證增值 3）
+ * 含 12 個管理工具（基本 5 + 認證增值 3 + 工具路由 2 + 工作目錄 2）
  */
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -98,6 +98,20 @@ const GATEWAY_TOOLS = [
   {
     name: `${GATEWAY_TOOL_PREFIX}${NAMESPACE_SEPARATOR}rescan`,
     description: '重新掃描所有 MCP 並熱更新集成表（安裝或移除 MCP 後使用，無需重啟 Gateway）',
+    inputSchema: { type: 'object' as const, properties: {} },
+  },
+  {
+    name: `${GATEWAY_TOOL_PREFIX}${NAMESPACE_SEPARATOR}set_workspace`,
+    description: '設定 AI 工作的目標專案目錄路徑（讓 ESLint、Playwright 等工具在正確的專案下執行）',
+    inputSchema: {
+      type: 'object' as const,
+      properties: { path: { type: 'string', description: '目標專案的絕對路徑，例如 d:\\BartenderMap' } },
+      required: ['path'],
+    },
+  },
+  {
+    name: `${GATEWAY_TOOL_PREFIX}${NAMESPACE_SEPARATOR}get_workspace`,
+    description: '查詢目前 Gateway 設定的工作目錄路徑',
     inputSchema: { type: 'object' as const, properties: {} },
   },
 ];

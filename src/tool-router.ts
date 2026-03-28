@@ -14,6 +14,9 @@ const logger = createLogger('tool-router');
 const AUTH_KEYWORDS = ['unauthorized', 'forbidden', '401', '403', 'auth', 'token', 'credential'];
 
 export class ToolRouter {
+  /** 目前設定的目標專案工作目錄（由 gateway__set_workspace 設定） */
+  private workspacePath: string | null = null;
+
   constructor(
     private registry: ToolRegistry,
     private readonly processPool: ProcessPool,
@@ -232,6 +235,24 @@ export class ToolRouter {
         const total = Object.keys(newRegistry.all_tools).length;
         return { content: [{ type: 'text' as const, text: `✅ 重新掃描完成！共 ${total} 個工具已更新` }] };
       }
+
+      case 'set_workspace': {
+        const path = args.path as string;
+        if (!path) throw new Error('缺少 path 參數');
+        this.workspacePath = path;
+        logger.info('工作目錄已設定', { path });
+        return { content: [{ type: 'text' as const, text: `✅ 工作目錄已設定為: ${path}` }] };
+      }
+
+      case 'get_workspace':
+        return {
+          content: [{
+            type: 'text' as const,
+            text: this.workspacePath
+              ? `📁 目前工作目錄: ${this.workspacePath}`
+              : '⚠️ 尚未設定工作目錄。請使用 gateway__set_workspace 設定，例如: { "path": "d:\\\\BartenderMap" }',
+          }],
+        };
 
       default:
         throw new Error(`未知的管理工具: ${toolName}`);
