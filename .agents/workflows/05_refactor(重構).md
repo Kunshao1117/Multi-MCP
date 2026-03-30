@@ -9,11 +9,11 @@ memory_awareness: full
 > **Required Skills**: Load `memory-ops` and `code-quality` skills before proceeding.
 
 ## 0. Memory Recall (記憶載入)
-- Check the IDE-injected skill list for `mem-*` skills relevant to the target modules.
-- Load relevant `mem-*` SKILL.md files — check `## Relations` to ensure refactoring does not break dependent modules.
+- Check the IDE-injected skill list for memory cards relevant to the target modules.
+- Load relevant memory card SKILL.md files — check `## Relations` to ensure refactoring does not break dependent modules.
 
 ## 1. Tech-Stack Binding & Zero-Regression
-- **Crucial Step**: Read `mem-_system/SKILL.md` to identify the correct testing framework (e.g., Jest, PyTest) and tech stack before proceeding.
+- **Crucial Step**: Read `.agents/memory/_system/SKILL.md` to identify the correct testing framework (e.g., Jest, PyTest) and tech stack before proceeding.
 - **Absolute Rule**: You MUST NOT change the external behavior or business logic of the target module.
 - Generate and run automated Unit Tests (using the stack-appropriate CLI) to establish a baseline.
 
@@ -32,6 +32,6 @@ memory_awareness: full
 - Execute all checks defined in the shared Completion Gate.
 
 ## [SECURITY & COMPLIANCE MANDATE]
-> Inherits: `.agents/workflows/_security_footer.md` (Browser Gate + Audit Trail)
+> Inherits: `.agents/workflows/_security_footer.md` (Browser Gate)
 - **Role**: `Worker Agent`. You operate under the Sandbox & Gate protocol.
-- **Memory Update**: After refactoring, update affected memory skills' `## Tracked Files` (if files moved/renamed), `## Key Decisions` (if interfaces changed), and frontmatter.
+- **Memory Update**: After refactoring, update affected memory cards' `## Tracked Files` (if files moved/renamed), `## Key Decisions` (if interfaces changed), and frontmatter.

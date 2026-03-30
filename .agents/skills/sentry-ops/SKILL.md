@@ -6,37 +6,37 @@ description: >
   Use when: 呼叫 sentry 相關工具、錯誤追蹤/堆疊分析/效能監控 的場景。
 ---
 
-# Sentry Ops — 錯誤監控操作食譜
+# Sentry Ops — Error Monitoring Recipes
 
-## Recipe 1: 錯誤調查流程
+## Recipe 1: Error Investigation Flow
 
-1. `find_projects` — 確認目標專案的 slug
-2. `list_issues` — 用 `query: 'is:unresolved'` 取得未解決問題清單
-3. `get_issue_details` — 取得特定問題的完整堆疊追蹤
-4. `get_issue_tag_values` — 分析影響範圍（用 `tagKey: 'environment'` 或 `'browser'`）
-5. 如需深度分析 → `analyze_issue_with_seer`（AI 根因分析，需等待 2-5 分鐘）
-6. 修復後 → `update_issue` 設定 `status: 'resolved'`
+1. `find_projects` — Confirm target project slug
+2. `list_issues` — Use `query: 'is:unresolved'` to get unresolved issues list
+3. `get_issue_details` — Get full stack trace for a specific issue
+4. `get_issue_tag_values` — Analyze impact scope（分析影響範圍，用 `tagKey: 'environment'` 或 `'browser'`）
+5. For deep analysis → `analyze_issue_with_seer`（AI 根因分析，需等待 2-5 分鐘）
+6. After fix → `update_issue` set `status: 'resolved'`
 
-## Recipe 2: 效能排查流程
+## Recipe 2: Performance Troubleshooting
 
-1. `list_events` — 用 `dataset: 'spans'` + `query: 'span.op:db'` 查詢慢查詢
-2. `get_trace_details` — 用 trace ID 取得完整追蹤鏈
-3. 分析 span 時間分佈，找出瓶頸
+1. `list_events` — Use `dataset: 'spans'` + `query: 'span.op:db'` to query slow queries
+2. `get_trace_details` — Get full trace chain using trace ID
+3. Analyze span time distribution to identify bottlenecks
 
-## Recipe 3: 最新版本問題監控
+## Recipe 3: Latest Release Issue Monitoring
 
-1. `find_releases` — 取得最新版本資訊
-2. `list_issues` — 用 `query: 'firstSeen:-24h'` 篩選新問題
+1. `find_releases` — Get latest release info
+2. `list_issues` — Use `query: 'firstSeen:-24h'` to filter new issues
 
 ## Gotchas (踩坑點)
 
-- ⚠️ `list_issues` 的 query 使用 **Sentry 搜索語法**，不是自然語言（如 `is:unresolved level:error`）
-- ⚠️ 提供 Sentry URL 時，**整段 URL 原封不動**傳入 `issueUrl` 參數
-- ⚠️ `analyze_issue_with_seer` 不要在 `get_issue_details` 後自動呼叫，只在需要時使用
-- ⚠️ `create_project` 已包含 DSN，不需再呼叫 `create_dsn`
+- ⚠️ `list_issues` query uses **Sentry search syntax**, not natural language（使用 Sentry 搜尋語法，如 `is:unresolved level:error`）
+- ⚠️ When providing Sentry URLs, pass the **entire URL as-is** to the `issueUrl` parameter（整段 URL 原封不動傳入）
+- ⚠️ Do NOT auto-call `analyze_issue_with_seer` after `get_issue_details` — only use when needed（不要自動呼叫，按需使用）
+- ⚠️ `create_project` already includes DSN — no need to call `create_dsn` separately（不需再另外呼叫）
 
 ## Interpretation (結果解讀)
 
-- Issue 的 `count` = 事件總數，`userCount` = 受影響使用者數
-- Tag values 的 `times_seen` 顯示各分類的發生次數，用於判斷影響範圍
-- Seer 分析結果包含具體的檔案位置和程式碼修復建議，可直接套用
+- Issue `count` = total events（事件總數）, `userCount` = affected users（受影響使用者數）
+- Tag values' `times_seen` shows occurrence count per category — use for impact assessment（用於判斷影響範圍）
+- Seer analysis results include specific file locations and code fix suggestions, directly applicable（可直接套用）

@@ -13,19 +13,16 @@ memory_awareness: full
 
 ## 2. Integrated Snapshot & Record Generation
 - Analyze Uncommitted Diffs: Parse `git status` and `git diff`.
-- **Memory Snapshot Mandate**: Verify all affected `mem-*` skills have been updated by the preceding workflow. If not, update them now based on the uncommitted diffs. Ensure each skill's `status` and `## Tracked Files` reflect the commit point.
+- **Memory Snapshot Mandate**: Verify all affected memory cards have been updated by the preceding workflow. If not, update them now based on the uncommitted diffs. Ensure each card's `status` and `## Tracked Files` reflect the commit point.
+- **Framework Version Check (框架版本檢查)**: If this session modified any files under `.agents/rules/`, `.agents/workflows/`, or `.agents/skills/` (excluding memory cards), remind the Director to update the framework's `VERSION` and `RELEASE_NOTES.md` before committing.
 - **Record Mandate**: Extract the business value of the changes. Overwrite `CHANGELOG.md` natively in **Traditional Chinese (繁體中文)** summarizing what was improved natively.
 
 ## 3. Staleness Detection (過時偵測)
-- Run `git diff --name-only` (or parse the already-collected diff from Step 2) to get the list of changed files.
-- For each `mem-*` skill in `.agents/skills/`:
-  1. Check if ANY of its `## Tracked Files` entries appear in the changed files list.
-  2. If yes, check whether this skill was updated during the current session (i.e., `staleness` is already `0` and content reflects the current changes).
-  3. If the skill was **NOT** updated but its tracked files **were** changed → increment `staleness` by `1`.
-- This step ensures that manual edits, skipped updates, or cross-agent modifications are detected and tracked.
+- 利用 `git diff --name-only` 取得已變更檔案清單，並與 `memory_list` 的追蹤檔案比對。
+- 針對受影響但尚未更新的記憶卡，你**禁止手動修改** staleness。你必須透過調用 `cartridge-system__memory_update` 來完成記憶更新，該工具將自動在底層重置過期指數與時間戳記。
 
 ### Staleness Warning Output (過時警告輸出)
-- If ANY `mem-*` skill's staleness was incremented in this step, you MUST insert a warning block in the §5 output BEFORE the authorization gate:
+- If ANY memory card's staleness was incremented in this step, you MUST insert a warning block in the §5 output BEFORE the authorization gate:
   ```
   ⚠️ 記憶同步警告：以下模組記憶尚未更新但追蹤的檔案已被修改：
   - {記憶名稱}: {受影響的檔案列表}
@@ -55,5 +52,5 @@ You MUST halt and output EXACTLY matching this Traditional Chinese structural te
 - Execute all checks defined in the shared Completion Gate.
 
 ## [SECURITY & COMPLIANCE MANDATE]
-> Inherits: `.agents/workflows/_security_footer.md` (Browser Gate + Audit Trail)
+> Inherits: `.agents/workflows/_security_footer.md` (Browser Gate)
 - **Role**: `Writer/SRE Agent`. You are authorized to write structural/log files or execute git commands.

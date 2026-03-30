@@ -25,9 +25,9 @@ memory_awareness: read
 
 // turbo
 ### 情境 B：測試失敗 (Failed)
-- **Automatic Failure Logging**: If the test fails or produces unexpected UI behavior, you MUST document the failure symptom into `.agents/logs/episodic_log.md` before doing anything else.
-- **Autonomous Fixing Loop**: You MUST NOT wait for the Director to ask for a fix. You MUST autonomously invoke the `/04_fix` workflow to investigate and resolve the issue. Output: `[系統通報] 偵測到測試失敗，錯誤已寫入教訓庫。正在自動串聯 /04_fix 進行修復。`
+- **Automatic Failure Logging**: If the test fails or produces unexpected UI behavior, you MUST document the failure symptom into the affected module's memory card `## Known Issues` before doing anything else.
+- **Autonomous Fixing Loop**: You MUST NOT wait for the Director to ask for a fix. You MUST autonomously invoke the `/04_fix` workflow to investigate and resolve the issue. Output: `[系統通報] 偵測到測試失敗，錯誤已寫入模組記憶。正在自動串聯 /04_fix 進行修復。`
 
 ## [SECURITY & COMPLIANCE MANDATE]
-> Inherits: `.agents/workflows/_security_footer.md` (Browser Gate + Audit Trail)
+> Inherits: `.agents/workflows/_security_footer.md` (Browser Gate)
 - **Role**: `Reader Agent`. You are STRICTLY FORBIDDEN from modifying physical source code.

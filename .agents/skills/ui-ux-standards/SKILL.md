@@ -9,6 +9,9 @@ description: >
 
 # UI/UX & Multi-Language Standards — Full Operating Protocol
 
+> This skill extends Core Mandate §11 (Cross-Cutting Quality Constraints) — UI/UX section.
+> It provides concrete audience layering, translation lookup tables, and error message examples. Principle-level descriptions live in Core Mandate; this skill focuses on implementation specifics.
+
 ## 1. Engineering Jargon Isolation (工程語彙物理隔離)
 
 ### Technical Audience Persona (技術受眾宣告機制)

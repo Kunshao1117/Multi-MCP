@@ -9,8 +9,8 @@ memory_awareness: full
 > **Required Skills**: Load `memory-ops` and `security-sre` skills before proceeding.
 
 ## 0. Memory Recall (記憶載入)
-- Check the IDE-injected skill list for `mem-*` skills relevant to the target modules.
-- Load relevant `mem-*` SKILL.md files — match against `## Known Issues` (the fix may relate to a previously documented issue) and check `## Relations` for cascading impact.
+- Check the IDE-injected skill list for memory cards relevant to the target modules.
+- Load relevant memory card SKILL.md files — match against `## Known Issues` (the fix may relate to a previously documented issue) and check `## Relations` for cascading impact.
 
 ## 1. Current State Constraint
 - **Strict Pre-condition**: Use loaded memory skills' `## Tracked Files` (joined with project root) to navigate directly to relevant files. You may also query the failing process via terminal. DO NOT guess the architecture or file paths blindly.
@@ -34,8 +34,7 @@ memory_awareness: full
 - Upon GO, you MUST call `task_boundary` to switch to `EXECUTION` mode and execute the fix to the physical file system.
 - **Mandatory Distillation**: Immediately after writing the fix:
   1. Append the lesson to the affected memory skill's `## Known Issues` or `## Module Lessons`.
-  2. If the lesson is cross-cutting (not module-specific), also append to `.agents/logs/episodic_log.md`.
-  3. Update the memory skill's frontmatter (`last_updated`, `staleness: 0`).
+  2. Update the memory skill's frontmatter (`last_updated`, `staleness: 0`).
 
 // turbo
 ## 5. Automated Re-Verification Loop
@@ -46,6 +45,6 @@ memory_awareness: full
 - Execute all checks defined in the shared Completion Gate.
 
 ## [SECURITY & COMPLIANCE MANDATE]
-> Inherits: `.agents/workflows/_security_footer.md` (Browser Gate + Audit Trail)
+> Inherits: `.agents/workflows/_security_footer.md` (Browser Gate)
 - **Role**: `Worker Agent`. You operate under the Sandbox & Gate protocol.
-- **Memory Update**: After executing the fix, update all affected `mem-*` SKILL.md files.
+- **Memory Update**: After executing the fix, update all affected memory card SKILL.md files.

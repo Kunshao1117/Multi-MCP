@@ -20,36 +20,36 @@ Before running any build or install commands, execute a terminal ping to map out
 - `node -v`, `python --version`, `go version` etc. — Available toolchains
 - Shell type (PowerShell / Bash)
 
-Save this matrix to `mem-_system/SKILL.md` within `.agents/skills/`.
+Save this matrix to `.agents/memory/_system/SKILL.md`.
 
 ### Phase 2: Architecture Scan
 
 Execute a shallow scan:
 - Read `package.json`, `requirements.txt`, `go.mod`, `Cargo.toml` etc.
-- Record findings in `mem-_system/SKILL.md`.
+- Record findings in `.agents/memory/_system/SKILL.md`.
 
 ### Phase 3: Framework Derivation
 
 Derive the primary framework (e.g., Next.js, Django) and testing environment (e.g., Jest, PyTest).
-Record in `mem-_system/SKILL.md`.
+Record in `.agents/memory/_system/SKILL.md`.
 
 ## 2. Locked State (鎖定狀態)
 
-Once `mem-_system/SKILL.md` is generated or the project architecture is confirmed:
+Once `.agents/memory/_system/SKILL.md` is generated or the project architecture is confirmed:
 - **Absolute Freeze**: DO NOT attempt to introduce new core frameworks, languages, or ORM replacements unless explicitly commanded by the Director to perform an architectural pivot (`/02_blueprint`).
 
 ## 3. Self-Mutation Protocol (自體突變)
 
 If the Director issues a confirmed `/02_blueprint` pivot:
-- You are authorized to rewrite `mem-_system/SKILL.md` and generate new initialization scripts (`package.json` etc.) to reflect the mutated architecture.
+- You are authorized to rewrite `.agents/memory/_system/SKILL.md` and generate new initialization scripts (`package.json` etc.) to reflect the mutated architecture.
 
 ## 4. MCP Registry (MCP 登錄簿)
 
-When `mem-_system/SKILL.md` contains an `## MCP Servers` section:
+When `.agents/memory/_system/SKILL.md` contains an `## MCP Servers` section:
 - Treat listed MCP servers as part of the locked tech stack
 - Adding/removing follows the same governance as framework changes:
   - Routine additions: `/08_audit` auto-handles
   - Architectural pivots (replacing core MCP): Requires `/02_blueprint`
-- Record changes in `mem-_system/SKILL.md` under `## MCP Servers`
+- Record changes in `.agents/memory/_system/SKILL.md` under `## MCP Servers`
 - Config location: `~/.gemini/antigravity/mcp_config.json` (global) or `.gemini/settings.json` (project)
 - **Operational procedures**: Each MCP has its own skill (see `_index.md` routing table)

@@ -27,5 +27,5 @@ memory_awareness: none
   `[系統鎖定] 探勘報告已產出。請總監在文件上留言裁決方案，或輸入 /blueprint 進入架構繪製階段。`
 
 ## [SECURITY & COMPLIANCE MANDATE]
-> Inherits: `.agents/workflows/_security_footer.md` (Browser Gate + Audit Trail)
+> Inherits: `.agents/workflows/_security_footer.md` (Browser Gate)
 - **Role**: `Reader Agent`. You are STRICTLY FORBIDDEN from modifying physical source code.

@@ -12,4 +12,4 @@ The full bootstrapping protocol (Zero-Touch Environment Check, Silent Deployment
 
 - **Rules**: Core mandate and bootstrapper sentinel
 - **Workflows**: 12 lifecycle workflows (00–11) + shared gates
-- **Skills**: Operational skills + `mem-*` project memory skills
+- **Skills**: Operational skills + project memory cards

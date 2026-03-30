@@ -2,7 +2,7 @@
 
 | Keywords (EN) | 關鍵字 (ZH) | Skill | MCP Server |
 |--------------|------------|-------|------------|
-| memory read/write, mem-* update, module memory | 記憶讀寫、模組記憶更新 | memory-ops | — |
+| memory read/write, module memory, .agents/memory/ | 記憶讀寫、模組記憶更新 | memory-ops | cartridge-system |
 | delegate, channel selection | 委派、管道選擇 | delegation-strategy | — |
 | browser E2E, visual test, subagent | 瀏覽器測試、視覺驗證 | browser-testing | playwright, a11y |
 | SOLID, line threshold, refactor quality | SOLID、行數上限、重構品質 | code-quality | eslint |

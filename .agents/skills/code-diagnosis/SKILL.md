@@ -12,30 +12,30 @@ description: >
 
 ## 1. Trigger Conditions (觸發條件)
 
-委派給 CLI 的條件（符合任一即可）：
-- 故障涉及 **3 個以上**的模組
-- 需要讀取超過 **15 個**原始碼檔案
-- 故障**跨越系統邊界**（前端↔後端、API↔資料庫）
-- Director 明確要求
+Conditions for delegating to CLI（符合任一即可）:
+- Fault involves **more than 3** modules（故障涉及 3 個以上模組）
+- Requires reading **more than 15** source files（需讀取超過 15 個檔案）
+- Fault **crosses system boundaries**（前端↔後端、API↔資料庫）
+- Director explicitly requests it（總監明確要求）
 
-以上皆不符合時，主腦直接處理。
+If none of the above apply, Master Agent handles directly（以上皆不符合時，主腦直接處理）。
 
 ## 2. Diagnosis Flow (診斷流程)
 
-1. 主腦構建 CLI 任務提示詞（用 `delegation-strategy` 骨架 + 本技能的診斷區塊）
-2. CLI 讀取記憶模組 → 讀取追蹤檔案 → 標記可疑區域 → 寫入報告
-3. 主腦複查報告，補充 CLI 盲點（運行時行為、外部服務互動）
-4. 綜合 CLI 報告與主腦證據，產出最終根因分析
+1. Master Agent constructs CLI task prompt (using `delegation-strategy` skeleton + this skill's diagnosis block)
+2. CLI reads memory modules → reads tracked files → marks suspicious areas → writes report
+3. Master Agent reviews report, supplements CLI blind spots (runtime behavior, external service interactions)
+4. Synthesize CLI report and Master Agent evidence into final root cause analysis
 
-> **Scope Control**: 超過 30 個檔案時，縮小範圍只指定最相關的記憶模組。
+> **Scope Control**: When exceeding 30 files, narrow scope to only the most relevant memory modules（超過 30 個檔案時縮小範圍）。
 
 ## 3. Master Agent Review (主腦複查)
 
-- **驗證可疑區域** — 結合架構知識判斷 CLI 的懷疑是否合理
-- **補充盲點** — 運行時行為、部署設定、外部服務互動
-- **綜合產出** — 合併為最終根因分析報告
+- **Verify suspicious areas** — Combine architectural knowledge to judge if CLI's suspicions are reasonable（驗證可疑區域）
+- **Supplement blind spots** — Runtime behavior, deployment config, external service interactions（補充執行期行為、部署設定、外部服務互動）
+- **Synthesize output** — Merge into final root cause analysis report（合併為最終根因分析報告）
 
 ## 4. References (參考資料)
 
-- `references/diagnosis-task-prompt.md` — 完整診斷任務提示詞
-- `references/diagnosis-report-template.md` — 診斷報告標準格式
+- `references/diagnosis-task-prompt.md` — Complete diagnosis task prompt
+- `references/diagnosis-report-template.md` — Diagnosis report standard format

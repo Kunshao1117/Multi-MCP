@@ -1,5 +1,5 @@
 ---
-name: mem-_system
+name: _system
 description: >
   專案記憶：Multi-MCP Gateway 系統層級資訊（技術堆疊、主機環境、部署設定）。
   Use when: 任何涉及 系統架構/技術堆疊/部署/MCP 伺服器管理 的任務。
@@ -86,5 +86,5 @@ staleness: 0
 - L06: devDependencies 的間接依賴漏洞（如 picomatch ReDoS、path-to-regexp ReDoS）不影響生產執行期，可安全透過 `npm audit fix` 自動塸除，尌後跟蹤 `npm test` 確認零迴歸
 
 ## Relations
-- mem-gateway-core
-- mem-cli
+- gateway-core
+- cli

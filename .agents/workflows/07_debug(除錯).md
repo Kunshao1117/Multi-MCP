@@ -9,8 +9,8 @@ memory_awareness: read
 > **Required Skills**: Load `memory-ops` skill before proceeding. Load `code-diagnosis` skill if CLI diagnostic delegation is needed.
 
 ## 0. Memory Recall (記憶載入)
-- Check the IDE-injected skill list for `mem-*` skills relevant to the failing module.
-- Load relevant `mem-*` SKILL.md files — check `## Known Issues` to determine if this is a documented problem.
+- Check the IDE-injected skill list for memory cards relevant to the failing module.
+- Load relevant memory card SKILL.md files — check `## Known Issues` to determine if this is a documented problem.
 
 ## 1. Hardened Evidence Collection
 - **Absolute Ban**: DO NOT invent or assume bug causes.
@@ -25,7 +25,7 @@ When triggered:
 2. Load `code-diagnosis` skill for the diagnostic prompt template (§2)
 3. Construct the diagnosis prompt:
    - **fault_symptoms**: Summarize the evidence collected in §1 (stack traces, error messages, Director's description)
-   - **suspect_modules**: List the `mem-*` modules most likely related to the fault
+   - **suspect_modules**: List the memory modules most likely related to the fault
 4. Execute the CLI delegation following `delegation-strategy` §3 (operate-then-abandon)
 5. Inform the Director: 「CLI 程式碼診斷已啟動。完成後請通知我繼續。」
 6. **Wait** for the Director to confirm CLI has finished
@@ -44,5 +44,5 @@ When triggered:
 - **Halt**: Output: `[防線鎖定] 數位鑑識完畢。若總監同意修復方向，請輸入 /fix 啟動修復程序。`
 
 ## [SECURITY & COMPLIANCE MANDATE]
-> Inherits: `.agents/workflows/_security_footer.md` (Browser Gate + Audit Trail)
+> Inherits: `.agents/workflows/_security_footer.md` (Browser Gate)
 - **Role**: `Reader Agent`. You are STRICTLY FORBIDDEN from modifying physical source code.

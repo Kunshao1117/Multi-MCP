@@ -26,12 +26,12 @@ You MUST halt and output an Artifact or Response EXACTLY matching this Tradition
 
 ## 4. Execution
 - Upon the Director's **GO** signal, execute the precise Git rollback command (e.g. `git reset --hard <hash>`).
-- Agent MUST update all affected `mem-*` SKILL.md files to reflect the reset state (revert `## Tracked Files`, `## Key Decisions`, and `status` as needed).
+- Agent MUST update all affected memory card SKILL.md files to reflect the reset state (revert `## Tracked Files`, `## Key Decisions`, and `status` as needed).
 
 ## COMPLETION GATE（完成閘門 — 不可略過）
 > Inherits: `.agents/workflows/_completion_gate.md`
 - Execute all checks defined in the shared Completion Gate.
 
 ## [SECURITY & COMPLIANCE MANDATE]
-> Inherits: `.agents/workflows/_security_footer.md` (Browser Gate + Audit Trail)
+> Inherits: `.agents/workflows/_security_footer.md` (Browser Gate)
 - **Role**: `SRE Agent`. Authorized to perform destructive Git actions ONLY post-gate.

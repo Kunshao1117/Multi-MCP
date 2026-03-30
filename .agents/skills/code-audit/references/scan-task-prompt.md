@@ -38,4 +38,4 @@ gateway__call_tool 呼叫 eslint__lint-files，傳入檔案路徑：
 ```
 
 > **Tech Stack Adaptation**: Python 專案改用 `pylint`/`mypy`/`pip-audit`。
-> **File List Construction**: 主腦必須讀取所有 `mem-*` 的追蹤檔案清單來構建路徑。
+> **File List Construction**: 主腦必須讀取所有記憶卡的追蹤檔案清單來構建路徑。

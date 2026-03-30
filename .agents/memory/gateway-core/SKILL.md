@@ -1,9 +1,9 @@
 ---
-name: mem-gateway-core
+name: gateway-core
 description: >
   專案記憶：Gateway 核心模組（設定載入、程序池、路由引擎、集成表、日誌、認證指南）。 Use when:
   修改閘道器核心邏輯、程序管理、工具路由、掃描機制 的任務。
-last_updated: 2026-03-28T03:20:00.000Z
+last_updated: '2026-03-31T07:30:35+08:00'
 status: stable
 staleness: 0
 ---
@@ -37,6 +37,7 @@ staleness: 0
 - D08: 新增 gateway__set_workspace / gateway__get_workspace 工具，讓 AI 明確宣告目標專案目錄；MCP SDK callTool 不支援 env 注入，workspace 路徑以 ToolRouter 內部狀態儲存，不自動注入下游工具環境變數
 - D09: Gateway 啟動時在 process.chdir() 之前偵測 INIT_CWD / VSCODE_CWD / WORKSPACE_ROOT 環境變數；CLI --workspace= 參數優先於環境變數；偵測結果透過三層建構子縷淯層層傳遞至 ToolRouter
 - D10: gateway__call_tool 的 workspace 改為必填參數，AI 必須在每次呼叫時宣告目標專案目錄；workspace 對本次呼叫暫時生效，finallyblock 確保全局狀態不被污染
+- D11: call_tool 轉發前以 `.agents` 目錄存在性驗證 projectRoot——AI 填錯則自動修正為 effectiveWorkspace，未填則自動注入；使用 fs.existsSync 同步檢查，開銷極小
 
 ## Known Issues
 - credentials.json 明文儲存密鑰，雖被 .gitignore 排除但缺少加密層
@@ -49,7 +50,5 @@ staleness: 0
 - L04: MCP SDK Client.callTool() 僅接受 name 與 arguments，不支援 env 欄位；工作目錄注入需透過其他機制（如 process-pool spawn cwd）實現，本次採狀態儲存方案
 - L05: IDE 啟動子程序時原始 cwd 儲存於 INIT_CWD 環境變數（npm/npx 標準）；必須在 process.chdir() 覆蓋之前擷取，否則變數仍存在但已失去參考意義
 - L06: INIT_CWD 偵測到的是 IDE 自身安裝目錄而非使用者專案；環境變數對於跨專案共用的 Gateway 不可靠
-
-## Relations
-- mem-_system
-- mem-cli
+- L07: projectRoot 路徑驗證使用 `!('projectRoot' in toolArgs)` 而非 `!toolArgs.projectRoot`，區分「AI 刻意傳了空值」與「AI 完全沒傳」，只在後者才注入
+- L08: set_workspace case 中 `const path = args.path` 會遮蔽頂部 `import path from 'node:path'`，需重命名為 `wsPath` 避免影響同檔案其他 case 的 path 引用

@@ -1,5 +1,5 @@
 ---
-name: mem-cli
+name: cli
 description: >
   專案記憶：CLI 管理主控台（安裝/移除 MCP、認證管理、分類管理、市集、健康檢查、工具瀏覽器、版本檢查、匯出匯入）。 Use when: 修改 CLI
   主控台/管理介面/使用者互動流程 的任務。
@@ -69,5 +69,5 @@ staleness: 0
 
 ## Relations
 
-- mem-\_system
-- mem-gateway-core
+- \_system
+- gateway-core

@@ -9,8 +9,8 @@ memory_awareness: full
 > **Required Skills**: Load `memory-ops`, `security-sre`, and `code-quality` skills before proceeding.
 
 ## 0. Memory Recall (記憶載入)
-- Check the IDE-injected skill list for `mem-*` skills relevant to the target modules.
-- Load relevant `mem-*` SKILL.md files to understand module architecture, tracked files, decisions, and known issues.
+- Check the IDE-injected skill list for memory cards relevant to the target modules.
+- Load relevant memory card SKILL.md files to understand module architecture, tracked files, decisions, and known issues.
 - Check `## Relations` for cross-module dependencies that may be affected by the build.
 
 ## 1. Context & Blueprint Acquisition
@@ -37,6 +37,6 @@ memory_awareness: full
 - Execute all checks defined in the shared Completion Gate.
 
 ## [SECURITY & COMPLIANCE MANDATE]
-> Inherits: `.agents/workflows/_security_footer.md` (Browser Gate + Audit Trail)
+> Inherits: `.agents/workflows/_security_footer.md` (Browser Gate)
 - **Role**: `Worker Agent`. You operate under the Sandbox & Gate protocol.
-- **Memory Update**: After writing files, update all affected `mem-*` SKILL.md files (Tracked Files, Key Decisions, Known Issues, Module Lessons as needed). If new cross-module lessons were learned, append to `.agents/logs/episodic_log.md`.
+- **Memory Update**: After writing files, update all affected memory card SKILL.md files (Tracked Files, Key Decisions, Known Issues, Module Lessons as needed).

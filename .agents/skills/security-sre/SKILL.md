@@ -8,6 +8,9 @@ description: >
 
 # Security & Reliability Engineering — Full Operating Protocol
 
+> This skill extends Core Mandate §11 (Cross-Cutting Quality Constraints) — Security section.
+> It provides concrete validation examples and error handling patterns. Principle-level descriptions live in Core Mandate; this skill focuses on implementation specifics.
+
 ## 1. Zero-Trust Validation (實體驗證器)
 
 - NEVER trust incoming data (from APIs, DBs, or the Director's raw inputs).

@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "lastScanned": "2026-03-28T03:06:58.104Z",
+  "lastScanned": "2026-03-30T23:29:04.716Z",
   "cartridges": {
-    "mem-cli": {
-      "skillPath": ".agents\\skills\\mem-cli\\SKILL.md",
+    "cli": {
+      "skillPath": ".agents\\memory\\cli\\SKILL.md",
       "trackedFiles": [
         "src/cli.ts",
         "src/cli/shared.ts",
@@ -21,12 +21,25 @@
         "mcp-catalog.json",
         "console.ps1"
       ],
-      "staleness": 0,
+      "staleness": 20,
       "lastUpdated": "2026-03-27T23:48:00.000Z",
-      "pendingChanges": []
+      "pendingChanges": [
+        {
+          "filePath": "src/cli/shared.ts",
+          "eventType": "change",
+          "timestamp": "2026-03-30T23:29:04.717Z"
+        },
+        {
+          "filePath": "src/cli/install-flow.ts",
+          "eventType": "change",
+          "timestamp": "2026-03-30T23:29:04.717Z"
+        }
+      ],
+      "depth": 1,
+      "parent": null
     },
-    "mem-gateway-core": {
-      "skillPath": ".agents\\skills\\mem-gateway-core\\SKILL.md",
+    "gateway-core": {
+      "skillPath": ".agents\\memory\\gateway-core\\SKILL.md",
       "trackedFiles": [
         "src/index.ts",
         "src/types.ts",
@@ -43,23 +56,14 @@
         "src/tool-router.test.ts",
         "src/process-pool.test.ts"
       ],
-      "staleness": 20,
-      "lastUpdated": "2026-03-28T03:05:00.000Z",
-      "pendingChanges": [
-        {
-          "filePath": "src/gateway-server.ts",
-          "eventType": "change",
-          "timestamp": "2026-03-28T03:20:32.614Z"
-        },
-        {
-          "filePath": "src/tool-router.ts",
-          "eventType": "change",
-          "timestamp": "2026-03-28T03:20:34.633Z"
-        }
-      ]
+      "staleness": 0,
+      "lastUpdated": "2026-03-31T07:04:43+08:00",
+      "pendingChanges": [],
+      "depth": 1,
+      "parent": null
     },
-    "mem-_system": {
-      "skillPath": ".agents\\skills\\mem-_system\\SKILL.md",
+    "_system": {
+      "skillPath": ".agents\\memory\\_system\\SKILL.md",
       "trackedFiles": [
         "package.json",
         "tsconfig.json",
@@ -74,126 +78,128 @@
       ],
       "staleness": 0,
       "lastUpdated": "2026-03-28T01:48:30.000Z",
-      "pendingChanges": []
+      "pendingChanges": [],
+      "depth": 1,
+      "parent": null
     }
   },
   "fileMap": {
     "src/cli.ts": [
-      "mem-cli"
+      "cli"
     ],
     "src/cli/shared.ts": [
-      "mem-cli"
+      "cli"
     ],
     "src/cli/source-detector.ts": [
-      "mem-cli"
+      "cli"
     ],
     "src/cli/install-flow.ts": [
-      "mem-cli"
+      "cli"
     ],
     "src/cli/auth-manager.ts": [
-      "mem-cli"
+      "cli"
     ],
     "src/cli/category-manager.ts": [
-      "mem-cli"
+      "cli"
     ],
     "src/cli/mcp-manager.ts": [
-      "mem-cli"
+      "cli"
     ],
     "src/cli/dashboard.ts": [
-      "mem-cli"
+      "cli"
     ],
     "src/cli/marketplace.ts": [
-      "mem-cli"
+      "cli"
     ],
     "src/cli/health-check.ts": [
-      "mem-cli"
+      "cli"
     ],
     "src/cli/tool-browser.ts": [
-      "mem-cli"
+      "cli"
     ],
     "src/cli/import-export.ts": [
-      "mem-cli"
+      "cli"
     ],
     "src/cli/version-check.ts": [
-      "mem-cli"
+      "cli"
     ],
     "mcp-catalog.json": [
-      "mem-cli"
+      "cli"
     ],
     "console.ps1": [
-      "mem-cli"
+      "cli"
     ],
     "src/index.ts": [
-      "mem-gateway-core"
+      "gateway-core"
     ],
     "src/types.ts": [
-      "mem-gateway-core"
+      "gateway-core"
     ],
     "src/logger.ts": [
-      "mem-gateway-core"
+      "gateway-core"
     ],
     "src/config-loader.ts": [
-      "mem-gateway-core"
+      "gateway-core"
     ],
     "src/credential-store.ts": [
-      "mem-gateway-core"
+      "gateway-core"
     ],
     "src/gateway-server.ts": [
-      "mem-gateway-core"
+      "gateway-core"
     ],
     "src/process-pool.ts": [
-      "mem-gateway-core"
+      "gateway-core"
     ],
     "src/tool-router.ts": [
-      "mem-gateway-core"
+      "gateway-core"
     ],
     "src/auth-guides.ts": [
-      "mem-gateway-core"
+      "gateway-core"
     ],
     "src/registry.ts": [
-      "mem-gateway-core"
+      "gateway-core"
     ],
     "src/registry.test.ts": [
-      "mem-gateway-core"
+      "gateway-core"
     ],
     "src/config-loader.test.ts": [
-      "mem-gateway-core"
+      "gateway-core"
     ],
     "src/tool-router.test.ts": [
-      "mem-gateway-core"
+      "gateway-core"
     ],
     "src/process-pool.test.ts": [
-      "mem-gateway-core"
+      "gateway-core"
     ],
     "package.json": [
-      "mem-_system"
+      "_system"
     ],
     "tsconfig.json": [
-      "mem-_system"
+      "_system"
     ],
     "gateway.config.json": [
-      "mem-_system"
+      "_system"
     ],
     ".gitignore": [
-      "mem-_system"
+      "_system"
     ],
     "mcps/程式碼品質/eslint.json": [
-      "mem-_system"
+      "_system"
     ],
     "mcps/安全掃描/snyk.json": [
-      "mem-_system"
+      "_system"
     ],
     "mcps/資料處理/excel.json": [
-      "mem-_system"
+      "_system"
     ],
     "mcps/錯誤監控/sentry.json": [
-      "mem-_system"
+      "_system"
     ],
     "mcps/網頁測試/playwright.json": [
-      "mem-_system"
+      "_system"
     ],
     "mcps/網頁測試/a11y.json": [
-      "mem-_system"
+      "_system"
     ]
   }
 }

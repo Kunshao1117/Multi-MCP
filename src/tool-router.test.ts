@@ -310,3 +310,122 @@ describe('route — 工作目錄管理', () => {
   });
 });
 
+// ═══════════════════════════════════
+// call_tool — projectRoot 智慧填充
+// ═══════════════════════════════════
+
+// 模擬 node:fs 以控制 .agents 目錄的存在判斷
+vi.mock('node:fs', () => ({
+  default: {
+    existsSync: vi.fn(() => false),
+  },
+}));
+
+import fs from 'node:fs';
+
+describe('call_tool — projectRoot 智慧填充', () => {
+  let pool: ReturnType<typeof createMockPool>;
+  let router: ToolRouter;
+  let mockClient: { callTool: ReturnType<typeof vi.fn> };
+
+  // 集成表需包含一個接受 projectRoot 的下游工具
+  function createRegistryWithCartridge(): ToolRegistry {
+    return {
+      version: '1.0.0',
+      generated_at: '2026-01-01T00:00:00+08:00',
+      servers: {
+        'cartridge-system': {
+          tool_count: 1,
+          tools: {
+            'cartridge-system__memory_list': {
+              original_name: 'memory_list', server_name: 'cartridge-system',
+              description: 'List memory cards.',
+              inputSchema: { type: 'object', properties: { projectRoot: { type: 'string' } } },
+            },
+          },
+        },
+      },
+      all_tools: {
+        'cartridge-system__memory_list': 'cartridge-system',
+      },
+    };
+  }
+
+  beforeEach(() => {
+    vi.mocked(fs.existsSync).mockReset();
+    pool = createMockPool();
+    mockClient = { callTool: vi.fn().mockResolvedValue({ content: [{ type: 'text', text: 'ok' }] }) };
+    (pool.getClient as ReturnType<typeof vi.fn>).mockResolvedValue(mockClient);
+    router = new ToolRouter(createRegistryWithCartridge(), pool, createTestConfig());
+  });
+
+  it('AI 填了正確的 projectRoot（底下有 .agents）→ 保持不變', async () => {
+    // 目標路徑下有 .agents → 不修正
+    vi.mocked(fs.existsSync).mockImplementation((p) =>
+      String(p).endsWith('d:\\Project\\.agents') ? true : false,
+    );
+
+    await router.route('gateway__call_tool', {
+      name: 'cartridge-system__memory_list',
+      arguments: { projectRoot: 'd:\\Project' },
+      workspace: 'd:\\Workspace',
+    });
+
+    expect(mockClient.callTool).toHaveBeenCalledWith(
+      expect.objectContaining({
+        arguments: expect.objectContaining({ projectRoot: 'd:\\Project' }),
+      }),
+    );
+  });
+
+  it('AI 填了錯誤的 projectRoot 且 workspace 正確 → 自動修正', async () => {
+    vi.mocked(fs.existsSync).mockImplementation((p) => {
+      const s = String(p);
+      // 錯誤路徑下無 .agents，workspace 下有
+      if (s.endsWith('d:\\Wrong\\.agents')) return false;
+      if (s.endsWith('d:\\Workspace\\.agents')) return true;
+      return false;
+    });
+
+    await router.route('gateway__call_tool', {
+      name: 'cartridge-system__memory_list',
+      arguments: { projectRoot: 'd:\\Wrong' },
+      workspace: 'd:\\Workspace',
+    });
+
+    expect(mockClient.callTool).toHaveBeenCalledWith(
+      expect.objectContaining({
+        arguments: expect.objectContaining({ projectRoot: 'd:\\Workspace' }),
+      }),
+    );
+  });
+
+  it('AI 沒填 projectRoot 但 workspace 存在 → 自動注入', async () => {
+    await router.route('gateway__call_tool', {
+      name: 'cartridge-system__memory_list',
+      arguments: {},
+      workspace: 'd:\\Workspace',
+    });
+
+    expect(mockClient.callTool).toHaveBeenCalledWith(
+      expect.objectContaining({
+        arguments: expect.objectContaining({ projectRoot: 'd:\\Workspace' }),
+      }),
+    );
+  });
+
+  it('workspace 為 null（未設定）→ 不做任何填充', async () => {
+    // 未設定 workspace，也不提供 callWorkspace
+    await router.route('gateway__call_tool', {
+      name: 'cartridge-system__memory_list',
+      arguments: {},
+    });
+
+    expect(mockClient.callTool).toHaveBeenCalledWith(
+      expect.objectContaining({
+        arguments: expect.not.objectContaining({ projectRoot: expect.anything() }),
+      }),
+    );
+  });
+});
+

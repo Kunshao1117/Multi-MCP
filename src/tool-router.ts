@@ -2,6 +2,8 @@
  * Multi-MCP Gateway — 工具路由引擎
  * 含認證錯誤優雅降級 + 閘道器管理工具（含增值功能）
  */
+import fs from 'node:fs';
+import path from 'node:path';
 import type { ToolRegistry, ParsedToolName } from './types.js';
 import { NAMESPACE_SEPARATOR, GATEWAY_TOOL_PREFIX } from './types.js';
 import type { ProcessPool } from './process-pool.js';
@@ -211,6 +213,24 @@ export class ToolRouter {
         // 本次呼叫暫時套用 workspace，結束後自動還原（不污染全局狀態）
         const previousWorkspace = this.workspacePath;
         if (callWorkspace) this.workspacePath = callWorkspace;
+
+        // ── projectRoot 智慧填充 ──
+        const effectiveWorkspace = this.workspacePath;
+        if (effectiveWorkspace && typeof toolArgs.projectRoot === 'string') {
+          const agentsAtArg = path.join(toolArgs.projectRoot, '.agents');
+          const agentsAtWs = path.join(effectiveWorkspace, '.agents');
+          if (!fs.existsSync(agentsAtArg) && fs.existsSync(agentsAtWs)) {
+            logger.info('projectRoot 自動修正', {
+              from: toolArgs.projectRoot,
+              to: effectiveWorkspace,
+            });
+            toolArgs.projectRoot = effectiveWorkspace;
+          }
+        } else if (effectiveWorkspace && !('projectRoot' in toolArgs)) {
+          toolArgs.projectRoot = effectiveWorkspace;
+          logger.info('projectRoot 自動注入', { value: effectiveWorkspace });
+        }
+
         try {
           return await this.route(toolName, toolArgs);
         } finally {
@@ -249,11 +269,11 @@ export class ToolRouter {
       }
 
       case 'set_workspace': {
-        const path = args.path as string;
-        if (!path) throw new Error('缺少 path 參數');
-        this.workspacePath = path;
-        logger.info('工作目錄已設定', { path });
-        return { content: [{ type: 'text' as const, text: `✅ 工作目錄已設定為: ${path}` }] };
+        const wsPath = args.path as string;
+        if (!wsPath) throw new Error('缺少 path 參數');
+        this.workspacePath = wsPath;
+        logger.info('工作目錄已設定', { path: wsPath });
+        return { content: [{ type: 'text' as const, text: `✅ 工作目錄已設定為: ${wsPath}` }] };
       }
 
       case 'get_workspace':

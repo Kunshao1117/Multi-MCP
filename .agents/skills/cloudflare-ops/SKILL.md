@@ -6,57 +6,57 @@ description: >
   Use when: 呼叫 cloudflare 相關工具、雲端資源管理/Workers/KV/D1/R2/容器/日誌 的場景。
 ---
 
-# Cloudflare Ops — 雲端服務操作食譜
+# Cloudflare Ops — Cloud Service Recipes
 
-> 此技能橫跨三台 MCP 伺服器：bindings（資源管理）、containers（容器）、observability（日誌）。
+> This skill spans three MCP servers: bindings（資源管理）, containers, observability（日誌）。
 
-## Recipe 1: 帳號初始化
+## Recipe 1: Account Initialization
 
-1. `accounts_list` — 列出所有帳號
-2. `set_active_account` — 設定活動帳號（**其他操作前必須先做**）
+1. `accounts_list` — List all accounts
+2. `set_active_account` — Set active account（**其他操作前必須先做**）
 
-## Recipe 2: KV 鍵值儲存管理
+## Recipe 2: KV Key-Value Storage
 
-1. `kv_namespaces_list` — 列出所有 KV 命名空間
-2. `kv_namespace_create` — 建立新命名空間
-3. `kv_namespace_get` — 查看特定命名空間詳情
+1. `kv_namespaces_list` — List all KV namespaces
+2. `kv_namespace_create` — Create new namespace
+3. `kv_namespace_get` — View specific namespace details
 
-## Recipe 3: D1 資料庫管理
+## Recipe 3: D1 Database Management
 
-1. `d1_databases_list` — 列出所有 D1 資料庫
-2. `d1_database_create` — 建立新資料庫
-3. `d1_database_query` — 執行 SQL 查詢
+1. `d1_databases_list` — List all D1 databases
+2. `d1_database_create` — Create new database
+3. `d1_database_query` — Execute SQL queries
 
-## Recipe 4: R2 物件儲存管理
+## Recipe 4: R2 Object Storage
 
-1. `r2_buckets_list` — 列出所有 R2 儲存桶
-2. `r2_bucket_create` — 建立新儲存桶
-3. `r2_bucket_get` — 查看儲存桶詳情
+1. `r2_buckets_list` — List all R2 buckets
+2. `r2_bucket_create` — Create new bucket
+3. `r2_bucket_get` — View bucket details
 
-## Recipe 5: Workers 管理與日誌查詢
+## Recipe 5: Workers Management & Log Queries
 
-1. `workers_list` — 列出所有 Workers
-2. `workers_get_worker_code` — 讀取 Worker 原始碼
-3. `query_worker_observability` — 查詢日誌和效能指標
-4. 查詢前用 `observability_keys` 確認可用欄位
-5. 用 `observability_values` 確認欄位的可用值
+1. `workers_list` — List all Workers
+2. `workers_get_worker_code` — Read Worker source code
+3. `query_worker_observability` — Query logs and performance metrics
+4. Before querying, use `observability_keys` to confirm available fields
+5. Use `observability_values` to confirm available values for a field
 
-## Recipe 6: 容器操作
+## Recipe 6: Container Operations
 
-1. `container_initialize` — 啟動容器
-2. `container_ping` — 確認容器運行中
-3. `container_exec` — 執行指令（Python 用 `python3`/`pip3`）
-4. `container_file_write` / `container_file_read` — 檔案讀寫
+1. `container_initialize` — Start container
+2. `container_ping` — Confirm container is running
+3. `container_exec` — Execute commands（Python 用 `python3`/`pip3`）
+4. `container_file_write` / `container_file_read` — File read/write
 
 ## Gotchas (踩坑點)
 
-- ⚠️ **帳號優先**：所有操作前必須先 `set_active_account`
-- ⚠️ **日誌查詢**：`query_worker_observability` 的 filter 欄位需用 `observability_keys` 先確認，不要猜
-- ⚠️ **容器 Python**：必須用 `python3` 和 `pip3`，不是 `python`/`pip`
-- ⚠️ **Pages 遷移**：遷移 Pages 到 Workers 前，**必須**先呼叫 `migrate_pages_to_workers_guide`
-- ⚠️ `search_cloudflare_documentation` 可搜尋所有 Cloudflare 產品文件
+- ⚠️ **Account first**: Must `set_active_account` before all operations（所有操作前必須先設定帳號）
+- ⚠️ **Log queries**: `query_worker_observability` filter fields require `observability_keys` confirmation first — do not guess（不要猜測欄位名稱）
+- ⚠️ **Container Python**: Must use `python3` and `pip3`, NOT `python`/`pip`
+- ⚠️ **Pages migration**: Before migrating Pages to Workers, **must** call `migrate_pages_to_workers_guide` first（遷移前必調）
+- ⚠️ `search_cloudflare_documentation` can search all Cloudflare product docs（可搜尋全部 Cloudflare 產品文件）
 
 ## Interpretation (結果解讀)
 
-- 日誌查詢支援三種檢視：`events`（列表）、calculations（統計）、specific invocations（定位）
-- Worker 的 `workers_get_worker_code` 可能回傳打包版本，不一定是原始碼
+- Log queries support three views: `events`（列表）, calculations（統計）, specific invocations（定位）
+- Worker's `workers_get_worker_code` may return bundled version, not necessarily source code（可能回傳打包版本）

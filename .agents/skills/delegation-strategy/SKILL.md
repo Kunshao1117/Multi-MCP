@@ -30,16 +30,16 @@ Evaluate in this order:
 ## 2. CLI Role Boundary (CLI 角色邊界)
 
 CLI = **read-only analytical subagent**. Three absolute constraints:
-1. **Read-Only Source Code** — 禁止修改專案原始碼
-2. **Report-Only Write** — 只能寫入 `.agents/logs/` 目錄
-3. **Self-Context via Memory** — CLI 可主動讀取 `mem-*` 建立上下文
+1. **Read-Only Source Code** — FORBIDDEN from modifying project source code
+2. **Report-Only Write** — Can only write to `.agents/logs/` directory
+3. **Self-Context via Memory** — CLI reads memory cards for context
 
 ## 3. CLI Delegation Details (委派細節)
 
-> 完整 CLI 委派流程、提示詞骨架、能力矩陣見 `references/` 子目錄：
-> - `references/cli-delegation-sop.md` — 檔案傳令模式與清理協議
-> - `references/cli-prompt-skeleton.md` — 通用提示詞骨架
-> - `references/cli-capability-matrix.md` — 可用工具與已知限制
+> Full CLI delegation flow, prompt skeletons, and capability matrix in `references/` subdirectory:
+> - `references/cli-delegation-sop.md` — File-based command pattern and cleanup protocol
+> - `references/cli-prompt-skeleton.md` — Universal prompt skeleton
+> - `references/cli-capability-matrix.md` — Available tools and known limitations
 
 ## 4. Deadlock Breaker (死鎖熔斷)
 

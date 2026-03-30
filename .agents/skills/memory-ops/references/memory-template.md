@@ -1,12 +1,13 @@
-# 記憶技能模板
+# Memory Card Template
 
-> 此為 `memory-ops` 技能的參考模板。建立新記憶技能時參照使用。
+> Reference template for `memory-ops` skill. Use when creating new memory cards.
 
-## YAML Frontmatter（必填欄位）
+## YAML Frontmatter (Required Fields)
 
 ```yaml
 ---
-name: mem-{module}
+name: {module}
+scopePath: path/to/owned/directory/
 description: >
   專案記憶：{中文模組描述}。
   Use when: {何時應該載入此記憶}。
@@ -16,7 +17,9 @@ staleness: 0
 ---
 ```
 
-## Markdown Body（標準區段）
+> **Note**: `description` remains in Traditional Chinese（description 欄位保持繁體中文，供 IDE 觸發匹配）.
+
+## Markdown Body (Standard Sections)
 
 ```markdown
 # {Module Name} — Module Memory
@@ -34,5 +37,5 @@ staleness: 0
 - Dxx: Lesson description
 
 ## Relations
-- mem-other-module
+- other-module
 ```
