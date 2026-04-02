@@ -1,6 +1,6 @@
 ---
 description: Restructures code for performance/cleanliness without altering business logic. Enforces pre- and post-refactor automated testing.
-required_skills: [memory-ops, code-quality]
+required_skills: [memory-ops, code-quality, test-patterns, impact-test-strategy]
 memory_awareness: full
 ---
 

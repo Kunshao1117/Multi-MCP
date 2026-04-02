@@ -4,6 +4,12 @@ description: >
   CLI-delegated code reading and diagnostic analysis procedures.
   Use when: 執行 /07_debug 除錯時需要大範圍閱讀原始碼、
   跨模組故障定位、或任何涉及 程式碼診斷/大範圍原始碼分析/故障調查 的場景。
+metadata:
+  author: antigravity
+  version: "5.1"
+  origin: framework
+  memory_awareness: read
+  tool_scope: ["filesystem:read"]
 ---
 
 # Code Diagnosis — Diagnostic Analysis Protocol

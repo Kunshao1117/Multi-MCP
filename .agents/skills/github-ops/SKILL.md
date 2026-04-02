@@ -4,6 +4,13 @@ description: >
   GitHub 版本控制操作食譜：倉庫管理、Issue/PR 工作流程、程式碼搜尋。
   MCP Server: github
   Use when: 呼叫 github 相關工具、版本控制/倉庫管理/PR操作 的場景。
+metadata:
+  author: antigravity
+  version: "5.1"
+  origin: framework
+  memory_awareness: none
+  mcp_servers: [github]
+  tool_scope: ["mcp:github"]
 ---
 
 # GitHub Ops — Version Control Recipes

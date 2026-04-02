@@ -4,6 +4,12 @@ description: >
   Testing heuristics, E2E Browser Agent orchestration, and strict DOM element interaction patterns.
   Use when: 執行 E2E 測試、需要 DOM 選擇器策略、
   或任何涉及 測試自動化/DOM互動/自動修復迴圈 的場景。
+metadata:
+  author: antigravity
+  version: "5.1"
+  origin: framework
+  memory_awareness: none
+  tool_scope: ["filesystem:read", "browser"]
 ---
 
 # [SKILL: TEST AUTOMATION STRATEGY]

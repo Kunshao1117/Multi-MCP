@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastScanned": "2026-03-30T23:29:04.716Z",
+  "lastScanned": "2026-04-02T02:28:40.835Z",
   "cartridges": {
     "cli": {
       "skillPath": ".agents\\memory\\cli\\SKILL.md",
@@ -27,12 +27,12 @@
         {
           "filePath": "src/cli/shared.ts",
           "eventType": "change",
-          "timestamp": "2026-03-30T23:29:04.717Z"
+          "timestamp": "2026-04-02T02:28:40.836Z"
         },
         {
           "filePath": "src/cli/install-flow.ts",
           "eventType": "change",
-          "timestamp": "2026-03-30T23:29:04.717Z"
+          "timestamp": "2026-04-02T02:28:40.836Z"
         }
       ],
       "depth": 1,
@@ -57,7 +57,7 @@
         "src/process-pool.test.ts"
       ],
       "staleness": 0,
-      "lastUpdated": "2026-03-31T07:04:43+08:00",
+      "lastUpdated": "2026-03-31T07:30:35+08:00",
       "pendingChanges": [],
       "depth": 1,
       "parent": null
@@ -76,9 +76,15 @@
         "mcps/網頁測試/playwright.json",
         "mcps/網頁測試/a11y.json"
       ],
-      "staleness": 0,
+      "staleness": 10,
       "lastUpdated": "2026-03-28T01:48:30.000Z",
-      "pendingChanges": [],
+      "pendingChanges": [
+        {
+          "filePath": ".gitignore",
+          "eventType": "change",
+          "timestamp": "2026-04-02T02:28:40.841Z"
+        }
+      ],
       "depth": 1,
       "parent": null
     }

@@ -29,11 +29,12 @@ You MUST execute BOTH of the following actions synchronously:
 **Track B: Machine-Readable Memory (Memory Skill System)**
 - Initialize the Memory Card System at `.agents/memory/`:
   1. Create `_system/SKILL.md` from tech stack decisions. Include runtime, framework, external_services, env_keys, config_files, and deploy info in Markdown sections.
-  2. Create one `{module}/SKILL.md` per major functional module identified in the blueprint. Populate with standard sections: Tracked Files, Key Decisions, Known Issues, Module Lessons, Relations.
+  2. Create one `{module}/SKILL.md` per major functional module identified in the blueprint. Populate with standard sections: Tracked Files, Key Decisions, Known Issues, Module Lessons, Relations, Applicable Skills.
   3. Memory card descriptions MUST include Chinese keywords for Director instruction matching.
   4. Memory card frontmatter MUST include `last_updated`, `status`, and `staleness: 0`.
   5. Memory card granularity: each card SHOULD track no more than 8 files. Use nested directories to establish tree hierarchy (max depth 4). Layer 3-4 cards go inside their parent card's directory. Group shared decisions in parent cards.
   6. **Nesting Analysis**: Before creating cards, analyze module relationships. If module B's `scopePath` is a sub-path of module A's, create B inside A's directory. Follow the Nesting Decision Tree in `memory-ops` skill § 5.
+  7. **Applicable Skills Population（適用技能填入）**: For each module memory card, analyse its characteristics (API? Frontend? Auth? Data?) and list the framework skills that govern operations on this module (e.g., `security-sre` for auth modules, `ui-ux-standards` for frontend modules).
 
 ## COMPLETION GATE（完成閘門 — 不可略過）
 > Inherits: `.agents/workflows/_completion_gate.md`

@@ -1,10 +1,10 @@
 ---
 name: _system
 description: >
-  專案記憶：Multi-MCP Gateway 系統層級資訊（技術堆疊、主機環境、部署設定）。
-  Use when: 任何涉及 系統架構/技術堆疊/部署/MCP 伺服器管理 的任務。
-last_updated: 2026-03-28T09:48:30+08:00
-status: stable
+  專案記憶：Multi-MCP Gateway 系統層級資訊（技術堆疊、主機環境、部署設定）。 Use when: 任何涉及 系統架構/技術堆疊/部署/MCP
+  伺服器管理 的任務。
+last_updated: 2026-04-02T10:58:38+08:00
+status: active
 staleness: 0
 ---
 
@@ -32,12 +32,14 @@ staleness: 0
 | cloudflare-bindings | 雲端基礎設施 | mcp-remote (bindings.mcp.cloudflare) | env (CLOUDFLARE_API_TOKEN) |
 | cloudflare-containers | 雲端基礎設施 | mcp-remote (containers.mcp.cloudflare) | env (CLOUDFLARE_API_TOKEN) |
 | cloudflare-observability | 雲端基礎設施 | mcp-remote (observability.mcp.cloudflare) | env (CLOUDFLARE_API_TOKEN) |
-| eslint | 程式碼品質 | @eslint/mcp | 無需認證 |
+| eslint | 程式碼品質 | @eslint/mcp | 無需認證（已停用） |
 | snyk | 安全掃描 | snyk mcp (內建 CLI) | 本地 Token（snyk auth） |
 | excel | 資料處理 | @shmaxi/excel-mcp-server | 無需認證 |
 | sentry | 錯誤監控 | @sentry/mcp-server | env (SENTRY_AUTH_TOKEN) |
 | playwright | 網頁測試 | @playwright/mcp | 無需認證 |
 | a11y | 網頁測試 | accessibility-mcp | 無需認證 |
+| context7 | 文件查詢 | @upstash/context7-mcp | 無需認證 |
+| cartridge-system | 記憶管理 | cartridge-system | 無需認證（已停用） |
 
 ## Config Architecture
 - `gateway.config.json` — 閘道器設定（超時、重試、日誌等級）
@@ -63,6 +65,7 @@ staleness: 0
 - mcps/錯誤監控/sentry.json
 - mcps/網頁測試/playwright.json
 - mcps/網頁測試/a11y.json
+- mcps/文件查詢/context7.json
 
 ## Key Decisions
 - D01: 使用 `mcps/` 分類目錄結構取代單一設定檔，便於管理大量 MCP
@@ -71,6 +74,7 @@ staleness: 0
 - D04: 審計 MCP 選擇「本地執行」策略，排除雲端掃描（Semgrep）以保護隱私
 - D05: Snyk MCP 使用 `--experimental` 旗標，需留意未來版本相容性
 - D06: 審計工作流採「CLI 子代理 + 合併報告 + 主腦只讀」架構，實現上下文隔離
+- D07: Context7 MCP 用於即時查詢框架官方文件，零外部依賴、無需 API Key
 
 ## Known Issues
 - credentials.json 明文儲存密鑰，依賴 .gitignore 保護，缺少加密層
@@ -84,6 +88,7 @@ staleness: 0
 - L04: npx 首次下載新套件時掃描易超時（registry 記錄 0 工具），需先手動 `npx -y <pkg> --help` 預下載後再 rescan
 - L05: 社群維護的 A11y MCP（@mseep/a11y-mcp、accessibility-mcp）在 Gateway 掃描時回傳 0 工具，可能是 MCP 協議實作不完整或初始化逾時
 - L06: devDependencies 的間接依賴漏洞（如 picomatch ReDoS、path-to-regexp ReDoS）不影響生產執行期，可安全透過 `npm audit fix` 自動塸除，尌後跟蹤 `npm test` 確認零迴歸
+- L07: 記憶卡夾系統停用時，記憶卡需手動更新；恢復後應優先重啟並同步過期索引
 
 ## Relations
 - gateway-core

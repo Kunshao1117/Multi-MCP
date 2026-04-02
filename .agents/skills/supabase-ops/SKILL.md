@@ -4,6 +4,13 @@ description: >
   Supabase 資料庫管理操作食譜：資料庫操作、安全檢查、分支管理、Edge Function 部署。
   MCP Server: supabase
   Use when: 呼叫 supabase 相關工具、資料庫管理/SQL查詢/安全檢查 的場景。
+metadata:
+  author: antigravity
+  version: "5.3"
+  origin: framework
+  memory_awareness: none
+  mcp_servers: [supabase]
+  tool_scope: ["mcp:supabase"]
 ---
 
 # Supabase Ops — Database Management Recipes
@@ -25,15 +32,75 @@ description: >
 
 ## Recipe 3: Branch Development Workflow
 
-1. `create_branch` — Create development branch（需先確認費用：`get_cost` → `confirm_cost`）
-2. Develop on branch using `apply_migration` and `execute_sql`
-3. `merge_branch` — Merge migrations back to main
-4. Use `rebase_branch` when migration conflicts arise
+### Phase 1: Branch Creation (分支建立)
+1. `get_cost` — Check branch creation cost for the organization（確認組織的分支費用）
+2. Present cost to Director and get confirmation
+3. `confirm_cost` — Get confirmation ID（取得確認 ID）
+4. `create_branch` — Create development branch with confirmation ID
+5. `list_branches` — Verify branch status is `ready`（等待分支狀態變為 ready）
+
+### Phase 2: Development & Testing (開發與測試)
+1. `apply_migration` on branch — Apply DDL changes（在分支上套用結構變更）
+2. `list_tables` with `verbose: true` — Verify schema is correct（驗證結構正確）
+3. `execute_sql` on branch — Test with sample data（用測試資料驗證）
+4. `get_advisors` — Check for RLS and performance warnings（檢查安全建議）
+
+### Phase 3: Merge or Rollback (合併或回滾)
+- **If tests pass** → `merge_branch` to apply migrations to production（合併到正式環境）
+- **If conflicts exist** → `rebase_branch` to sync with production migrations（同步正式環境遷移）
+- **If tests fail** → `reset_branch` to discard changes, or `delete_branch` to abandon（重置或捨棄分支）
+
+### Workflow Integration (工作流整合)
+- `/03_build`: Use branch for safe schema changes during feature development
+- `/04_fix`: Use branch to test database fixes before applying to production
+- `/05_refactor`: Use branch for schema refactoring with rollback safety
 
 ## Recipe 4: Edge Function Deployment
 
 1. `list_edge_functions` — View existing functions
 2. `deploy_edge_function` — Deploy new version（已存在的會建立新版本）
+
+## Recipe 5: Migration Verification (遷移驗證)
+
+After applying a migration, verify schema consistency:
+（套用遷移後，驗證 schema 一致性）
+
+1. `apply_migration` — Apply the DDL changes
+2. `list_tables` with `verbose: true` — Read the updated schema
+3. Cross-compare against the expected model structure:
+   - All new columns exist with correct types（新欄位存在且型別正確）
+   - No orphaned columns from previous migrations（無前次遷移的孤立欄位）
+   - Indexes and constraints are in place（索引和約束已建立）
+4. `get_advisors` — Check for RLS and performance issues
+5. **Rollback awareness**: If migration fails, document the rollback SQL in the implementation plan
+   （若遷移失敗，在實作計畫中記錄回滾 SQL）
+
+> ⚠️ Always test migrations on a branch first before applying to production（先在分支測試遷移）。
+
+## Recipe 6: Test Data Seeding (測試資料播種)
+
+For development and testing environments:
+（用於開發和測試環境）
+
+1. Create a seed SQL file with representative test data:
+   ```sql
+   -- Seed data for development environment
+   INSERT INTO users (email, role) VALUES
+     ('admin@test.com', 'admin'),
+     ('editor@test.com', 'editor'),
+     ('viewer@test.com', 'viewer');
+   ```
+2. Execute via `execute_sql` on the development branch（在開發分支上執行）
+3. **Never seed production** — seed files must include a safety check:
+   ```sql
+   -- Safety: Only run on non-production branches
+   DO $$ BEGIN
+     IF current_database() LIKE '%production%' THEN
+       RAISE EXCEPTION 'Cannot seed production database';
+     END IF;
+   END $$;
+   ```
+4. After testing, clean up with `TRUNCATE` or branch deletion（測試後清理）
 
 ## Gotchas (踩坑點)
 

@@ -4,6 +4,12 @@ description: >
   CLI-delegated code scanning procedures, scan report format, and cross-boundary analysis patterns.
   Use when: 執行 /08_audit 深度審計、需要 ESLint/安全 工具掃描、
   或任何涉及 程式碼品質掃描/安全漏洞掃描/工具報告解讀 的場景。
+metadata:
+  author: antigravity
+  version: "5.1"
+  origin: framework
+  memory_awareness: read
+  tool_scope: ["filesystem:read", "terminal"]
 ---
 
 # Code Audit — Scan Operating Protocol

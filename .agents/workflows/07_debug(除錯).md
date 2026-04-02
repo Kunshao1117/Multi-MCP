@@ -41,6 +41,7 @@ When triggered:
   3. 【CLI 診斷摘要】(Summary of CLI diagnosis findings, if §1.5 was executed — omit if not)
   4. 【根因白話文解析】(Why it broke, translated into plain business logic)
   5. 【概念修復方案】(Proposed architectural fix)
+  6. 【技能萃取建議】(If the debugging methodology developed in this session is reusable across future incidents, recommend creating a project skill via `/12_skill_forge` — 若本次歸納出可重用的診斷方法論，建議萃取為專案衍生技能)
 - **Halt**: Output: `[防線鎖定] 數位鑑識完畢。若總監同意修復方向，請輸入 /fix 啟動修復程序。`
 
 ## [SECURITY & COMPLIANCE MANDATE]

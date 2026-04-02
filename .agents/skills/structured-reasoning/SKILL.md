@@ -3,6 +3,13 @@ name: structured-reasoning
 description: >
   Sequential Thinking deep reasoning workflow: architecture decisions, debugging, multi-option analysis.
   Use when: 需要 深度推理/架構決策/除錯分析/多方案比較 的複雜場景。
+metadata:
+  author: antigravity
+  version: "5.1"
+  origin: framework
+  memory_awareness: none
+  mcp_servers: [sequentialthinking]
+  tool_scope: ["mcp:sequentialthinking"]
 ---
 
 # Structured Reasoning (結構化推理)

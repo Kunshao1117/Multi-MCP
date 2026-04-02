@@ -1,12 +1,12 @@
 ---
 description: Actuates the Browser Agent to perform visual and functional tests on the UI without Director intervention.
-required_skills: [test-automation-strategy, browser-testing]
+required_skills: [test-automation-strategy, browser-testing, a11y-testing]
 memory_awareness: read
 ---
 
 # [WORKFLOW: TEST (測試)]
 
-> **Required Skills**: Load `test-automation-strategy` before proceeding.
+> **Required Skills**: Load `test-automation-strategy` and `a11y-testing` before proceeding.
 
 ## 1. Invocation & Autonomy
 - This workflow can be called by the Director directly or autonomously invoked by other workflows (e.g., via the `// turbo` chain from `/03_build`).
@@ -14,6 +14,11 @@ memory_awareness: read
 ## 2. Robotic QA & Visual Verification
 - You MUST spawn the `browser_agent` to navigate to the application's local URL (e.g., `http://localhost:3000` or equivalent).
 - Perform end-to-end (E2E) functional tests mimicking a real user: click buttons, fill forms, and observe state changes.
+
+## 2.5 Accessibility Scan (無障礙掃描 — 新增步驟)
+- After visual testing, execute `a11y-testing` skill § 1 Scan Flow on each tested page.
+- Include accessibility scan results in the walkthrough artifact.
+- If critical a11y violations found → document and trigger `/04_fix` for remediation.
 
 ## 3. 測試授權與自動判斷
 - You MUST call `task_boundary` to enter `VERIFICATION` mode before starting tests.

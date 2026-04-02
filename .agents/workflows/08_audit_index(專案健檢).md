@@ -1,6 +1,6 @@
 ---
 description: Full-spectrum project health audit — workspace security, memory skill integrity, source code logic, API integration, performance, and maintainability.
-required_skills: [memory-ops, tech-stack-protocol, delegation-strategy, code-audit]
+required_skills: [memory-ops, tech-stack-protocol, delegation-strategy, code-audit, test-patterns, a11y-testing]
 memory_awareness: full
 ---
 
@@ -31,7 +31,7 @@ memory_awareness: full
   - For each uncovered module: check if it belongs to an existing functional domain card (using `scopePath` containment). If yes, create as a nested child card. If no, create at root level. Follow the Nesting Decision Tree in `memory-ops` skill § 5.
   - Populate with auto-detected tracked files, key decisions, bilingual `description` (English + Chinese keywords), and relations.
 - **Phase C (Staleness & Schema Check)**: For each existing memory card, `view_file` the `SKILL.md` and validate:
-  1. **Schema Compliance**: All required sections per `memory-ops` skill are present (frontmatter with `last_updated`, `status`, `staleness` + body with `Tracked Files`, `Key Decisions`, `Known Issues`, `Module Lessons`, `Relations`).
+  1. **Schema Compliance**: All required sections per `memory-ops` skill are present (frontmatter with `last_updated`, `status`, `staleness` + body with `Tracked Files`, `Key Decisions`, `Known Issues`, `Module Lessons`, `Relations`, `Applicable Skills`).
   2. **Field Type Check**: `status` is one of `stable`, `in_progress`, `deprecated`. `staleness` is a number.
   3. **Tracked File Verification**: Each `## Tracked Files` entry exists on disk.
   4. **Staleness Evaluation**: Read `staleness` value.
@@ -41,7 +41,12 @@ memory_awareness: full
   - If SOME tracked files changed → update the skill and reset `staleness` to 0.
 - **Phase D (System Memory Refresh)**: `view_file` the project's dependency files (`package.json`, `requirements.txt`, `go.mod`, or equivalent if they exist). Compare against `.agents/memory/_system/SKILL.md` tech stack sections. Flag any discrepancies and update if needed.
 - **Phase E (Cross-Reference Integrity)**: For each card's `## Relations`, verify each referenced memory card exists. Flag any orphaned references pointing to non-existent or archived cards.
-- **Phase F (Workflow-Skill Binding)**: For each workflow file in `.agents/workflows/`, read its YAML frontmatter `required_skills` and `memory_awareness` fields. Verify each listed skill has a corresponding folder in `.agents/skills/`. Verify `memory_awareness` is one of `none`, `read`, `full`. Flag any broken bindings or missing fields.
+- **Phase F (Workflow-Skill Binding)**: For each workflow file in `.agents/workflows/`, read its YAML frontmatter `required_skills` and `memory_awareness` fields. Verify each listed skill has a corresponding folder in `.agents/skills/`. Verify `memory_awareness` is one of `none`, `read`, `full`. Verify each skill's `tool_scope` metadata field exists and contains valid category values (`filesystem:read`, `filesystem:write`, `mcp:{server}`, `browser`, `terminal`). Flag any broken bindings or missing fields.
+- **Phase G (Project Skills Health — 專案衍生技能健康檢查)**: Scan `.agents/project_skills/` directory:
+  1. Count total project skills. Verify each has a valid SKILL.md with compliant frontmatter (`metadata.origin: project`).
+  2. Check for stale or unused project skills — if a skill has not been referenced by any workflow or memory card in the current session context, flag as a candidate for archival.
+  3. Verify naming compliance (kebab-case, 1-64 characters).
+  4. If recurring patterns are detected across 3+ module memory cards that are NOT covered by any existing skill, RECOMMEND creating a new project skill.
 
 ## 3.5 Source Code Deep Audit（原始碼深度審計）
 

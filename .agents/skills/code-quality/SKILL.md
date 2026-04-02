@@ -4,6 +4,12 @@ description: >
   SOLID principle alignment, dynamic file line thresholds, and code style enforcement.
   Use when: 建構新程式碼、重構既有程式碼、
   或任何涉及 SOLID/閾值/行數/refactor/程式碼品質 的任務。
+metadata:
+  author: antigravity
+  version: "5.1"
+  origin: framework
+  memory_awareness: none
+  tool_scope: ["filesystem:read"]
 ---
 
 # Code Quality Standards — Full Operating Protocol

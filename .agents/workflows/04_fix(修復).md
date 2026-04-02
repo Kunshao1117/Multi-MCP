@@ -1,12 +1,12 @@
 ---
 description: Executes targeted bug fixes with a strict minimal-impact policy. Requires explicit visual diff authorization.
-required_skills: [memory-ops, security-sre]
+required_skills: [memory-ops, security-sre, test-patterns, impact-test-strategy]
 memory_awareness: full
 ---
 
 # [WORKFLOW: FIX (修復)]
 
-> **Required Skills**: Load `memory-ops` and `security-sre` skills before proceeding.
+> **Required Skills**: Load `memory-ops`, `security-sre`, `test-patterns`, and `impact-test-strategy` skills before proceeding.
 
 ## 0. Memory Recall (記憶載入)
 - Check the IDE-injected skill list for memory cards relevant to the target modules.
@@ -14,6 +14,13 @@ memory_awareness: full
 
 ## 1. Current State Constraint
 - **Strict Pre-condition**: Use loaded memory skills' `## Tracked Files` (joined with project root) to navigate directly to relevant files. You may also query the failing process via terminal. DO NOT guess the architecture or file paths blindly.
+
+## 1.5 Impact Analysis (影響分析 — 新增步驟)
+- Execute `impact-test-strategy` skill § 1 Impact Analysis Flow:
+  1. Map the target file(s) to their owning module(s) via memory cards
+  2. Identify affected modules through Relations
+  3. Classify risk level (High/Medium/Low)
+- Include the impact report in the patch plan (§ 3)
 
 ## 2. Minimal Impact Principle
 - Identify the exact root cause of the bug.
@@ -24,9 +31,10 @@ memory_awareness: full
 - Generate a Markdown Artifact named `implementation_plan.md` in **Traditional Chinese (繁體中文, zh-TW)**.
 - **Structure**:
   1. 【故障根因白話文翻譯】(Plain text translation of the bug)
-  2. 【修改範圍】(Exact files to be touched)
-  3. 【實體 Diff 對照】(Before / After code blocks for the Director to review)
-  4. 【連帶影響評估】(Cascading impact analysis)
+  2. 【影響分析】(Impact analysis from § 1.5 — risk level, affected modules)
+  3. 【修改範圍】(Exact files to be touched)
+  4. 【實體 Diff 對照】(Before / After code blocks for the Director to review)
+  5. 【連帶影響評估】(Cascading impact analysis)
 
 ## 4. Authorization Gate & Execution
 - Do NOT write to the file system yet.
@@ -35,6 +43,8 @@ memory_awareness: full
 - **Mandatory Distillation**: Immediately after writing the fix:
   1. Append the lesson to the affected memory skill's `## Known Issues` or `## Module Lessons`.
   2. Update the memory skill's frontmatter (`last_updated`, `staleness: 0`).
+  3. **Regression Test Generation（回歸測試產生）**: Execute `impact-test-strategy` skill § 3 to auto-generate a regression test for this fix. The test must verify the bug does not recur.
+  4. **Skill Distillation（技能萃取建議）**: If the root cause pattern represents a class of bugs that could recur across modules, and no existing framework or project skill covers this pattern, RECOMMEND creating a defensive project skill via `/12_skill_forge`.
 
 // turbo
 ## 5. Automated Re-Verification Loop

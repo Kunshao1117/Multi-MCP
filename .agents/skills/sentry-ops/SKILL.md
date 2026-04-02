@@ -4,6 +4,13 @@ description: >
   Sentry 錯誤監控操作食譜：錯誤調查、效能排查、問題管理流程。
   MCP Server: sentry
   Use when: 呼叫 sentry 相關工具、錯誤追蹤/堆疊分析/效能監控 的場景。
+metadata:
+  author: antigravity
+  version: "5.3"
+  origin: framework
+  memory_awareness: none
+  mcp_servers: [sentry]
+  tool_scope: ["mcp:sentry"]
 ---
 
 # Sentry Ops — Error Monitoring Recipes
@@ -27,6 +34,36 @@ description: >
 
 1. `find_releases` — Get latest release info
 2. `list_issues` — Use `query: 'firstSeen:-24h'` to filter new issues
+
+## Recipe 4: Seer AI Root Cause Deep Dive (AI 根因深度分析)
+
+Use when standard stack trace analysis is insufficient to identify root cause.
+（當標準堆疊追蹤不足以判斷根因時使用）
+
+### Pre-Check (呼叫前檢查)
+- Confirm issue has sufficient events (3+ occurrences recommended)（建議 3+ 次發生）
+- Verify GitHub integration is connected (Seer needs source code access)（需 GitHub 整合才能存取原始碼）
+- Check if analysis already exists — `analyze_issue_with_seer` caches results（結果有快取，重複呼叫秒回）
+
+### Execution (執行)
+1. `analyze_issue_with_seer` — Trigger AI analysis
+   - Via URL: `issueUrl: "https://sentry.io/issues/PROJECT-123/"`
+   - Via ID: `organizationSlug` + `issueId`
+   - ⏱️ First analysis takes **2-5 minutes**; subsequent calls return cached results instantly
+2. Review Seer response:
+   - **Root Cause**: Specific code location and explanation（根因定位到具體程式碼行）
+   - **Fix Suggestion**: Concrete code changes with file paths（修復建議含檔案路徑）
+   - **Confidence**: Assessment of analysis certainty
+
+### Post-Analysis Actions (分析後行動)
+1. If fix is straightforward → Apply via `/04_fix` workflow（簡單修復 → 直接修復）
+2. If fix requires architectural change → Escalate to Director（架構變更 → 回報總監）
+3. If Seer suggests a PR → Review the generated PR via `pr-review-ops` skill
+
+### Integration with `/07_debug` (除錯工作流整合)
+- Load this skill during `/07_debug` Phase 3 (Root Cause Hypothesis)
+- Use Seer as a **second opinion** after manual analysis（作為手動分析的第二意見）
+- Cross-reference Seer's findings with `get_issue_tag_values` for environment/browser distribution
 
 ## Gotchas (踩坑點)
 

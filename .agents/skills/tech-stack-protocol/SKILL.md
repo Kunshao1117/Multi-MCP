@@ -5,6 +5,12 @@ description: >
   References Memory Skill System for state storage.
   Use when: 進入新專案、執行 /02_blueprint 架構設計、
   或任何涉及 技術堆疊/框架/依賴/tech stack/初始化 的決策。
+metadata:
+  author: antigravity
+  version: "5.1"
+  origin: framework
+  memory_awareness: full
+  tool_scope: ["filesystem:read", "mcp:cartridge-system"]
 ---
 
 # Dynamic Tech Stack Protocol — Full Operating Protocol

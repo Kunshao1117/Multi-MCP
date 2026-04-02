@@ -3,6 +3,12 @@ name: maps-assist
 description: >
   Google Maps Platform code assist: documentation retrieval and query strategy.
   Use when: 需要 地圖功能/Maps API/地點/路線/地理編碼 的開發場景。
+metadata:
+  author: antigravity
+  version: "5.1"
+  origin: framework
+  memory_awareness: none
+  tool_scope: ["filesystem:read"]
 ---
 
 # Maps Assist (地圖 API 輔助)

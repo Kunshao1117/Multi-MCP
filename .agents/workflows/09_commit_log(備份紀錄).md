@@ -20,6 +20,7 @@ memory_awareness: full
 ## 3. Staleness Detection (過時偵測)
 - 利用 `git diff --name-only` 取得已變更檔案清單，並與 `memory_list` 的追蹤檔案比對。
 - 針對受影響但尚未更新的記憶卡，你**禁止手動修改** staleness。你必須透過調用 `cartridge-system__memory_update` 來完成記憶更新，該工具將自動在底層重置過期指數與時間戳記。
+- **Project Skills Check（衍生技能檢查）**: If any files under `.agents/project_skills/` were modified, include them in the commit scope. Verify their frontmatter is still compliant.
 
 ### Staleness Warning Output (過時警告輸出)
 - If ANY memory card's staleness was incremented in this step, you MUST insert a warning block in the §5 output BEFORE the authorization gate:

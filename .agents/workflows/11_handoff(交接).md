@@ -11,6 +11,8 @@ memory_awareness: full
 ## 1. Memory Skill State Aggregation
 - 調用 MCP 工具 `cartridge-system__memory_list` 取得專案內所有記憶模組清單。
 - 若需深入了解特定記憶，調用 `cartridge-system__memory_read` 取得完整內容。
+- **Project Skills Scan（衍生技能掃描）**: List all project skills in `.agents/project_skills/`. Read each SKILL.md frontmatter to collect names and descriptions for inclusion in the handoff prompt.
+- **Skill-Memory Cross-Reference（技能記憶對照）**: For each memory card, collect its `## Applicable Skills` entries. Include a summary mapping in the handoff to help the next AI understand which skills govern which modules.
 
 ## 2. Session Delta Extraction
 - Identify what was accomplished in the CURRENT conversation:
@@ -59,7 +61,8 @@ Generate a Markdown Artifact named `handoff_prompt.md` in **Traditional Chinese 
 1. 查看 .agents/memory/ 中所有記憶卡，取得專案概覽和模組清單。
 2. 根據總監的指令，載入相關模組的記憶技能。
 3. 查看每個技能的 status 和 staleness 了解最新進度。
-4. 完成工作後，務必更新受影響模組的記憶技能。
+4. 查看 .agents/project_skills/ 中的專案衍生技能，瞭解本專案特有的操作規範。
+5. 完成工作後，務必更新受影響模組的記憶技能。
 ```
 
 ## 5. Output Mandate (Strictly zh-TW)

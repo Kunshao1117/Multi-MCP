@@ -19,3 +19,11 @@
 | database, table, query, migration, edge function | 資料庫、查詢、遷移、Edge Function | supabase-ops | supabase |
 | git, repository, issue, pull request, commit | 版本控制、倉庫、Issue、PR | github-ops | github |
 | KV, D1, R2, Workers, container, logs | 雲端資源、容器、Workers、日誌 | cloudflare-ops | cloudflare-* |
+| skill generation, meta-skill, create skill, self-extend | 技能產生、自動繁衍、建立新技能 | skill-factory | — |
+| unit test, API contract, error scenario, mock strategy | 單元測試、契約測試、異常場景、Mock策略 | test-patterns | — |
+| change impact, test scope, regression test, risk analysis | 變更影響、測試範圍、回歸測試、風險分析 | impact-test-strategy | — |
+| accessibility, a11y, WCAG, screen reader, contrast | 無障礙、a11y、WCAG、螢幕閱讀器、對比度 | a11y-testing | a11y |
+| Excel, spreadsheet, workbook, chart, pivot table | Excel、試算表、工作簿、圖表、樞紐分析 | excel-ops | excel |
+| PR review, code review, automated review | PR 審查、程式碼審查、自動審查 | pr-review-ops | github |
+| performance, Lighthouse, Web Vitals, page speed, SEO score | 效能、Lighthouse、Web Vitals、載入速度、SEO 評分 | performance-audit | playwright |
+| live docs, framework query, Context7, API docs | 即時文件、框架查詢、Context7、API 文件 | context7-docs | context7 |

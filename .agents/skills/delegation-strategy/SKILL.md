@@ -4,6 +4,12 @@ description: >
   Channel selection decision tree for task delegation.
   Use when: 委派瀏覽器任務、使用 browser_subagent、CLI 分析委派、
   或任何涉及 委派/管道選擇/delegation 的決策。
+metadata:
+  author: antigravity
+  version: "5.1"
+  origin: framework
+  memory_awareness: none
+  tool_scope: ["filesystem:read"]
 ---
 
 # Delegation Strategy (委派策略)

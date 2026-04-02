@@ -3,6 +3,13 @@ name: browser-testing
 description: >
   Browser subagent delegation SOP and auto-arbitration gate for E2E visual testing.
   Use when: 任何涉及 瀏覽器測試/E2E/視覺驗證/browser_subagent 的流程。
+metadata:
+  author: antigravity
+  version: "5.1"
+  origin: framework
+  memory_awareness: none
+  mcp_servers: [playwright, a11y]
+  tool_scope: ["filesystem:read", "browser", "mcp:playwright", "mcp:a11y"]
 ---
 
 # Browser Testing (瀏覽器測試)

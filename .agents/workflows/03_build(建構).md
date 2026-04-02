@@ -1,12 +1,12 @@
 ---
 description: Writes physical source code based on approved blueprints. Enforces automated testing and browser UI verification.
-required_skills: [memory-ops, security-sre, code-quality]
+required_skills: [memory-ops, security-sre, code-quality, test-patterns]
 memory_awareness: full
 ---
 
 # [WORKFLOW: BUILD (建構)]
 
-> **Required Skills**: Load `memory-ops`, `security-sre`, and `code-quality` skills before proceeding.
+> **Required Skills**: Load `memory-ops`, `security-sre`, `code-quality`, and `test-patterns` skills before proceeding.
 
 ## 0. Memory Recall (記憶載入)
 - Check the IDE-injected skill list for memory cards relevant to the target modules.
@@ -29,8 +29,14 @@ memory_awareness: full
 - **Wait for GO**. Upon approval, you MUST call `task_boundary` to switch to `EXECUTION` mode, and write the changes to the physical disk.
 
 // turbo
-## 4. Automated Chaining to Test
-- Immediately after writing the physical files, you MUST autonomously invoke the `/06_test` workflow to visually verify your own changes. DO NOT ask the Director to run the test workflow.
+## 4. Unit Test Generation (單元測試產生)
+- After writing physical files, consult `test-patterns` skill § 1 Test Decision Tree.
+- If the written code requires unit tests (utility functions, API routes, state logic), generate and execute them BEFORE proceeding to E2E.
+- If unit tests fail, fix the source code and re-run until passing.
+
+// turbo
+## 5. Automated Chaining to Test
+- Immediately after unit tests pass, you MUST autonomously invoke the `/06_test` workflow to visually verify your own changes. DO NOT ask the Director to run the test workflow.
 
 ## COMPLETION GATE（完成閘門 — 不可略過）
 > Inherits: `.agents/workflows/_completion_gate.md`
