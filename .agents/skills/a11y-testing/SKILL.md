@@ -15,9 +15,6 @@ metadata:
 
 # Accessibility Testing — 無障礙測試食譜
 
-> This skill provides operation recipes for the a11y MCP server,
-> which is already registered in `browser-testing` but lacked operational guidance.
-
 ## 1. Scan Flow (掃描流程)
 
 ### Prerequisites (前置條件)

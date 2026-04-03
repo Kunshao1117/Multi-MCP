@@ -1,6 +1,6 @@
 ---
 description: Ultimate "rewind button" that uses 'git log' and explicit visual diff checks to safely revert the project to a prior stable state.
-required_skills: [memory-ops]
+required_skills: [memory-ops, cross-lingual-guard]
 memory_awareness: full
 ---
 
@@ -34,4 +34,4 @@ You MUST halt and output an Artifact or Response EXACTLY matching this Tradition
 
 ## [SECURITY & COMPLIANCE MANDATE]
 > Inherits: `.agents/workflows/_security_footer.md` (Browser Gate)
-- **Role**: `SRE Agent`. Authorized to perform destructive Git actions ONLY post-gate.
+- **Role**: `SRE` | 權限依安全閘門矩陣。破壞性 Git 操作僅限閘門通過後執行。

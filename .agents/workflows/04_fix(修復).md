@@ -1,12 +1,12 @@
 ---
 description: Executes targeted bug fixes with a strict minimal-impact policy. Requires explicit visual diff authorization.
-required_skills: [memory-ops, security-sre, test-patterns, impact-test-strategy]
+required_skills: [memory-ops, security-sre, test-patterns, impact-test-strategy, cross-lingual-guard]
 memory_awareness: full
 ---
 
 # [WORKFLOW: FIX (修復)]
 
-> **Required Skills**: Load `memory-ops`, `security-sre`, `test-patterns`, and `impact-test-strategy` skills before proceeding.
+> **Required Skills**: 見 YAML `required_skills` 欄位。
 
 ## 0. Memory Recall (記憶載入)
 - Check the IDE-injected skill list for memory cards relevant to the target modules.
@@ -56,5 +56,5 @@ memory_awareness: full
 
 ## [SECURITY & COMPLIANCE MANDATE]
 > Inherits: `.agents/workflows/_security_footer.md` (Browser Gate)
-- **Role**: `Worker Agent`. You operate under the Sandbox & Gate protocol.
+- **Role**: `Worker` | 權限依安全閘門矩陣。
 - **Memory Update**: After executing the fix, update all affected memory card SKILL.md files.

@@ -15,18 +15,16 @@ metadata:
 
 # UI/UX & Multi-Language Standards — Full Operating Protocol
 
-> This skill extends Core Mandate §11 (Cross-Cutting Quality Constraints) — UI/UX section.
-> It provides concrete audience layering, translation lookup tables, and error message examples. Principle-level descriptions live in Core Mandate; this skill focuses on implementation specifics.
-
 ## 1. Engineering Jargon Isolation (工程語彙物理隔離)
 
-### Technical Audience Persona (技術受眾宣告機制)
+### Target Audience Decision Tree
 
-Before applying jargon isolation, determine the target user persona for the specific UI component:
-
-- **Level 1 (B2C End-User)**: Absolute jargon isolation. Translate everything to pure user intent.
-- **Level 2 (B2B Operator)**: Task-oriented precision. Domain jargon allowed, but ban low-level implementation details (e.g., allow "Invoice Status", ban "DB Timeout").
-- **Level 3 (Developer/SysAdmin)**: Full transparency. Expose raw engineering specs and system exceptions for debugging.
+```
+UI component target audience?
+├── L1 (B2C End-User) → Absolute jargon isolation. Pure user intent language.
+├── L2 (B2B Operator) → Domain jargon allowed. Ban implementation details.
+└── L3 (Developer/SysAdmin) → Full transparency. Raw engineering specs.
+```
 
 ### Forbidden Vocabulary (For Levels 1 & 2)
 
@@ -45,8 +43,8 @@ All actions and statuses must be translated into the user's intent:
 
 ## 2. Multi-Language & Localization Strategy (多語系與在地化策略)
 
-- **Dynamic Language Prompting**: Do NOT assume Traditional Chinese (zh-TW) is the default language for the UI. Before generating any user-facing text, you MUST ask the Director for the target language or check the project's i18n configurations.
-- **Dictionary/Key-Based Approach**: Favor using localization keys (e.g., `common.buttons.submit`) over hardcoded strings in UI components, even for single-language projects, to future-proof the application.
+1. MUST check project i18n configuration or ask Director for target language BEFORE generating UI text
+2. Use localization keys (e.g., `common.buttons.submit`) over hardcoded strings, even for single-language projects
 
 ## 3. Human-Readable Error Handling (白話文錯誤攔截)
 
@@ -61,7 +59,8 @@ When a backend service throws a technical exception, the UI MUST intercept it an
 
 ## 4. Intent-Driven UI & Graceful States (意圖驅動與優雅狀態)
 
-- **Task-Oriented Flow**: Design layouts and flows based on what the user is trying to accomplish, not how the data is structured in the database.
-- **Empty & Loading States**: Mandatory implementation of Skeleton Loading screens for data fetching. Empty states MUST never just say "No Data". They must include a Call to Action (CTA) in the appropriate language (e.g., "It looks empty here. Create your first project!").
+1. Design layouts by **user task**, NOT by database structure
+2. MUST implement Skeleton Loading for data fetching
+3. Empty states MUST include a Call to Action (CTA) — FORBIDDEN: 「No Data」 alone
 
 

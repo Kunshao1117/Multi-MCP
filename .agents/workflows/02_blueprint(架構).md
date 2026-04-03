@@ -1,12 +1,12 @@
 ---
 description: Converts business requirements into strict software architecture, ER diagrams, and API routes. Generates dual-track memory.
-required_skills: [memory-ops, tech-stack-protocol]
+required_skills: [memory-ops, tech-stack-protocol, cross-lingual-guard]
 memory_awareness: full
 ---
 
 # [WORKFLOW: BLUEPRINT (架構)]
 
-> **Required Skills**: Load `memory-ops` and `tech-stack-protocol` skills before proceeding.
+> **Required Skills**: 見 YAML `required_skills` 欄位。
 
 ## 1. Context Retrieval
 - Read the current state of `.agents/memory/_system/SKILL.md`. If it does not exist or the stack is `[UNDEFINED]`, halt and prompt the Director to finalize the tech stack first.
@@ -42,4 +42,4 @@ You MUST execute BOTH of the following actions synchronously:
 
 ## [SECURITY & COMPLIANCE MANDATE]
 > Inherits: `.agents/workflows/_security_footer.md` (Browser Gate)
-- **Role**: `Writer/SRE Agent`. You are authorized to write structural/log files or execute specific system commands.
+- **Role**: `Writer/SRE` | 權限依安全閘門矩陣。

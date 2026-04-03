@@ -1,13 +1,13 @@
 ---
 description: Creates new project-specific skills by distilling reusable patterns from audit findings, debugging methodologies, or Director directives.
-required_skills: [skill-factory, memory-ops]
+required_skills: [skill-factory, memory-ops, cross-lingual-guard]
 memory_awareness: full
 skill_generation: true
 ---
 
 # [WORKFLOW: SKILL FORGE (技能鍛造)]
 
-> **Required Skills**: Load `skill-factory` skill before proceeding. Load `memory-ops` if memory cards need updating.
+> **Required Skills**: 見 YAML `required_skills` 欄位。另外，`memory-ops` 僅在需要更新記憶卡時載入。
 
 ## 1. Trigger Conditions (觸發條件)
 
@@ -51,6 +51,8 @@ Upon approval:
 ## 5. Verification
 
 - Read back the generated `SKILL.md` and validate format compliance.
+// turbo
+- Run `.agents/scripts/Measure-SkillQuality.ps1 -Target {skill-path}` — ALL items MUST be 🟢. If any 🔴 → fix and re-scan.
 - Confirm the symlink `.agents/skills/_project` correctly resolves to the new skill's parent directory.
 
 ## COMPLETION GATE（完成閘門 — 不可略過）
@@ -59,5 +61,4 @@ Upon approval:
 
 ## [SECURITY & COMPLIANCE MANDATE]
 > Inherits: `.agents/workflows/_security_footer.md` (Browser Gate)
-- **Role**: `Worker Agent`. You operate under the Sandbox & Gate protocol.
-- **Project Skills Write**: Authorized to create and modify files within `.agents/project_skills/`.
+- **Role**: `Worker` | 權限依安全閘門矩陣。衍生技能目錄寫入授權。

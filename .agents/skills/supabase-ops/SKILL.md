@@ -62,10 +62,7 @@ metadata:
 
 ## Recipe 5: Migration Verification (遷移驗證)
 
-After applying a migration, verify schema consistency:
-（套用遷移後，驗證 schema 一致性）
-
-1. `apply_migration` — Apply the DDL changes
+1. `apply_migration` — Apply DDL changes
 2. `list_tables` with `verbose: true` — Read the updated schema
 3. Cross-compare against the expected model structure:
    - All new columns exist with correct types（新欄位存在且型別正確）
@@ -79,10 +76,7 @@ After applying a migration, verify schema consistency:
 
 ## Recipe 6: Test Data Seeding (測試資料播種)
 
-For development and testing environments:
-（用於開發和測試環境）
-
-1. Create a seed SQL file with representative test data:
+1. Create a seed SQL file:
    ```sql
    -- Seed data for development environment
    INSERT INTO users (email, role) VALUES

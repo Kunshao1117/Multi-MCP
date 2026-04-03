@@ -16,11 +16,8 @@ metadata:
 ## Trigger Conditions (觸發條件)
 
 - `/08_audit` Phase D: Performance assessment
-  （健檢的效能評估階段）
 - Pre-deployment performance gate
-  （部署前的效能閘門）
 - Director requests performance report
-  （總監要求效能報告）
 
 ## Recipe 1: Lighthouse CLI Scan (Lighthouse 命令列掃描)
 

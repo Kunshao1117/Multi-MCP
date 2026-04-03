@@ -14,13 +14,9 @@ metadata:
 
 # Impact & Test Strategy — 影響與測試策略
 
-> This skill teaches the Agent to analyze change impact BEFORE modifying code,
-> determine the appropriate test scope, and generate regression tests AFTER fixing bugs.
-
 ## 1. Impact Analysis Flow (影響分析流程)
 
-Execute this analysis BEFORE writing code modifications:
-（修改程式碼之前執行此分析）
+Execute BEFORE code modification:
 
 ### Step 1: Map File → Module (檔案→模組映射)
 
@@ -66,49 +62,31 @@ Include in `implementation_plan.md`:
 
 ## 2. Test Scope Decision Tree (測試範圍決策樹)
 
-Based on the impact analysis, determine which tests to run:
-（根據影響分析結果，決定執行哪些測試）
-
 ```
-What type of change is this?
-├── Hotfix (單一模組內的快速修復)
-│   └── Run: Source module's unit tests + Source module's E2E paths
-│       → Fast feedback, minimal disruption
-│
-├── Cross-module change (跨模組修改)
-│   └── Run: All affected modules' unit tests + Full E2E suite
-│       → Broader coverage for cascading changes
-│
-├── Core utility refactor (核心工具重構)
-│   └── Run: ALL unit tests + Full E2E suite
-│       → Maximum coverage — core changes affect everything
-│
-├── UI-only change (純 UI 修改)
-│   └── Run: E2E visual test for affected pages only
-│       → No unit tests needed for pure presentation changes
-│
-└── Config / Environment change (設定/環境變更)
-    └── Run: Full E2E suite (no unit tests)
-        → Verify the application bootstraps correctly
+Change type?
+├── Hotfix → Run: Source module unit tests + Source module E2E
+├── Cross-module → Run: All affected modules' unit tests + Full E2E
+├── Core utility refactor → Run: ALL unit tests + Full E2E
+├── UI-only → Run: E2E visual test for affected pages only
+└── Config / Environment → Run: Full E2E suite (no unit tests)
 ```
 
 ### Execution Protocol (執行協定)
 
-1. **Unit tests first** — Fast feedback loop（先跑單元測試，快速回饋）
-2. **Fix unit test failures before proceeding to E2E**（修復單元測試失敗後再跑 E2E）
-3. **E2E tests last** — Comprehensive validation（最後跑 E2E，全面驗證）
+1. Unit tests first
+2. Fix unit test failures before proceeding to E2E
+3. E2E tests last
 
 ## 3. Regression Test Generator (回歸測試產生器)
 
-After fixing a bug via `/04_fix`, generate a regression test:
-（透過 `/04_fix` 修復 bug 後，產生回歸測試）
+After `/04_fix` bug fix, generate a regression test:
 
 ### Step 1: Analyze the Fix Diff (分析修復差異)
 
 From the code diff, extract:
-- **Root cause pattern**: What type of bug was it?（根因模式）
-- **Trigger condition**: What input/state caused the bug?（觸發條件）
-- **Expected behavior**: What should happen instead?（預期行為）
+- **Root cause pattern**: Bug type
+- **Trigger condition**: Input/state that caused the bug
+- **Expected behavior**: Correct behavior
 
 ### Step 2: Select Regression Template (選擇回歸模板)
 
@@ -134,23 +112,18 @@ What type of bug was fixed?
 2. Name the test descriptively: `it('should not regress: {bug description}')`
 3. Document in the module's memory card `## Module Lessons` with lesson ID
 
-### Integration with /04_fix Completion Gate (與修復完成門的整合)
+### /04_fix Completion Gate Integration
 
-The Completion Gate SHOULD check:
 - [ ] Regression test generated for the fixed bug
 - [ ] Regression test passes
 - [ ] Lesson documented in memory card
 
 ## Constraints (限制與邊界)
 
-- Impact analysis uses **memory card Relations** as the primary data source
-  （影響分析以記憶卡的關聯性為主要資料來源）
-- If no memory cards exist, fall back to `grep_search` for import/require analysis
-  （若無記憶卡，退回使用 grep 搜尋 import 語句）
-- This skill does NOT execute tests — it determines WHICH tests to run
-  （本技能不執行測試，只決定該跑哪些測試）
-- Actual test execution is done via terminal `run_command`
-  （實際測試執行透過終端機命令）
+- Primary data source: memory card `## Relations` section
+- No memory cards → fall back to `grep_search` for import/require analysis
+- This skill determines WHICH tests to run — does NOT execute them
+- Test execution: via terminal `run_command`
 
 ## References (參考資源)
 

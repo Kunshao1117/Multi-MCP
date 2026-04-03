@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastScanned": "2026-04-02T02:28:40.835Z",
+  "lastScanned": "2026-04-03T09:01:00+08:00",
   "cartridges": {
     "cli": {
       "skillPath": ".agents\\memory\\cli\\SKILL.md",
@@ -21,20 +21,9 @@
         "mcp-catalog.json",
         "console.ps1"
       ],
-      "staleness": 20,
-      "lastUpdated": "2026-03-27T23:48:00.000Z",
-      "pendingChanges": [
-        {
-          "filePath": "src/cli/shared.ts",
-          "eventType": "change",
-          "timestamp": "2026-04-02T02:28:40.836Z"
-        },
-        {
-          "filePath": "src/cli/install-flow.ts",
-          "eventType": "change",
-          "timestamp": "2026-04-02T02:28:40.836Z"
-        }
-      ],
+      "staleness": 0,
+      "lastUpdated": "2026-04-03T10:19:46+08:00",
+      "pendingChanges": [],
       "depth": 1,
       "parent": null
     },
@@ -57,7 +46,7 @@
         "src/process-pool.test.ts"
       ],
       "staleness": 0,
-      "lastUpdated": "2026-03-31T07:30:35+08:00",
+      "lastUpdated": "2026-04-03T10:19:47+08:00",
       "pendingChanges": [],
       "depth": 1,
       "parent": null
@@ -74,22 +63,50 @@
         "mcps/資料處理/excel.json",
         "mcps/錯誤監控/sentry.json",
         "mcps/網頁測試/playwright.json",
-        "mcps/網頁測試/a11y.json"
+        "mcps/網頁測試/a11y.json",
+        "mcps/文件查詢/context7.json"
       ],
-      "staleness": 10,
-      "lastUpdated": "2026-03-28T01:48:30.000Z",
-      "pendingChanges": [
-        {
-          "filePath": ".gitignore",
-          "eventType": "change",
-          "timestamp": "2026-04-02T02:28:40.841Z"
-        }
-      ],
+      "staleness": 0,
+      "lastUpdated": "2026-04-03T10:19:45+08:00",
+      "pendingChanges": [],
       "depth": 1,
       "parent": null
     }
   },
   "fileMap": {
+    "package.json": [
+      "_system"
+    ],
+    "tsconfig.json": [
+      "_system"
+    ],
+    "gateway.config.json": [
+      "_system"
+    ],
+    ".gitignore": [
+      "_system"
+    ],
+    "mcps/程式碼品質/eslint.json": [
+      "_system"
+    ],
+    "mcps/安全掃描/snyk.json": [
+      "_system"
+    ],
+    "mcps/資料處理/excel.json": [
+      "_system"
+    ],
+    "mcps/錯誤監控/sentry.json": [
+      "_system"
+    ],
+    "mcps/網頁測試/playwright.json": [
+      "_system"
+    ],
+    "mcps/網頁測試/a11y.json": [
+      "_system"
+    ],
+    "mcps/文件查詢/context7.json": [
+      "_system"
+    ],
     "src/cli.ts": [
       "cli"
     ],
@@ -176,36 +193,6 @@
     ],
     "src/process-pool.test.ts": [
       "gateway-core"
-    ],
-    "package.json": [
-      "_system"
-    ],
-    "tsconfig.json": [
-      "_system"
-    ],
-    "gateway.config.json": [
-      "_system"
-    ],
-    ".gitignore": [
-      "_system"
-    ],
-    "mcps/程式碼品質/eslint.json": [
-      "_system"
-    ],
-    "mcps/安全掃描/snyk.json": [
-      "_system"
-    ],
-    "mcps/資料處理/excel.json": [
-      "_system"
-    ],
-    "mcps/錯誤監控/sentry.json": [
-      "_system"
-    ],
-    "mcps/網頁測試/playwright.json": [
-      "_system"
-    ],
-    "mcps/網頁測試/a11y.json": [
-      "_system"
     ]
   }
 }

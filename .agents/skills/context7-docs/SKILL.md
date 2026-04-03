@@ -15,8 +15,6 @@ metadata:
 
 # Context7 Docs — Live Documentation Query Recipes
 
-> This skill enables real-time querying of the latest official documentation for open-source frameworks and libraries.
-
 ## Trigger Conditions (觸發條件)
 
 - Uncertainty about a framework API during coding

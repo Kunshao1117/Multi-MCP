@@ -37,8 +37,11 @@ metadata:
 
 ## Recipe 4: Seer AI Root Cause Deep Dive (AI 根因深度分析)
 
-Use when standard stack trace analysis is insufficient to identify root cause.
-（當標準堆疊追蹤不足以判斷根因時使用）
+```
+Standard stack trace insufficient?
+├── Yes → Use this recipe
+└── No → Use Recipe 1 instead
+```
 
 ### Pre-Check (呼叫前檢查)
 - Confirm issue has sufficient events (3+ occurrences recommended)（建議 3+ 次發生）

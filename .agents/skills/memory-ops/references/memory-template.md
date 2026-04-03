@@ -38,4 +38,7 @@ staleness: 0
 
 ## Relations
 - other-module
+
+## Applicable Skills
+- {skill-name} — {觸發條件描述}
 ```

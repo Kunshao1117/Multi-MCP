@@ -1,12 +1,12 @@
 ---
 description: Consolidates memory snapshotting, changelog recording, and interactive Git commit/push actions.
-required_skills: [memory-ops]
+required_skills: [memory-ops, cross-lingual-guard]
 memory_awareness: full
 ---
 
 # [WORKFLOW: COMMIT LOG (備份紀錄)]
 
-> **Required Skills**: Load `memory-ops` skill before proceeding.
+> **Required Skills**: 見 YAML `required_skills` 欄位。
 
 ## 1. Zero-Touch Version Control Constraint
 - You MUST operate the local Git repository entirely. DO NOT ask the Director to run terminal commands.
@@ -19,7 +19,7 @@ memory_awareness: full
 
 ## 3. Staleness Detection (過時偵測)
 - 利用 `git diff --name-only` 取得已變更檔案清單，並與 `memory_list` 的追蹤檔案比對。
-- 針對受影響但尚未更新的記憶卡，你**禁止手動修改** staleness。你必須透過調用 `cartridge-system__memory_update` 來完成記憶更新，該工具將自動在底層重置過期指數與時間戳記。
+- 針對受影響但尚未更新的記憶卡，你**禁止手動修改** staleness。你必須使用原生工具（`write_to_file` / `replace_file_content`）更新記憶卡內容，然後調用 `cartridge-system__memory_commit` 完成歸卡，該工具將自動重置過期指數與時間戳記。
 - **Project Skills Check（衍生技能檢查）**: If any files under `.agents/project_skills/` were modified, include them in the commit scope. Verify their frontmatter is still compliant.
 
 ### Staleness Warning Output (過時警告輸出)
@@ -54,4 +54,4 @@ You MUST halt and output EXACTLY matching this Traditional Chinese structural te
 
 ## [SECURITY & COMPLIANCE MANDATE]
 > Inherits: `.agents/workflows/_security_footer.md` (Browser Gate)
-- **Role**: `Writer/SRE Agent`. You are authorized to write structural/log files or execute git commands.
+- **Role**: `Writer/SRE` | 權限依安全閘門矩陣。

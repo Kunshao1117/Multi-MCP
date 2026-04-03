@@ -6,7 +6,7 @@ memory_awareness: full
 
 # [WORKFLOW: HANDOFF (交接)]
 
-> **Required Skills**: Load `memory-ops` skill before proceeding.
+> **Required Skills**: 見 YAML `required_skills` 欄位。
 
 ## 1. Memory Skill State Aggregation
 - 調用 MCP 工具 `cartridge-system__memory_list` 取得專案內所有記憶模組清單。
@@ -76,4 +76,4 @@ Generate a Markdown Artifact named `handoff_prompt.md` in **Traditional Chinese 
 
 ## [SECURITY & COMPLIANCE MANDATE]
 > Inherits: `.agents/workflows/_security_footer.md` (Browser Gate)
-- **Role**: `Reader/Memory Agent`. You may read all project files and update memory cards, but you are FORBIDDEN from modifying physical source code.
+- **Role**: `Reader/Memory` | 權限依安全閘門矩陣。

@@ -14,9 +14,6 @@ metadata:
 
 # Code Quality Standards — Full Operating Protocol
 
-> This skill extends Core Mandate §11 (Cross-Cutting Quality Constraints) — Code Quality section.
-> It provides concrete line thresholds and execution details. Principle-level descriptions live in Core Mandate; this skill focuses on implementation specifics.
-
 ## 1. SOLID Alignment (SOLID 原則對齊)
 
 - Code MUST adhere to SOLID principles. Favor composition over inheritance. Ensure single-responsibility functions.

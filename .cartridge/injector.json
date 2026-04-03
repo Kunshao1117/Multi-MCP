@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "settings": {
+    "conflictPolicy": "ask"
+  },
+  "deployedHashes": {
+    "skills\\memory-ops\\references\\memory-template.md": "924462aed23efa25a6af90928583d07573b6e0d17881d3d9c85ac9682a0dfe20",
+    "skills\\memory-ops\\SKILL.md": "7e4422ecfde79f03442e68e95f51ec7fb1c69c7bbe777f600b54be9b7ee30cc1"
+  }
+}

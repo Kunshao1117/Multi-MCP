@@ -6,7 +6,7 @@ memory_awareness: read
 
 # [WORKFLOW: TEST (測試)]
 
-> **Required Skills**: Load `test-automation-strategy` and `a11y-testing` before proceeding.
+> **Required Skills**: 見 YAML `required_skills` 欄位。
 
 ## 1. Invocation & Autonomy
 - This workflow can be called by the Director directly or autonomously invoked by other workflows (e.g., via the `// turbo` chain from `/03_build`).
@@ -35,4 +35,4 @@ memory_awareness: read
 
 ## [SECURITY & COMPLIANCE MANDATE]
 > Inherits: `.agents/workflows/_security_footer.md` (Browser Gate)
-- **Role**: `Reader Agent`. You are STRICTLY FORBIDDEN from modifying physical source code.
+- **Role**: `Reader/Memory` | 權限依安全閘門矩陣。記憶寫入限於記錄測試失敗。

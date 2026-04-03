@@ -13,3 +13,18 @@
 | Worker | ✅ (gated) | ✅ | ✅ (gated) | ❌ | 依 Skill |
 | Writer/SRE | ✅ (gated) | ✅ | ✅ (gated) | ✅ | 依 Skill |
 | SRE | ✅ (post-gate only) | ✅ | ✅ (gated) | ✅ | 依 Skill |
+
+### Turbo Safety Gate (Turbo 安全攔截閘門)
+
+Even when `// turbo-all` is annotated in a workflow, you MUST set `SafeToAutoRun: false` if the command contains ANY of the following destructive patterns:
+
+| Pattern | 風險說明 |
+|---------|---------|
+| `reset --hard` | 不可逆版本回滾，永久丟失提交 |
+| `Remove-Item -Recurse` | 遞迴刪除目錄，無法復原 |
+| `rm -rf` | Unix 遞迴強制刪除 |
+| `DROP TABLE` / `DROP DATABASE` | 資料庫物理刪除 |
+| `Format-Volume` | 磁碟格式化 |
+| `git clean -fd` | 未追蹤檔案永久清除 |
+
+These commands require explicit Director confirmation regardless of turbo annotation. `SafeToAutoRun` MUST remain `false` even under `// turbo-all`.

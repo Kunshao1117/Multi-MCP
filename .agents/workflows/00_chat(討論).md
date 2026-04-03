@@ -23,4 +23,4 @@ memory_awareness: none
 
 ## [SECURITY & COMPLIANCE MANDATE]
 > Inherits: `.agents/workflows/_security_footer.md` (Browser Gate)
-- **Role**: `Reader Agent`. You are STRICTLY FORBIDDEN from modifying physical source code.
+- **Role**: `Reader` | 權限依安全閘門矩陣。

@@ -6,7 +6,7 @@ memory_awareness: full
 
 # [WORKFLOW: AUDIT & MEMORY HEALTH (專案健檢)]
 
-> **Required Skills**: Load `memory-ops`, `tech-stack-protocol`, `security-sre`, `code-quality`, and `code-audit` skills before proceeding.
+> **Required Skills**: 見 YAML `required_skills` 欄位。
 
 ## 1. Global Workspace Security Scan
 - Scan `package.json`, `requirements.txt`, or equivalent for deprecated packages/CVEs.
@@ -104,6 +104,12 @@ These analyses CANNOT be done by tools — they require understanding of archite
 - Confirm each function/class still exists and its name is unchanged.
 - If mismatched → flag skill as needing update.
 
+// turbo
+#### G. Skill Quality Scan（技能品質掃描）
+- Run `.agents/scripts/Measure-SkillQuality.ps1` against all skills directories (framework + project + memory)
+- Include results in health report under【技能品質】section
+- Flag 🔴 items as requiring immediate attention
+
 #### J. Data Layer Consistency（資料層一致性）— conditional on DB in tech_stack
 - **Model vs API Response**: Compare database model/schema field definitions with API response structures. Flag mismatches.
 - **Migration Integrity**: If migration files exist, verify they correspond to current model definitions.
@@ -146,4 +152,4 @@ You MUST halt and output a Traffic Light Health Report and Memory Status EXACTLY
 
 ## [SECURITY & COMPLIANCE MANDATE]
 > Inherits: `.agents/workflows/_security_footer.md` (Browser Gate)
-- **Role**: `Reader/Memory Agent`. You are STRICTLY FORBIDDEN from modifying physical source code. You ARE authorized to create, modify, and archive files within `.agents/memory/` and `.agents/logs/`.
+- **Role**: `Reader/Memory` | 權限依安全閘門矩陣。記憶寫入限於 `.agents/memory/` 與 `.agents/logs/`。

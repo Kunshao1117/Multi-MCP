@@ -6,7 +6,7 @@ memory_awareness: read
 
 # [WORKFLOW: DEBUG (除錯)]
 
-> **Required Skills**: Load `memory-ops` skill before proceeding. Load `code-diagnosis` skill if CLI diagnostic delegation is needed.
+> **Required Skills**: 見 YAML `required_skills` 欄位。另外，`code-diagnosis` 技能僅在需要 CLI 診斷委派時載入。
 
 ## 0. Memory Recall (記憶載入)
 - Check the IDE-injected skill list for memory cards relevant to the failing module.
@@ -46,4 +46,4 @@ When triggered:
 
 ## [SECURITY & COMPLIANCE MANDATE]
 > Inherits: `.agents/workflows/_security_footer.md` (Browser Gate)
-- **Role**: `Reader Agent`. You are STRICTLY FORBIDDEN from modifying physical source code.
+- **Role**: `Reader` | 權限依安全閘門矩陣。

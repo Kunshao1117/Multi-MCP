@@ -1,12 +1,12 @@
 ---
 description: Writes physical source code based on approved blueprints. Enforces automated testing and browser UI verification.
-required_skills: [memory-ops, security-sre, code-quality, test-patterns]
+required_skills: [memory-ops, security-sre, code-quality, test-patterns, cross-lingual-guard]
 memory_awareness: full
 ---
 
 # [WORKFLOW: BUILD (建構)]
 
-> **Required Skills**: Load `memory-ops`, `security-sre`, `code-quality`, and `test-patterns` skills before proceeding.
+> **Required Skills**: 見 YAML `required_skills` 欄位。
 
 ## 0. Memory Recall (記憶載入)
 - Check the IDE-injected skill list for memory cards relevant to the target modules.
@@ -44,5 +44,5 @@ memory_awareness: full
 
 ## [SECURITY & COMPLIANCE MANDATE]
 > Inherits: `.agents/workflows/_security_footer.md` (Browser Gate)
-- **Role**: `Worker Agent`. You operate under the Sandbox & Gate protocol.
+- **Role**: `Worker` | 權限依安全閘門矩陣。
 - **Memory Update**: After writing files, update all affected memory card SKILL.md files (Tracked Files, Key Decisions, Known Issues, Module Lessons as needed).

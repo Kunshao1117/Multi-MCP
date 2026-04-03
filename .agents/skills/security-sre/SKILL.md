@@ -14,14 +14,11 @@ metadata:
 
 # Security & Reliability Engineering — Full Operating Protocol
 
-> This skill extends Core Mandate §11 (Cross-Cutting Quality Constraints) — Security section.
-> It provides concrete validation examples and error handling patterns. Principle-level descriptions live in Core Mandate; this skill focuses on implementation specifics.
-
 ## 1. Zero-Trust Validation (實體驗證器)
 
-- NEVER trust incoming data (from APIs, DBs, or the Director's raw inputs).
-- You MUST generate explicit physical validators (e.g., Zod, Joi, or custom validation schemas) for every incoming payload or DB write.
-- Stop relying on type casting or assuming the runtime data matches the TypeScript interfaces.
+- NEVER trust incoming data (from APIs, DBs, or Director's raw inputs)
+- MUST generate explicit physical validators (Zod/Joi) for every incoming payload or DB write
+- FORBIDDEN: relying on type casting or assuming runtime data matches TypeScript interfaces
 - **Example**:
   ```typescript
   const CreatePostSchema = z.object({
@@ -47,19 +44,18 @@ metadata:
 
 ## 3. Physical Error Handling & Logging (實體錯誤處理)
 
-- **Suppression Constraint**: NEVER expose internal stack traces or database query strings to the frontend UI/API responses.
-- Catch errors gracefully and return standardized HTTP status codes and non-technical, human-readable JSON error messages:
+- NEVER expose internal stack traces or DB query strings to frontend/API responses
+- Return standardized HTTP status codes + human-readable JSON:
   ```json
   { "error": "Internal server error. Please try again later." }
   ```
-- **Backend Logging**: You MUST physically write error details and stack traces to a local log file (e.g., `/logs/error.log`) or standard output using a robust logging library (e.g., Winston, Pino) for debugging purposes.
+- MUST write error details to log file (`/logs/error.log`) or stdout via logging library (Winston/Pino)
 
 ## 4. Structured Logging Standard (結構化日誌標準)
 
 ### Log Format (日誌格式)
 
 All backend log entries MUST use JSON structured format:
-（所有後端日誌必須使用 JSON 結構化格式）
 
 ```json
 {
@@ -94,15 +90,14 @@ All backend log entries MUST use JSON structured format:
 
 | Level | When to Use |
 |-------|------------|
-| `error` | Operation failed and requires attention（操作失敗，需要關注） |
-| `warn` | Operation succeeded but with unexpected conditions（操作成功但有異常狀況） |
-| `info` | Important business events（重要的業務事件：登入、建立資源等） |
-| `debug` | Detailed diagnostic info — suppress in production（詳細診斷資訊，正式環境不輸出） |
+| `error` | Operation failed, requires attention |
+| `warn` | Succeeded but unexpected conditions |
+| `info` | Important business events (login, resource creation) |
+| `debug` | Diagnostic info — suppress in production |
 
 ### AI Log Query Templates (AI 日誌查詢模板)
 
-When debugging, use these grep patterns to search logs:
-（除錯時使用以下 grep 模板搜尋日誌）
+Grep patterns for log search:
 
 ```bash
 # Find all errors in the last hour（搜尋最近一小時的錯誤）

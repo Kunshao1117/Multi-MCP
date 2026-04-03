@@ -3,7 +3,7 @@ name: gateway-core
 description: >
   專案記憶：Gateway 核心模組（設定載入、程序池、路由引擎、集成表、日誌、認證指南）。 Use when:
   修改閘道器核心邏輯、程序管理、工具路由、掃描機制 的任務。
-last_updated: '2026-03-31T07:30:35+08:00'
+last_updated: '2026-04-03T10:19:47+08:00'
 status: stable
 staleness: 0
 ---

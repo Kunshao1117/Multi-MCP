@@ -51,6 +51,21 @@ CLI = **read-only analytical subagent**. Three absolute constraints:
 
 If validation loop fails **3 consecutive times**: Break → `notify_user` → Wait for Director.
 
+### Counter Persistence (計數器持久化)
+
+Do NOT rely on conversational memory for failure counting. Use a state file:
+
+```
+On each validation failure:
+├── Read `.gemini/validation_state.json` (create if missing: { "attempts": 0 })
+├── Increment attempts
+├── Write back to `.gemini/validation_state.json`
+└── If attempts >= 3 → Break → notify_user → Reset file to { "attempts": 0 }
+
+On validation success:
+└── Delete or reset `.gemini/validation_state.json` to { "attempts": 0 }
+```
+
 ## 5. Constraints (約束)
 
 - MCP servers are **tool extensions**, NOT delegation targets

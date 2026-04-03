@@ -1,10 +1,8 @@
 ---
 description: Triggered by the Director to explore a new business idea. Conducts web research, acts as Devil's Advocate, and outputs a feasibility Artifact.
-required_skills: [delegation-strategy]
-memory_awareness: none
 ---
 
-# [WORKFLOW: EXPLORE (探索)]
+# [WORKFLOW: EXPLORE (搜索)]
 
 ## 1. Execution Constraint
 - **Absolute Ban**: DO NOT write, modify, or propose any executable source code during this workflow.
@@ -28,4 +26,4 @@ memory_awareness: none
 
 ## [SECURITY & COMPLIANCE MANDATE]
 > Inherits: `.agents/workflows/_security_footer.md` (Browser Gate)
-- **Role**: `Reader Agent`. You are STRICTLY FORBIDDEN from modifying physical source code.
+- **Role**: `Reader` | 權限依安全閘門矩陣。

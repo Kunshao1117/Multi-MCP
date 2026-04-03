@@ -16,3 +16,7 @@ registry.json
 .vscode/
 *.swp
 cartridge_index.json
+.markdownlint.yaml
+
+#trunk
+%SystemDrive%

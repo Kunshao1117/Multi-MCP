@@ -17,37 +17,40 @@ metadata:
 
 ## 1. Project Exploration (探勘狀態)
 
-When assigned to a completely new or unidentified directory (Uninitialized Project):
+```
+Project state?
+├── No `.agents/memory/_system/SKILL.md` exists → Execute Phase 1/2/3 below
+└── `_system` exists with populated tech stack → Skip to §2 Locked State
+```
 
 ### Phase 1: Pre-Flight Capability Discovery
 
-Before running any build or install commands, execute a terminal ping to map out:
-- `Get-CimInstance` (Windows) or `uname` (Unix) — Host OS
-- `node -v`, `python --version`, `go version` etc. — Available toolchains
-- Shell type (PowerShell / Bash)
-
-Save this matrix to `.agents/memory/_system/SKILL.md`.
+1. Run `Get-CimInstance` (Windows) or `uname` (Unix) → Host OS
+2. Run `node -v`, `python --version`, `go version` → Available toolchains
+3. Detect shell type (PowerShell / Bash)
+4. Save matrix to `.agents/memory/_system/SKILL.md`
 
 ### Phase 2: Architecture Scan
 
-Execute a shallow scan:
-- Read `package.json`, `requirements.txt`, `go.mod`, `Cargo.toml` etc.
-- Record findings in `.agents/memory/_system/SKILL.md`.
+1. Read `package.json`, `requirements.txt`, `go.mod`, `Cargo.toml` etc.
+2. Record findings in `.agents/memory/_system/SKILL.md`
 
 ### Phase 3: Framework Derivation
 
-Derive the primary framework (e.g., Next.js, Django) and testing environment (e.g., Jest, PyTest).
-Record in `.agents/memory/_system/SKILL.md`.
+1. Derive primary framework (e.g., Next.js, Django) and testing environment (e.g., Jest, PyTest)
+2. Record in `.agents/memory/_system/SKILL.md`
 
 ## 2. Locked State (鎖定狀態)
 
-Once `.agents/memory/_system/SKILL.md` is generated or the project architecture is confirmed:
-- **Absolute Freeze**: DO NOT attempt to introduce new core frameworks, languages, or ORM replacements unless explicitly commanded by the Director to perform an architectural pivot (`/02_blueprint`).
+Once `_system` SKILL.md is generated:
+- **Absolute Freeze**: Do NOT introduce new core frameworks, languages, or ORM replacements
+- Exception: Director explicitly commands `/02_blueprint` architectural pivot
 
 ## 3. Self-Mutation Protocol (自體突變)
 
-If the Director issues a confirmed `/02_blueprint` pivot:
-- You are authorized to rewrite `.agents/memory/_system/SKILL.md` and generate new initialization scripts (`package.json` etc.) to reflect the mutated architecture.
+Triggered by confirmed `/02_blueprint` pivot:
+1. Rewrite `.agents/memory/_system/SKILL.md`
+2. Generate new initialization scripts (`package.json` etc.)
 
 ## 4. MCP Registry (MCP 登錄簿)
 

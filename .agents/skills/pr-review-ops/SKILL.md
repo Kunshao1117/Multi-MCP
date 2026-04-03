@@ -18,11 +18,8 @@ metadata:
 ## Trigger Conditions (觸發條件)
 
 - Director requests code review on a specific PR
-  （總監要求審查特定 PR）
 - `/08_audit` identifies PRs pending review
-  （健檢發現待審 PR）
 - Post-build workflow needs peer review gate
-  （建構後的品質閘門）
 
 ## Recipe 1: PR Content Analysis (PR 內容分析)
 
