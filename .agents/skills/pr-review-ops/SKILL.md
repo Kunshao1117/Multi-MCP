@@ -1,9 +1,10 @@
 ---
 name: pr-review-ops
 description: >
-  PR 自動審查操作食譜：變更讀取、結構化審查評論、CI 狀態確認與合併決策。
+  [MCP: github] PR 自動審查操作食譜：變更讀取、結構化審查評論、CI 狀態確認與合併決策。
   MCP Server: github
-  Use when: 呼叫 github PR 審查工具、程式碼審查/Code Review/PR Review/自動審查 的場景。
+  Use when: 執行 PR 程式碼審查、提交結構化 Review 評論、或判斷 PR 合併決策 的場景。
+  DO NOT use when: 建立分支/推送檔案/Issue 管理等一般 GitHub 操作（用 github-ops）。
 metadata:
   author: antigravity
   version: "5.3"
@@ -53,22 +54,27 @@ metadata:
 
 ## Recipe 3: Merge Decision Flow (合併決策流程)
 
-1. `get_pull_request_status` — Check CI/CD status
-   - `state: "success"` → All checks passed
-   - `state: "pending"` → Wait and re-check
-   - `state: "failure"` → Block merge, report failures
-2. `get_pull_request_reviews` — Confirm approval count
-3. Only proceed to `merge_pull_request` when:
-   - CI status = `success`
-   - At least one `APPROVE` review exists
-   - No unresolved `REQUEST_CHANGES`
+```
+[MERGE GATE] Approval decision:
+├── [SUDO] detected? → Force approve. Skip ALL checks.
+├── CI status = success?
+│   ├── NO → [HALT] 「🔴 [PR HALT] CI 未通過。拒絕合併。」
+│   └── YES → Continue.
+├── Security checklist items from Recipe 2 ALL passed?
+│   ├── NO → Submit REQUEST_CHANGES. Block merge.
+│   └── YES → Continue.
+├── At least one APPROVE review exists?
+│   ├── NO → [HALT] 「🔴 [PR HALT] 尚無核准審查。」
+│   └── YES → Approve merge.
+└── Gate cleared → merge_pull_request.
+```
 
 ## Gotchas (踩坑點)
 
-- ⚠️ Always read existing comments before submitting review — avoid redundant feedback（避免重複評論）
-- ⚠️ `create_pull_request_review` with `REQUEST_CHANGES` blocks merge — use thoughtfully（會阻止合併）
-- ⚠️ Review comments visible to all collaborators — maintain professional tone（評論對所有人可見）
-- ⚠️ For large PRs (20+ files), prioritize reviewing `modified` files over `added`（大型 PR 優先看修改檔）
+- Always read existing comments before submitting review — avoid redundant feedback（避免重複評論）
+- `create_pull_request_review` with `REQUEST_CHANGES` blocks merge — use thoughtfully（會阻止合併）
+- Review comments visible to all collaborators — maintain professional tone（評論對所有人可見）
+- For large PRs (20+ files), prioritize reviewing `modified` files over `added`（大型 PR 優先看修改檔）
 
 ## Interpretation (結果解讀)
 

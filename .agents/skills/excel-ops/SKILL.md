@@ -1,9 +1,10 @@
 ---
 name: excel-ops
 description: >
-  Excel 試算表操作食譜：工作簿管理、資料寫入、格式化、圖表生成、樞紐分析表。
+  [MCP: excel] Excel 試算表操作食譜：工作簿管理、資料寫入、格式化、圖表生成、樞紐分析表。
   MCP Server: excel
   Use when: 呼叫 excel 相關工具、資料匯出/報告生成/試算表/圖表/樞紐分析 的場景。
+  DO NOT use when: 非試算表操作、純文字報告不需要 Excel 格式。
 metadata:
   author: antigravity
   version: "5.3"
@@ -58,19 +59,19 @@ metadata:
 
 ## Gotchas (踩坑點)
 
-- ⚠️ **`file_path` is REQUIRED for ALL 18 tools** — every Excel tool needs a workbook file path. Omitting it causes `Received undefined` error. Specify output path for new workbooks, source path for existing ones（所有 18 個工具皆須傳入 `file_path`，缺少會報錯）
-- ⚠️ **Use absolute paths** for `file_path` (e.g., `D:\\Projects\\reports\\audit.xlsx`). Relative paths may cause file-not-found errors（使用絕對路徑，避免找不到檔案）
-- ⚠️ Always call `validate_excel_range` before `write_data_to_excel` to confirm range is valid（寫入前驗證範圍）
-- ⚠️ Always call `validate_formula_syntax` before `apply_formula`（套用公式前驗證語法）
-- ⚠️ `write_data_to_excel` overwrites existing data in target range — check first（會覆寫既有資料）
-- ⚠️ Chart `dataRange` must reference populated cells with headers（圖表範圍需含標題列）
+- **`file_path` is REQUIRED for ALL 18 tools** — every Excel tool needs a workbook file path. Omitting it causes `Received undefined` error. Specify output path for new workbooks, source path for existing ones（所有 18 個工具皆須傳入 `file_path`，缺少會報錯）
+- **Use absolute paths** for `file_path` (e.g., `D:\\Projects\\reports\\audit.xlsx`). Relative paths may cause file-not-found errors（使用絕對路徑，避免找不到檔案）
+- Always call `validate_excel_range` before `write_data_to_excel` to confirm range is valid（寫入前驗證範圍）
+- Always call `validate_formula_syntax` before `apply_formula`（套用公式前驗證語法）
+- `write_data_to_excel` overwrites existing data in target range — check first（會覆寫既有資料）
+- Chart `dataRange` must reference populated cells with headers（圖表範圍需含標題列）
 
 ## Common Use Cases (常見應用場景)
 
-| 場景 | 推薦 Recipe |
-|------|:----------:|
-| 審計報告匯出 | Recipe 1 + 2 |
-| 測試結果比較表 | Recipe 1 + 3 |
-| 效能指標追蹤 | Recipe 1 + 3 |
-| 多維度資料分析 | Recipe 1 + 4 |
+| 場景               |   推薦 Recipe    |
+| ------------------ | :--------------: |
+| 審計報告匯出       |   Recipe 1 + 2   |
+| 測試結果比較表     |   Recipe 1 + 3   |
+| 效能指標追蹤       |   Recipe 1 + 3   |
+| 多維度資料分析     |   Recipe 1 + 4   |
 | 專案健康狀態儀表板 | Recipe 1 + 2 + 3 |

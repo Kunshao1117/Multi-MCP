@@ -1,0 +1,7 @@
+{
+  "command": "node",
+  "args": [
+    "C:\\gitnexus-src\\gitnexus\\dist\\cli\\index.js",
+    "mcp"
+  ]
+}

@@ -20,3 +20,13 @@ cartridge_index.json
 
 #trunk
 %SystemDrive%
+
+#.agents
+.agents/scripts/
+.agents/logs/
+
+#.gitnexus
+.gitnexus/
+.claude/
+AGENTS.md
+CLAUDE.md

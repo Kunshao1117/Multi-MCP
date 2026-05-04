@@ -21,10 +21,12 @@ gateway__call_tool 呼叫 eslint__lint-files，傳入檔案路徑：
 ### 2. Snyk 原始碼安全掃描（MCP 工具）
 使用 gateway__call_tool 呼叫 snyk__snyk_code_scan，path 設為 {project_root}
 統計：漏洞總數（Critical / High / Medium / Low）/ 前 5 項最嚴重漏洞
+> 降級：若 Snyk 認證不可用（snyk__snyk_auth 未完成），跳過此步驟並在報告中注記「Snyk 未認證，已跳過」。
 
 ### 3. Snyk 依賴漏洞掃描（MCP 工具）
 使用 gateway__call_tool 呼叫 snyk__snyk_sca_scan，path 設為 {project_root}
 統計：漏洞總數 / 前 5 項最嚴重的依賴漏洞
+> 降級：若 Snyk 認證不可用，改用 `run_shell_command` 執行 `npm audit --json` 或 `yarn audit --json`，並按相同格式統計漏洞。
 
 ### 4. TypeScript 型別檢查（僅限 TS 專案）
 執行：cd {project_root}; npx tsc --noEmit
@@ -35,6 +37,8 @@ gateway__call_tool 呼叫 eslint__lint-files，傳入檔案路徑：
 
 ### 6. 環境變數一致性
 讀取 .env.example，搜尋 process.env 引用，比對差異。
+
+
 ```
 
 > **Tech Stack Adaptation**: Python 專案改用 `pylint`/`mypy`/`pip-audit`。

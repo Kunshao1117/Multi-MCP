@@ -1,9 +1,10 @@
 ---
 name: context7-docs
 description: >
-  即時框架文件查詢食譜：解析框架庫 ID、查詢最新官方文件、版本指定查詢。
+  [MCP: context7] 即時框架文件查詢食譜：解析框架庫 ID、查詢最新官方文件、版本指定查詢。
   MCP Server: context7
   Use when: 需要 即時文件查詢/框架 API 確認/Next.js/React/Payload CMS 文件 的場景。
+  DO NOT use when: 不確定框架名稱時先用搜尋引擎、非即時文件查詢需求。
 metadata:
   author: antigravity
   version: "5.3"
@@ -49,12 +50,12 @@ metadata:
 
 ### Common Query Patterns (常見查詢模式)
 
-| 框架 | 常見查詢 |
-|------|---------|
-| Next.js | `"App Router metadata API"`, `"server actions form handling"`, `"middleware redirect"` |
-| React | `"useOptimistic hook"`, `"server components vs client components"`, `"suspense boundary"` |
-| Payload CMS | `"collection hooks afterChange"`, `"access control functions"`, `"local API usage"` |
-| Tailwind CSS | `"arbitrary values"`, `"dark mode configuration"`, `"responsive breakpoints"` |
+| 框架         | 常見查詢                                                                                  |
+| ------------ | ----------------------------------------------------------------------------------------- |
+| Next.js      | `"App Router metadata API"`, `"server actions form handling"`, `"middleware redirect"`    |
+| React        | `"useOptimistic hook"`, `"server components vs client components"`, `"suspense boundary"` |
+| Payload CMS  | `"collection hooks afterChange"`, `"access control functions"`, `"local API usage"`       |
+| Tailwind CSS | `"arbitrary values"`, `"dark mode configuration"`, `"responsive breakpoints"`             |
 
 ## Recipe 2: Version-Specific Query (版本指定查詢)
 
@@ -67,19 +68,19 @@ When the project uses a specific framework version:
 
 ## Gotchas (踩坑點)
 
-- ⚠️ **Both parameters are REQUIRED**: `resolve-library-id` and `query-docs` each require two parameters. Missing one causes `invalid_type` error（兩個參數都必填，缺一會報錯）
-- ⚠️ **`libraryId` format**: Must be `/org/project` format (e.g., `/websites/nextjs`), NOT package name（必須是 `/org/project` 格式，不是套件名稱）
-- ⚠️ Context7 queries the **latest** documentation — if your project uses an older version, verify API compatibility（查詢最新文件，注意版本相容性）
-- ⚠️ Use specific queries, not broad questions — narrower queries produce better results（用具體查詢，非籠統問題）
-- ⚠️ If `resolve-library-id` returns no results, try alternative names (e.g., `"next"` vs `"nextjs"`）
-- ⚠️ Documentation results are snapshots — for critical decisions, verify against the actual source（關鍵決策請驗證原始文件）
-- ⚠️ **每個問題最多呼叫 3 次** — 若 3 次內找不到，使用已有的最佳結果（API 限制）
+- **Both parameters are REQUIRED**: `resolve-library-id` and `query-docs` each require two parameters. Missing one causes `invalid_type` error（兩個參數都必填，缺一會報錯）
+- **`libraryId` format**: Must be `/org/project` format (e.g., `/websites/nextjs`), NOT package name（必須是 `/org/project` 格式，不是套件名稱）
+- Context7 queries the **latest** documentation — if your project uses an older version, verify API compatibility（查詢最新文件，注意版本相容性）
+- Use specific queries, not broad questions — narrower queries produce better results（用具體查詢，非籠統問題）
+- If `resolve-library-id` returns no results, try alternative names (e.g., `"next"` vs `"nextjs"`）
+- Documentation results are snapshots — for critical decisions, verify against the actual source（關鍵決策請驗證原始文件）
+- **每個問題最多呼叫 3 次** — 若 3 次內找不到，使用已有的最佳結果（API 限制）
 
 ## Integration with Workflows (工作流整合)
 
-| 工作流 | 使用場景 |
-|--------|---------|
+| 工作流      | 使用場景                        |
+| ----------- | ------------------------------- |
 | `/03_build` | 查詢框架 API 用法以正確實作功能 |
-| `/04_fix` | 查詢 API 變更以確認修復方向 |
-| `/07_debug` | 查詢已知問題和解決方案 |
-| `/08_audit` | 查詢最佳實踐以評估程式碼品質 |
+| `/04_fix`   | 查詢 API 變更以確認修復方向     |
+| `/07_debug` | 查詢已知問題和解決方案          |
+| `/08_audit` | 查詢最佳實踐以評估程式碼品質    |

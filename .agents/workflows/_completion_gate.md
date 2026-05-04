@@ -1,13 +1,37 @@
 ---
-description: 
+description: 所有 Writer/Worker 工作流共用的靜默完成閘門。
 ---
 
 <!-- Shared Completion Gate for all Writer/Worker workflows -->
-Before reporting completion to the Director, verify ALL of the following:
-- [ ] **Memory Diff Check**: List ALL source files you modified in this session. Cross-reference against memory cards' Tracked Files. If overlap found → use the `memory-ops` skill to update those memory cards NOW (write_to_file → memory_commit). If no memory cards exist in this project → skip.
-- [ ] **Commit Verification (歸卡驗證)**: For EVERY memory card updated in this session, confirm that `memory_commit` was called AFTER the last write. If any card was written but not committed → call `memory_commit` NOW before proceeding.
-- [ ] **New File Attribution (新建檔案歸屬)**: If ANY new source files were created in this session, verify each file appears in at least one memory card's Tracked Files. If untracked files exist → execute memory-ops § 4.5.
-- [ ] Memory Update Summary included in output
-- [ ] **Interface Layer Check (介面層檢查)**: The completion report uses business-level descriptions, NOT raw code identifiers. Memory Update Summary must describe WHAT CHANGED in business terms (e.g., "更新了安全模組的已知問題" instead of "updated security memory card Known Issues section").
-- [ ] **Granularity Gate (粒度閘門)**: For each memory card updated in this session, verify trackedFiles count ≤ 8. If exceeded → propose split to Director before reporting completion.
-- [ ] **Skill Distillation Check (技能萃取檢查)**: If this session revealed a reusable pattern, debugging methodology, or operational recipe that does NOT already exist in any framework or project skill, RECOMMEND creating a new project skill via `/12_skill_forge`. This is a suggestion, not a blocker.
+Execute ALL checks below SILENTLY. Output NOTHING when checks pass.
+Output ONLY when a check FAILS — use the halt message format.
+
+```
+[COMPLETION GATE — SILENT MODE]
+├── [SUDO] detected in session? → Skip ALL checks. Force complete.
+├── [HALT MANDATE] Writer/Worker 角色結案前，Check 0–3 中任一 FAIL → 必須 HALT，禁止靜默跳過。
+├── Check 0: Circuit Breaker — same task retried > MAX_RETRY (3) per tool?
+│   ├── Count failures PER TOOL (e.g., browser failures don't affect CLI retry budget).
+│   ├── Only TRANSIENT errors count toward retry limit (semantic/infrastructure errors bypass).
+│   └── FAIL → [HALT] 「🔴 [CIRCUIT BREAK] 同一任務已重試 {N} 次仍失敗。強制中止，請總監介入決策。」
+│             Attach: last 3 error summaries for Director review.
+├── Check 1: Memory Diff — modified files reflected in memory cards?
+│   └── FAIL → [HALT] 「🔴 [GATE HALT] 記憶卡未同步。完成閘門強制中止，禁止結案。」
+├── Check 2: Commit Verification — memory_commit called after last write?
+│   └── FAIL → [HALT] 「🔴 [GATE HALT] 記憶卡寫入但未 memory_commit。完成閘門強制中止。」
+├── Check 3: New File Attribution — new files tracked in memory cards?
+│   └── FAIL → [HALT] 「🔴 [GATE HALT] 新建檔案未歸入記憶卡。完成閘門強制中止。」
+├── Check 4: Interface Layer — completion uses business language?
+│   └── FAIL → Self-correct internally. No output needed.
+├── Check 5: Granularity — trackedFiles ≤ 8 per card?
+│   └── FAIL → 「🟡 [GATE WARN] 記憶卡過載，建議拆分。」
+├── Check 6: Skill Distillation — reusable pattern detected?
+│   └── If yes → RECOMMEND /12_skill_forge (non-blocking).
+├── Check 7: Documentation Sync — public/framework docs may need update?
+│   ├── Did code modifications alter public interfaces, architecture, or workflows?
+│   ├── YES → Check related `README.md`, `/docs`, or framework rule files for staleness.
+│   │   ├── Docs outdated? → 「🔴 [GATE FAIL] 公共文件需同步更新。」
+│   │   └── Docs synced? → Pass.
+│   └── NO → Skip silently.
+└── ALL PASS → Proceed silently. Zero output.
+```

@@ -1,8 +1,9 @@
 ---
 name: browser-testing
 description: >
-  Browser subagent delegation SOP and auto-arbitration gate for E2E visual testing.
-  Use when: 任何涉及 瀏覽器測試/E2E/視覺驗證/browser_subagent 的流程。
+  [Testing] Browser subagent delegation SOP and auto-arbitration gate for E2E visual testing.
+  Use when: 需要啟動 browser_subagent 進行視覺驗證、E2E 測試執行、或瀏覽器自動仲裁閘門判定 的場景。
+  DO NOT use when: 寫單元測試（用 test-patterns）、只需要 DOM 選擇器策略（用 test-automation-strategy）、決定委派管道（用 delegation-strategy）。
 metadata:
   author: antigravity
   version: "5.1"
@@ -15,6 +16,7 @@ metadata:
 # Browser Testing (瀏覽器測試)
 
 ## Trigger Conditions (觸發條件)
+
 - E2E visual testing, UI verification, or browser-based validation
   （端到端視覺測試、UI 驗證、或瀏覽器操作驗證）
 
@@ -58,12 +60,34 @@ After delegation produces code changes:
    （UI 變更必須以視覺測試收尾）
 
 ## Constraints (約束)
+
 - Subagent output is Read-Only — Master Agent performs all physical writes
   （代理輸出為唯讀，實際寫入由主代理執行）
 - Server must be running and warmed up before spawning subagent
   （啟動代理前確保伺服器已運行）
 
+### Step 4: Structured Error Triage (結構化錯誤分類)
+
+When Auto-Arbitration Gate FAILS, classify the error before deciding next action:
+（自動仲裁閘門失敗時，先分類錯誤再決定下一步）
+
+```
+[ERROR TRIAGE] On Auto-Arbitration failure:
+├── TRANSIENT (暫時性): Network timeout, server not ready, rate limit, 429/503
+│   └── Action: Wait 3s with backoff, then retry (max 2 retries).
+│       Counts toward Circuit Breaker (Check 0 in _completion_gate).
+├── SEMANTIC (語意性): Wrong selector, element not found, assertion mismatch, logic error
+│   └── Action: Return structured error to Master Agent for re-planning.
+│       Include: { errorType: "SEMANTIC", selector: "...", expected: "...", actual: "..." }
+│       Does NOT count toward Circuit Breaker retry limit.
+└── INFRASTRUCTURE (基礎設施): Server crash, port conflict, OOM, ECONNREFUSED
+    └── Action: [HALT] Escalate to Director immediately.
+          「🔴 [INFRA HALT] 基礎設施異常：{error}。請總監確認環境狀態。」
+          Does NOT count toward Circuit Breaker retry limit.
+```
+
 ## Done When (驗證標準)
+
 - Browser subagent returned successfully with report
 - All proposed changes applied and tests pass
 - Visual verification screenshot/recording embedded in walkthrough

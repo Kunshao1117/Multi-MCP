@@ -1,9 +1,10 @@
 {
   "version": 1,
-  "lastScanned": "2026-04-03T09:01:00+08:00",
+  "lastScanned": "2026-04-30T14:51:26+08:00",
   "cartridges": {
     "cli": {
       "skillPath": ".agents\\memory\\cli\\SKILL.md",
+      "description": "專案記憶：CLI 管理主控台（安裝/移除 MCP、認證管理、分類管理、市集、健康檢查、工具瀏覽器、版本檢查、匯出匯入）。 Use when: 修改 CLI 主控台/管理介面/使用者互動流程 的任務。\n",
       "trackedFiles": [
         "src/cli.ts",
         "src/cli/shared.ts",
@@ -29,6 +30,7 @@
     },
     "gateway-core": {
       "skillPath": ".agents\\memory\\gateway-core\\SKILL.md",
+      "description": "專案記憶：Gateway 核心模組（設定載入、程序池、路由引擎、集成表、日誌、認證指南）。 Use when: 修改閘道器核心邏輯、程序管理、工具路由、掃描機制 的任務。\n",
       "trackedFiles": [
         "src/index.ts",
         "src/types.ts",
@@ -53,6 +55,7 @@
     },
     "_system": {
       "skillPath": ".agents\\memory\\_system\\SKILL.md",
+      "description": "專案記憶：Multi-MCP Gateway 系統層級資訊（技術堆疊、主機環境、部署設定）。 Use when: 任何涉及 系統架構/技術堆疊/部署/MCP 伺服器管理 的任務。\n",
       "trackedFiles": [
         "package.json",
         "tsconfig.json",
@@ -64,49 +67,17 @@
         "mcps/錯誤監控/sentry.json",
         "mcps/網頁測試/playwright.json",
         "mcps/網頁測試/a11y.json",
-        "mcps/文件查詢/context7.json"
+        "mcps/文件查詢/context7.json",
+        "mcps/開發工具/gitnexus.json"
       ],
       "staleness": 0,
-      "lastUpdated": "2026-04-03T10:19:45+08:00",
+      "lastUpdated": "2026-05-04T21:40:59+08:00",
       "pendingChanges": [],
       "depth": 1,
       "parent": null
     }
   },
   "fileMap": {
-    "package.json": [
-      "_system"
-    ],
-    "tsconfig.json": [
-      "_system"
-    ],
-    "gateway.config.json": [
-      "_system"
-    ],
-    ".gitignore": [
-      "_system"
-    ],
-    "mcps/程式碼品質/eslint.json": [
-      "_system"
-    ],
-    "mcps/安全掃描/snyk.json": [
-      "_system"
-    ],
-    "mcps/資料處理/excel.json": [
-      "_system"
-    ],
-    "mcps/錯誤監控/sentry.json": [
-      "_system"
-    ],
-    "mcps/網頁測試/playwright.json": [
-      "_system"
-    ],
-    "mcps/網頁測試/a11y.json": [
-      "_system"
-    ],
-    "mcps/文件查詢/context7.json": [
-      "_system"
-    ],
     "src/cli.ts": [
       "cli"
     ],
@@ -193,6 +164,116 @@
     ],
     "src/process-pool.test.ts": [
       "gateway-core"
+    ],
+    "package.json": [
+      "_system"
+    ],
+    "tsconfig.json": [
+      "_system"
+    ],
+    "gateway.config.json": [
+      "_system"
+    ],
+    ".gitignore": [
+      "_system"
+    ],
+    "mcps/程式碼品質/eslint.json": [
+      "_system"
+    ],
+    "mcps/安全掃描/snyk.json": [
+      "_system"
+    ],
+    "mcps/資料處理/excel.json": [
+      "_system"
+    ],
+    "mcps/錯誤監控/sentry.json": [
+      "_system"
+    ],
+    "mcps/網頁測試/playwright.json": [
+      "_system"
+    ],
+    "mcps/網頁測試/a11y.json": [
+      "_system"
+    ],
+    "mcps/文件查詢/context7.json": [
+      "_system"
+    ],
+    "mcps/開發工具/gitnexus.json": [
+      "_system"
     ]
-  }
+  },
+  "untrackedFiles": [
+    {
+      "filePath": "package-lock.json",
+      "suggestedOwner": null,
+      "detectedAt": "2026-04-30T14:51:29+08:00",
+      "lastEvent": "add"
+    },
+    {
+      "filePath": "mcps/雲端基礎設施/cloudflare-observability.json",
+      "suggestedOwner": null,
+      "detectedAt": "2026-04-30T14:51:30+08:00",
+      "lastEvent": "add"
+    },
+    {
+      "filePath": "mcps/雲端基礎設施/cloudflare-containers.json",
+      "suggestedOwner": null,
+      "detectedAt": "2026-04-30T14:51:30+08:00",
+      "lastEvent": "add"
+    },
+    {
+      "filePath": "mcps/雲端基礎設施/cloudflare-bindings.json",
+      "suggestedOwner": null,
+      "detectedAt": "2026-04-30T14:51:30+08:00",
+      "lastEvent": "add"
+    },
+    {
+      "filePath": "mcps/開發工具/github.json",
+      "suggestedOwner": null,
+      "detectedAt": "2026-04-30T14:51:30+08:00",
+      "lastEvent": "add"
+    },
+    {
+      "filePath": "mcps/輔助工具/sequentialthinking.json",
+      "suggestedOwner": null,
+      "detectedAt": "2026-04-30T14:51:30+08:00",
+      "lastEvent": "add"
+    },
+    {
+      "filePath": "mcps/安全掃描/snyk.json.disabled",
+      "suggestedOwner": "_system",
+      "detectedAt": "2026-04-30T14:51:30+08:00",
+      "lastEvent": "add"
+    },
+    {
+      "filePath": "mcps/記憶管理/cartridge-system.json",
+      "suggestedOwner": null,
+      "detectedAt": "2026-04-30T14:51:30+08:00",
+      "lastEvent": "add"
+    },
+    {
+      "filePath": "mcps/程式碼品質/eslint.json.disabled",
+      "suggestedOwner": "_system",
+      "detectedAt": "2026-04-30T14:51:30+08:00",
+      "lastEvent": "add"
+    },
+    {
+      "filePath": "mcps/UI設計/stitch.json",
+      "suggestedOwner": null,
+      "detectedAt": "2026-04-30T14:51:30+08:00",
+      "lastEvent": "add"
+    },
+    {
+      "filePath": ".agents/memory/_memory",
+      "suggestedOwner": null,
+      "detectedAt": "2026-04-30T14:51:30+08:00",
+      "lastEvent": "add"
+    },
+    {
+      "filePath": "CHANGELOG.md",
+      "suggestedOwner": null,
+      "detectedAt": "2026-04-30T14:51:30+08:00",
+      "lastEvent": "add"
+    }
+  ]
 }

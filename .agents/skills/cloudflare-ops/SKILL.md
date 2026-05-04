@@ -1,16 +1,23 @@
 ---
 name: cloudflare-ops
 description: >
-  Cloudflare 雲端服務操作食譜：KV/D1/R2 資源管理、Workers 管理、容器操作、日誌查詢。
+  [MCP: cloudflare] Cloudflare 雲端服務操作食譜：KV/D1/R2 資源管理、Workers 管理、容器操作、日誌查詢。
   MCP Server: cloudflare-bindings, cloudflare-containers, cloudflare-observability
   Use when: 呼叫 cloudflare 相關工具、雲端資源管理/Workers/KV/D1/R2/容器/日誌 的場景。
+  DO NOT use when: 非 Cloudflare 雲端服務操作。
 metadata:
   author: antigravity
   version: "5.3"
   origin: framework
   memory_awareness: none
-  mcp_servers: [cloudflare-bindings, cloudflare-containers, cloudflare-observability]
-  tool_scope: ["mcp:cloudflare-bindings", "mcp:cloudflare-containers", "mcp:cloudflare-observability"]
+  mcp_servers:
+    [cloudflare-bindings, cloudflare-containers, cloudflare-observability]
+  tool_scope:
+    [
+      "mcp:cloudflare-bindings",
+      "mcp:cloudflare-containers",
+      "mcp:cloudflare-observability",
+    ]
 ---
 
 # Cloudflare Ops — Cloud Service Recipes
@@ -61,12 +68,14 @@ Use Cloudflare Containers as an isolated execution environment for one-off scrip
 （使用 Cloudflare 容器作為一次性腳本的隔離執行環境）
 
 ### Use Cases (適用場景)
+
 - Data transformation scripts（資料轉換腳本）
 - Batch processing tasks（批次處理任務）
 - Experimental code execution（實驗性程式碼執行）
 - Package installation testing（套件安裝測試）
 
 ### Full Execution Flow (完整執行流程)
+
 1. `container_initialize` — Start a fresh container（啟動全新容器）
 2. `container_ping` — Confirm container is ready（確認容器就緒）
 3. `container_file_write` — Write script file(s) to container（寫入腳本檔案）
@@ -78,6 +87,7 @@ Use Cloudflare Containers as an isolated execution environment for one-off scrip
 6. `container_file_delete` — Clean up sensitive files（清理敏感檔案）
 
 ### Security Guidelines (安全指引)
+
 - ⛔ NEVER pass API keys, passwords, or tokens to the container（禁止傳入機敏資訊）
 - ⛔ NEVER connect container to production databases（禁止連接正式環境資料庫）
 - ✅ Use for read-only analysis and computation（用於唯讀分析和計算）
@@ -85,11 +95,11 @@ Use Cloudflare Containers as an isolated execution environment for one-off scrip
 
 ## Gotchas (踩坑點)
 
-- ⚠️ **Account first**: Must `set_active_account` before all operations（所有操作前必須先設定帳號）
-- ⚠️ **Log queries**: `query_worker_observability` filter fields require `observability_keys` confirmation first — do not guess（不要猜測欄位名稱）
-- ⚠️ **Container Python**: Must use `python3` and `pip3`, NOT `python`/`pip`
-- ⚠️ **Pages migration**: Before migrating Pages to Workers, **must** call `migrate_pages_to_workers_guide` first（遷移前必調）
-- ⚠️ `search_cloudflare_documentation` can search all Cloudflare product docs（可搜尋全部 Cloudflare 產品文件）
+- **Account first**: Must `set_active_account` before all operations（所有操作前必須先設定帳號）
+- **Log queries**: `query_worker_observability` filter fields require `observability_keys` confirmation first — do not guess（不要猜測欄位名稱）
+- **Container Python**: Must use `python3` and `pip3`, NOT `python`/`pip`
+- **Pages migration**: Before migrating Pages to Workers, **must** call `migrate_pages_to_workers_guide` first（遷移前必調）
+- `search_cloudflare_documentation` can search all Cloudflare product docs（可搜尋全部 Cloudflare 產品文件）
 
 ## Interpretation (結果解讀)
 

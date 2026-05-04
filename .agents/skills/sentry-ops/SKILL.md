@@ -1,9 +1,10 @@
 ---
 name: sentry-ops
 description: >
-  Sentry 錯誤監控操作食譜：錯誤調查、效能排查、問題管理流程。
+  [MCP: sentry] Sentry 錯誤監控操作食譜：錯誤調查、效能排查、問題管理流程。
   MCP Server: sentry
   Use when: 呼叫 sentry 相關工具、錯誤追蹤/堆疊分析/效能監控 的場景。
+  DO NOT use when: 非 Sentry 錯誤監控場景、一般除錯不需要 Sentry 工具時。
 metadata:
   author: antigravity
   version: "5.3"
@@ -44,11 +45,13 @@ Standard stack trace insufficient?
 ```
 
 ### Pre-Check (呼叫前檢查)
+
 - Confirm issue has sufficient events (3+ occurrences recommended)（建議 3+ 次發生）
 - Verify GitHub integration is connected (Seer needs source code access)（需 GitHub 整合才能存取原始碼）
 - Check if analysis already exists — `analyze_issue_with_seer` caches results（結果有快取，重複呼叫秒回）
 
 ### Execution (執行)
+
 1. `analyze_issue_with_seer` — Trigger AI analysis
    - Via URL: `issueUrl: "https://sentry.io/issues/PROJECT-123/"`
    - Via ID: `organizationSlug` + `issueId`
@@ -59,21 +62,23 @@ Standard stack trace insufficient?
    - **Confidence**: Assessment of analysis certainty
 
 ### Post-Analysis Actions (分析後行動)
+
 1. If fix is straightforward → Apply via `/04_fix` workflow（簡單修復 → 直接修復）
 2. If fix requires architectural change → Escalate to Director（架構變更 → 回報總監）
 3. If Seer suggests a PR → Review the generated PR via `pr-review-ops` skill
 
 ### Integration with `/07_debug` (除錯工作流整合)
+
 - Load this skill during `/07_debug` Phase 3 (Root Cause Hypothesis)
 - Use Seer as a **second opinion** after manual analysis（作為手動分析的第二意見）
 - Cross-reference Seer's findings with `get_issue_tag_values` for environment/browser distribution
 
 ## Gotchas (踩坑點)
 
-- ⚠️ `list_issues` query uses **Sentry search syntax**, not natural language（使用 Sentry 搜尋語法，如 `is:unresolved level:error`）
-- ⚠️ When providing Sentry URLs, pass the **entire URL as-is** to the `issueUrl` parameter（整段 URL 原封不動傳入）
-- ⚠️ Do NOT auto-call `analyze_issue_with_seer` after `get_issue_details` — only use when needed（不要自動呼叫，按需使用）
-- ⚠️ `create_project` already includes DSN — no need to call `create_dsn` separately（不需再另外呼叫）
+- `list_issues` query uses **Sentry search syntax**, not natural language（使用 Sentry 搜尋語法，如 `is:unresolved level:error`）
+- When providing Sentry URLs, pass the **entire URL as-is** to the `issueUrl` parameter（整段 URL 原封不動傳入）
+- Do NOT auto-call `analyze_issue_with_seer` after `get_issue_details` — only use when needed（不要自動呼叫，按需使用）
+- `create_project` already includes DSN — no need to call `create_dsn` separately（不需再另外呼叫）
 
 ## Interpretation (結果解讀)
 

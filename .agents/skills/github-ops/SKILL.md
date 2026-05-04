@@ -1,9 +1,10 @@
 ---
 name: github-ops
 description: >
-  GitHub 版本控制操作食譜：倉庫管理、Issue/PR 工作流程、程式碼搜尋。
+  [MCP: github] GitHub 版本控制操作食譜：倉庫管理、Issue 追蹤、分支建立、程式碼搜尋、檔案推送。
   MCP Server: github
-  Use when: 呼叫 github 相關工具、版本控制/倉庫管理/PR操作 的場景。
+  Use when: 需要 倉庫管理/Issue 操作/分支建立/檔案推送/程式碼搜尋 的場景。
+  DO NOT use when: 執行 PR 程式碼審查或合併決策（用 pr-review-ops）。
 metadata:
   author: antigravity
   version: "5.1"
@@ -45,10 +46,10 @@ metadata:
 
 ## Gotchas (踩坑點)
 
-- ⚠️ `push_files` can push multiple files as a **single commit**（單一 commit） — cleaner than calling `create_or_update_file` repeatedly
-- ⚠️ `fork_repository` defaults to personal account; specify `organization` to fork to an org（預設 fork 到個人帳號）
-- ⚠️ Use `get_pull_request_status` before merging to confirm all CI passes（合併前先確認 CI）
-- ⚠️ `update_pull_request_branch` may trigger rebase conflicts（可能觸發衝突）
+- `push_files` can push multiple files as a **single commit**（單一 commit） — cleaner than calling `create_or_update_file` repeatedly
+- `fork_repository` defaults to personal account; specify `organization` to fork to an org（預設 fork 到個人帳號）
+- Use `get_pull_request_status` before merging to confirm all CI passes（合併前先確認 CI）
+- `update_pull_request_branch` may trigger rebase conflicts（可能觸發衝突）
 
 ## Interpretation (結果解讀)
 

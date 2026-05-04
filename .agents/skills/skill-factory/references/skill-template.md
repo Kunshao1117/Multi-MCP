@@ -6,14 +6,16 @@
 
 ```yaml
 ---
-name: {skill-name}
+name: { skill-name }
 description: >
-  {English functional description}.
-  Use when: {中文觸發條件描述}。
+  [{Domain}] {English functional description}.
+  Use when: {中文正向觸發條件}。
+  DO NOT use when: {中文負向排除條件}。
 metadata:
   author: antigravity
   version: "1.0"
   origin: project
+  style: imperative|guided|hybrid
   memory_awareness: none|read|full
   tool_scope: ["{category1}", "{category2}"]
 ---
@@ -29,15 +31,18 @@ metadata:
 ## 1. Trigger Conditions (觸發條件)
 
 When to load this skill:
+
 - Condition 1
 - Condition 2
 
 ## 2. Procedure (操作步驟)
 
 ### Step 1: {Action}
+
 - Instruction detail
 
 ### Step 2: {Action}
+
 - Instruction detail
 
 ## 3. Constraints (限制與邊界)

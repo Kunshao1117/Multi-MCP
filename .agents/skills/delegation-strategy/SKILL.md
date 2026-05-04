@@ -1,9 +1,9 @@
 ---
 name: delegation-strategy
 description: >
-  Channel selection decision tree for task delegation.
-  Use when: 委派瀏覽器任務、使用 browser_subagent、CLI 分析委派、
-  或任何涉及 委派/管道選擇/delegation 的決策。
+  [Infra] Channel selection decision tree for task delegation (browser vs CLI vs MCP vs direct).
+  Use when: 需要決定任務該走哪個管道（瀏覽器代理/CLI/MCP/主腦直接處理）、或首次設計委派架構 的場景。
+  DO NOT use when: 已確定管道為瀏覽器且需要執行測試（用 browser-testing）、已確定管道為 CLI 且需要掃描（用 code-audit）。
 metadata:
   author: antigravity
   version: "5.1"
@@ -27,15 +27,16 @@ Evaluate in this order:
 
 > **Hot-Path Exclusion**: CLI is NOT for tasks needing immediate feedback on code just written. Use `run_command` directly.
 
-| Channel | Context | Speed | Output |
-|---------|---------|-------|--------|
-| browser_subagent | Isolated (DOM) | Slow | Browser report |
-| MCP tools | Shared (main) | Fast | Tool responses |
-| CLI fire-and-forget | Isolated (CLI) | Medium | File on disk |
+| Channel             | Context        | Speed  | Output         |
+| ------------------- | -------------- | ------ | -------------- |
+| browser_subagent    | Isolated (DOM) | Slow   | Browser report |
+| MCP tools           | Shared (main)  | Fast   | Tool responses |
+| CLI fire-and-forget | Isolated (CLI) | Medium | File on disk   |
 
 ## 2. CLI Role Boundary (CLI 角色邊界)
 
 CLI = **read-only analytical subagent**. Three absolute constraints:
+
 1. **Read-Only Source Code** — FORBIDDEN from modifying project source code
 2. **Report-Only Write** — Can only write to `.agents/logs/` directory
 3. **Self-Context via Memory** — CLI reads memory cards for context
@@ -43,6 +44,7 @@ CLI = **read-only analytical subagent**. Three absolute constraints:
 ## 3. CLI Delegation Details (委派細節)
 
 > Full CLI delegation flow, prompt skeletons, and capability matrix in `references/` subdirectory:
+>
 > - `references/cli-delegation-sop.md` — File-based command pattern and cleanup protocol
 > - `references/cli-prompt-skeleton.md` — Universal prompt skeleton
 > - `references/cli-capability-matrix.md` — Available tools and known limitations

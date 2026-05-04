@@ -1,9 +1,9 @@
 ---
 name: code-diagnosis
 description: >
-  CLI-delegated code reading and diagnostic analysis procedures.
-  Use when: 執行 /07_debug 除錯時需要大範圍閱讀原始碼、
-  跨模組故障定位、或任何涉及 程式碼診斷/大範圍原始碼分析/故障調查 的場景。
+  [Audit] CLI-delegated broad codebase reading and cross-module fault diagnosis.
+  Use when: 故障涉及 3+ 模組或需讀取 15+ 檔案的大範圍診斷、跨系統邊界（前後端/API/資料庫）的故障定位。
+  DO NOT use when: 單一模組內的簡單除錯（主腦直接處理）、工具掃描（用 code-audit）。
 metadata:
   author: antigravity
   version: "5.1"
@@ -19,6 +19,7 @@ metadata:
 ## 1. Trigger Conditions (觸發條件)
 
 Conditions for delegating to CLI（符合任一即可）:
+
 - Fault involves **more than 3** modules（故障涉及 3 個以上模組）
 - Requires reading **more than 15** source files（需讀取超過 15 個檔案）
 - Fault **crosses system boundaries**（前端↔後端、API↔資料庫）

@@ -1,9 +1,9 @@
 ---
 name: code-audit
 description: >
-  CLI-delegated code scanning procedures, scan report format, and cross-boundary analysis patterns.
-  Use when: 執行 /08_audit 深度審計、需要 ESLint/安全 工具掃描、
-  或任何涉及 程式碼品質掃描/安全漏洞掃描/工具報告解讀 的場景。
+  [Audit] CLI-delegated code scanning procedures: ESLint, npm audit, TypeScript check, TODO markers.
+  Use when: 執行 ESLint 品質掃描/npm audit 安全掃描/TypeScript 型別檢查/環境變數一致性檢查 的場景。
+  DO NOT use when: 執行 /08_audit 的語義推理分析（用 audit-engine）、單次修復或重構（用 /04_fix 或 /05_refactor）。
 metadata:
   author: antigravity
   version: "5.1"
@@ -18,19 +18,21 @@ metadata:
 
 ## 1. Scan Flow (掃描流程)
 
-Six-step scan, execute in order:
+Multi-step scan, execute in order (see `references/scan-task-prompt.md` for full prompt):
 
 1. **ESLint quality scan** — Use project-local `npm run lint` or `npx eslint .`（品質掃描）
 2. **Dependency security scan** — Use terminal-native audit commands（如 `npm audit` 或 `yarn audit`）
-4. **TypeScript type check** — `npx tsc --noEmit`（僅 TS 專案）
-5. **TODO marker statistics** — grep TODO/FIXME/HACK/XXX/TEMP（代辦標記統計）
-6. **Environment variable consistency** — Compare `.env.example` against `process.env` references（環境變數一致性）
+3. **TypeScript type check** — `npx tsc --noEmit`（僅 TS 專案）
+4. **TODO marker statistics** — grep TODO/FIXME/HACK/XXX/TEMP（代辦標記統計）
+5. **Environment variable consistency** — Compare `.env.example` against `process.env` references（環境變數一致性）
 
 > Full prompt templates and report formats in `references/` subdirectory.
 
 ## 2. Master Agent Analysis (主腦分析層)
 
-After CLI scan completes, Master Agent supplements with AI-exclusive analysis（主腦補充 AI 專屬分析）:
+After CLI scan completes, Master Agent supplements with AI-exclusive analysis（主腦補充 AI 專屬分析）.
+In `/08_audit`, these items are decomposed into `audit-engine` §1–§4 + workflow §3.5 steps B/C/E/F/J — do NOT re-execute here（在 /08 健檢中，以下項目由 `audit-engine` 和工作流步驟細分承接，不需重複執行）:
+
 - **Module Relationship** — Compare import dependency graph against memory card relation declarations（比對依賴圖與記憶卡關聯宣告）
 - **API Integration** — Match frontend fetch calls against backend route definitions（前後端串接比對）
 - **Dead Code** — Files not imported by any module, excluding entry points（未被引用的檔案）

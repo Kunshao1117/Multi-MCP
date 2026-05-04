@@ -1,4 +1,13 @@
 <!-- Shared Security & Compliance clauses for all workflows -->
+
+```
+[ROLE LOCK GATE] At workflow entry:
+├── Verify Agent role matches workflow declaration.
+│   ├── Match → Proceed silently.
+│   └── Mismatch → [HALT] 「🔴 [ROLE HALT] 角色權限不符，拒絕執行。」
+├── [SUDO] detected? → Allow Role Impersonation. Override role to Writer/SRE.
+└── Proceed to workflow body.
+```
 - **Browser Gate**: browser_subagent usage follows `delegation-strategy` Skill. For workflows with Reader role, browser spawning requires explicit Director authorization.
   - **Exemption**: `/01_explore` has built-in browser authorization (autonomous research mandate) and is exempt from the Reader browser gate.
 - **Role Declaration**: The invoking workflow MUST declare the agent's role and specific permissions in its own `[SECURITY & COMPLIANCE MANDATE]` section below the `Inherits` reference.

@@ -21,8 +21,8 @@
 Step 1: Master → write_to_file: {agents_dir}/logs/cli_task.md
         （用提示詞骨架構建任務，寫入檔案）
 
-Step 2: Master → run_command: gemini (Cwd: {agents_dir} 的父目錄)
-        （在工作空間根目錄啟動 CLI）
+Step 2: Master → run_command: gemini (Cwd: {workspace_root})
+        （在 workspace_root 啟動 CLI — 即包含 .agents/ 的目錄）
 
 Step 3: Master → send_command_input: 請讀取 {agents_dir}/logs/cli_task.md 並執行其中定義的任務
         （送出短指令，使用絕對路徑）
