@@ -18,7 +18,7 @@ staleness: 20
 
 > [!CAUTION]
 > 🟠 **系統強制攔截**：此記憶已過期失真！
-> 追蹤檔案異動：`CHANGELOG.md`、`.gitignore`（2026-05-15T17:17:45+08:00）
+> 追蹤檔案異動：`CHANGELOG.md`、`.gitignore`（2026-05-15T20:36:18+08:00）
 > AI 嚴禁基於此記憶施工，必須優先閱讀最新原始碼並更新此記憶卡。
 > staleness: 20 | threshold: 🟠 顯著過期
 
