@@ -230,6 +230,8 @@ npm run dev
 
 > 💡 開發期間可使用 `tsx src/index.ts` 取代 `node dist/index.js`。
 
+> ⚠️ Codex/Gemini 若使用 `node D:/Multi-MCP/dist/index.js` 啟動 Gateway，修改 `src/` 後必須先重新建置。Gateway 會在啟動時檢查 `src/` 是否比 `dist/` 新；若偵測到舊編譯產物，會拒絕啟動並提示執行 `npx tsc`，避免 AI 連到舊版工具描述。
+
 ---
 
 ## 設定檔說明
@@ -439,6 +441,9 @@ npm run console
 | `npm run dev:scan` | 開發模式掃描所有 MCP 並生成集成表 |
 | `npm run console` | 啟動互動式 CLI 管理主控台 |
 | `npm run build` | 編譯 TypeScript 至 `dist/` |
+| `npm run typecheck` | 執行 TypeScript 型別檢查，不輸出檔案 |
+| `npm run verify:runtime` | 以 MCP stdio 啟動 `dist/index.js`，驗證 Gateway 工具暴露與 cartridge-system 工具數量 |
+| `npm run preflight:gateway` | 依序執行 typecheck、核心測試、build 與 runtime 驗證 |
 | `npm run start` | 生產模式啟動 Gateway |
 | `npm run scan` | 生產模式掃描工具 |
 | `npm test` | 執行單元測試（Vitest） |

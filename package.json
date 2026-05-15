@@ -6,13 +6,16 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
+    "typecheck": "tsc --noEmit --pretty false",
     "start": "node dist/index.js",
     "scan": "node dist/index.js --scan",
     "console": "tsx src/cli.ts",
     "dev": "tsx src/index.ts",
     "dev:scan": "tsx src/index.ts --scan",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "verify:runtime": "node scripts/verify-gateway-runtime.mjs",
+    "preflight:gateway": "npm run typecheck && vitest run src/config-loader.test.ts src/process-pool.test.ts src/registry.test.ts src/tool-router.test.ts src/runtime-guard.test.ts && npm run build && npm run verify:runtime"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1"

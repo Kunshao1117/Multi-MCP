@@ -18,6 +18,7 @@ import { loadConfig } from './config-loader.js';
 import { loadRegistry, scanAndGenerateRegistry } from './registry.js';
 import { GatewayServer } from './gateway-server.js';
 import { setLogLevel, createLogger } from './logger.js';
+import { assertDistFresh } from './runtime-guard.js';
 
 // 在 process.chdir 覆蓋前，先擷取 IDE 注入的原始專案目錄
 const IDE_WORKSPACE_ENVS = ['INIT_CWD', 'VSCODE_CWD', 'WORKSPACE_ROOT'] as const;
@@ -54,6 +55,7 @@ async function main(): Promise<void> {
       process.exit(0);
     } else {
       // === 伺服器模式 ===
+      assertDistFresh({ entryFile: __filename, projectRoot: PROJECT_ROOT });
       logger.info('=== Multi-MCP Gateway: 伺服器模式 ===');
       const registry = loadRegistry();
       const server = new GatewayServer(config, registry, initWorkspace);
@@ -69,4 +71,3 @@ async function main(): Promise<void> {
 }
 
 main();
-

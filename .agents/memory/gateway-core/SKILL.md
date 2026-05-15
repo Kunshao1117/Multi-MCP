@@ -12,7 +12,7 @@ metadata:
     - 'filesystem:read'
     - 'filesystem:write'
     - 'mcp:cartridge-system'
-last_updated: '2026-05-15T17:01:37+08:00'
+last_updated: '2026-05-15T20:59:43+08:00'
 status: stable
 staleness: 0
 ---
@@ -21,6 +21,8 @@ staleness: 0
 
 ## Tracked Files
 - src/index.ts
+- src/runtime-guard.ts
+- src/runtime-guard.test.ts
 - src/types.ts
 - src/logger.ts
 - src/config-loader.ts
@@ -35,6 +37,7 @@ staleness: 0
 - src/config-loader.test.ts
 - src/tool-router.test.ts
 - src/process-pool.test.ts
+- scripts/verify-gateway-runtime.mjs
 
 ## Key Decisions
 - D01: 閘道器只暴露管理工具（10 個），下游工具透過 search_tools + call_tool 動態發現
@@ -52,6 +55,7 @@ staleness: 0
 - D13: `gateway__search_tools` 現在會把 Gateway 管理工具納入搜尋；查詢 call tool、呼叫工具、Gateway 呼叫或下游工具名稱時，優先露出 `gateway__call_tool`
 - D14: `gateway__list_server_tools` 回傳下游工具 inputSchema 並用實際 tools map 計算數量，避免 registry `tool_count` 快取過期造成分類摘要或工具數量錯誤
 - D15: `gateway__call_tool` 錯誤訊息需區分 server 未註冊、工具不存在、Gateway 管理工具誤用與下游 schema/呼叫失敗，並提醒 AI 先查 inputSchema 不猜參數
+- D16: `dist/index.js` 啟動 Gateway 時會執行 runtime freshness guard；若偵測到非測試 `src/**/*.ts` 比 `dist/**/*.js` 新，直接拒絕啟動並提示先 `npx tsc` 後重啟 MCP 連線
 
 ## Known Issues
 - credentials.json 明文儲存密鑰，雖被 .gitignore 排除但缺少加密層
@@ -68,3 +72,4 @@ staleness: 0
 - L08: set_workspace case 中 `const path = args.path` 會遮蔽頂部 `import path from 'node:path'`，需重命名為 `wsPath` 避免影響同檔案其他 case 的 path 引用
 - L09: Gateway 工具提示是 AI 行為控制面的一部分；搜尋工具若只回傳下游結果但不露出 `gateway__call_tool`，AI 可能誤判只能瀏覽不能真實呼叫
 - L10: 下游 MCP 工具參數必須以 registry inputSchema 為準；例如 cartridge-system 的 `memory_deps` 使用 `moduleName`，不是模型猜測的 `module`
+- L11: `dist/` 被 `.gitignore` 排除但仍是 Codex/Gemini runtime，不能只靠記憶或文件要求 AI build；啟動期 guard 才能防止舊工具 metadata 靜默上線

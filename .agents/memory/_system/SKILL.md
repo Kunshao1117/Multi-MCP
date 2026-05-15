@@ -10,7 +10,7 @@ metadata:
   memory_awareness: full
   tool_scope:
     - 'filesystem:read'
-last_updated: '2026-05-15T20:46:26+08:00'
+last_updated: '2026-05-15T20:59:50+08:00'
 status: stable
 staleness: 0
 ---
@@ -54,10 +54,12 @@ staleness: 0
 ## Config Architecture
 - `gateway.config.json` — 閘道器設定（超時、重試、日誌等級）
 - `gateway.env` — 認證檔案（由 CLI 主控台自動產生）
+- `.npmrc` — 固定 npm script shell 為 `cmd.exe`，避免 Windows session 缺少 `ComSpec` 時 npm script 無法 spawn
 - `credentials.json` — 多帳號認證儲存（明文，已被 .gitignore 排除）
 - `mcps/` — 分類目錄式 MCP 設定（JSON 檔）
 - `registry.json` — 掃描產出的工具集成表
 - `dist/` — TypeScript 編譯產物；被 `.gitignore` 排除但 Codex/Gemini MCP runtime 以 `node d:/Multi-MCP/dist/index.js` 啟動，修改 `src/` 後必須先 build 並重啟 MCP 連線
+- `scripts/verify-gateway-runtime.mjs` — 以 MCP stdio 啟動 `dist/index.js`，驗證 Gateway 管理工具描述、搜尋流程與 cartridge-system 工具數量
 - `.agents/memory/` — 唯一提交到 Git 的 Antigravity agents 目錄；`.agents` 其他框架、技能、工作流檔案為本機 ignored 狀態
 - `.cartridge/` — Cartridge System 本機索引產物；被 `.gitignore` 排除，不提交
 - `C:\Users\homeb\.gemini\antigravity\mcp_config.json` — Gemini IDE 全域 MCP 設定（含 Trunk HTTP 端點）
@@ -67,11 +69,14 @@ staleness: 0
 - `npm run dev:scan` — 開發模式掃描工具
 - `npm run console` — CLI 管理主控台
 - `npm test` — 單元測試 (vitest)
-- `npx tsc` — 直接編譯到 `dist/`；當 Windows session 缺少 `ComSpec` 時，`npm run build` 可能因 npm spawn shell 失敗而無法啟動 script
+- `npx tsc` — 直接編譯到 `dist/`；`.npmrc` 已固定 npm script shell，`npm run build` 與 `npx tsc` 皆可作為建置入口
+- `npm run verify:runtime` — 驗證 `dist/` runtime 實際暴露新版 Gateway 工具與 cartridge-system 8 個工具
+- `npm run preflight:gateway` — typecheck、核心測試、build、runtime verify 的完整 Gateway 上線前檢查
 
 ## Tracked Files
 - README.md
 - CHANGELOG.md
+- .npmrc
 - package.json
 - package-lock.json
 - tsconfig.json
@@ -107,6 +112,7 @@ staleness: 0
 - D10: `.gitignore` 採「忽略 `.agents/*`、只放行 `.agents/memory/`」策略；rules、skills、workflows、scripts、VERSION 屬於本機框架檔，不進倉庫
 - D11: `.cartridge/` 是本機記憶索引快取，不進倉庫；跨機器 clone 後需重新掃描或由 cartridge-system 重建索引
 - D12: Gateway MCP runtime 指向 `dist/index.js`，因此只改 `src/` 不會影響已連線 MCP；完成原始碼變更後必須編譯 `dist/` 並重啟 MCP 連線，否則 Codex tool discovery 可能仍讀到舊工具 metadata
+- D13: `dist/index.js` server mode 會在啟動前檢查非測試 `src/**/*.ts` 是否比 `dist/**/*.js` 新；若 stale 則拒絕啟動，防止其他 AI 或人類忘記 build 後連到舊 Gateway
 
 ## Known Issues
 - credentials.json 明文儲存密鑰，依賴 .gitignore 保護，缺少加密層
@@ -114,7 +120,7 @@ staleness: 0
 - 遠端 MCP（Stitch、Cloudflare）掃描時偶發 AbortError 超時
 - Trunk MCP 不在 Gateway 統一管理範疇，認證狀態無法透過 gateway__auth_status 監控
 - swarm-mcp 目前以 `.disabled` 保留設定，需重新命名為 `.json` 並 rescan 後才會進入 Gateway registry
-- 若 Windows 環境變數 `ComSpec` 為空，`npm run build` 可能在 npm script shell spawn 階段失敗；可改用 `npx tsc` 或補回 `ComSpec=C:\Windows\System32\cmd.exe`
+- `.npmrc` 固定 npm script shell 後，`npm run build` 不再依賴當前 session 的 `ComSpec` 是否存在；若系統 cmd.exe 路徑異常仍可改用 `npx tsc`
 - Codex 當前 session 的 MCP stdio transport 被手動終止後不一定自動重連；需要重啟 Codex session 或重新載入 MCP 連線，才能讓 tool discovery 使用最新 `dist/`
 
 ## Module Lessons
