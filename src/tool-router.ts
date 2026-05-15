@@ -4,12 +4,13 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import type { ToolRegistry, ParsedToolName } from './types.js';
+import type { ToolRegistry, ParsedToolName, SearchToolsResult } from './types.js';
 import { NAMESPACE_SEPARATOR, GATEWAY_TOOL_PREFIX } from './types.js';
 import type { ProcessPool } from './process-pool.js';
 import { getAuthGuide } from './auth-guides.js';
 import { searchTools } from './registry.js';
 import type { GatewayConfig } from './types.js';
+import { callToolSearchResult, searchGatewayTools } from './gateway-tools.js';
 import { createLogger } from './logger.js';
 
 const logger = createLogger('tool-router');
@@ -57,7 +58,11 @@ export class ToolRouter {
 
     // 驗證工具存在
     if (!this.registry.all_tools[namespacedName]) {
-      throw new Error(`未知的工具: ${namespacedName}`);
+      const knownServer = this.registry.servers[serverName];
+      if (!knownServer) {
+        throw new Error(`server 未註冊: ${serverName}。請先用 gateway__list_servers 確認可用下游 MCP；若剛新增 MCP，請呼叫 gateway__rescan。`);
+      }
+      throw new Error(`工具不存在: ${namespacedName}。請先用 gateway__search_tools 或 gateway__list_server_tools 查詢正確工具名稱與 inputSchema。`);
     }
 
     logger.info('路由呼叫', { tool: namespacedName, server: serverName });
@@ -99,7 +104,11 @@ export class ToolRouter {
         };
       }
 
-      throw err;
+      throw new Error([
+        `下游工具呼叫失敗: ${namespacedName}`,
+        `錯誤: ${errorMsg}`,
+        '若這是 schema 驗證失敗，請先用 gateway__search_tools 或 gateway__list_server_tools 查詢下游工具 inputSchema，arguments 必須使用真實參數名稱。',
+      ].join('\n'));
     }
   }
 
@@ -195,14 +204,37 @@ export class ToolRouter {
         if (!query) throw new Error('缺少 query 參數');
         const server = args.server as string | undefined;
         const limit = args.limit as number | undefined;
-        const results = searchTools(this.registry, query, { server, limit });
+        const downstreamResults = searchTools(this.registry, query, { server, limit });
+        const gatewayResults = server
+          ? []
+          : searchGatewayTools(query, limit ?? 10);
+        const results = this.mergeSearchResults(query, gatewayResults, downstreamResults, limit ?? 10);
         if (results.length === 0) {
-          return { content: [{ type: 'text' as const, text: `沒有找到與 "${query}" 相關的工具。請嘗試其他關鍵字。` }] };
+          return {
+            content: [{
+              type: 'text' as const,
+              text: [
+                `沒有找到與 "${query}" 相關的工具。請嘗試其他關鍵字，或用 gateway__list_servers / gateway__list_server_tools 確認下游 server 與工具名稱。`,
+                '若使用者要求 Gateway MCP 真實呼叫，找不到入口時請回報卡點，不要改用 stdio、終端 handler 或單元測試宣稱已完成 Gateway 驗證。',
+              ].join('\n'),
+            }],
+          };
         }
         const formatted = results.map((r) =>
-          `🔧 ${r.name}\n   ${r.description}\n   參數: ${JSON.stringify(r.inputSchema)}`,
+          `🔧 ${r.name}\n   類型: ${r.server === GATEWAY_TOOL_PREFIX ? 'Gateway 管理工具' : `下游 MCP 工具 (${r.server})`}\n   ${r.description}\n   參數: ${JSON.stringify(r.inputSchema)}`,
         ).join('\n\n');
-        return { content: [{ type: 'text' as const, text: `找到 ${results.length} 個相關工具：\n\n${formatted}` }] };
+        return {
+          content: [{
+            type: 'text' as const,
+            text: [
+              `找到 ${results.length} 個相關工具：`,
+              '',
+              formatted,
+              '',
+              '使用守則：gateway__search_tools / gateway__list_server_tools 只負責探索與查 schema；要真實執行下游 MCP，請用 gateway__call_tool，並讓 arguments 符合下游 inputSchema。',
+            ].join('\n'),
+          }],
+        };
       }
 
       case 'call_tool': {
@@ -210,6 +242,16 @@ export class ToolRouter {
         const toolArgs = (args.arguments ?? {}) as Record<string, unknown>;
         const callWorkspace = args.workspace as string | undefined;
         if (!toolName) throw new Error('缺少 name 參數');
+        const parsed = this.parseToolName(toolName);
+        if (parsed.serverName === GATEWAY_TOOL_PREFIX) {
+          throw new Error('Gateway 呼叫入口使用錯誤: gateway__call_tool 只能呼叫下游 MCP 工具，不能包裝呼叫 Gateway 管理工具。');
+        }
+        if (!this.registry.servers[parsed.serverName]) {
+          throw new Error(`server 未註冊: ${parsed.serverName}。請先用 gateway__list_servers 確認可用下游 MCP。`);
+        }
+        if (!this.registry.all_tools[toolName]) {
+          throw new Error(`工具不存在: ${toolName}。請先用 gateway__search_tools 或 gateway__list_server_tools 查詢正確工具名稱與 inputSchema。`);
+        }
         // 本次呼叫暫時套用 workspace，結束後自動還原（不污染全局狀態）
         const previousWorkspace = this.workspacePath;
         if (callWorkspace) this.workspacePath = callWorkspace;
@@ -242,14 +284,21 @@ export class ToolRouter {
         const serverName = args.server_name as string;
         if (!serverName) throw new Error('缺少 server_name 參數');
         const serverEntry = this.registry.servers[serverName];
-        if (!serverEntry) throw new Error(`找不到伺服器: ${serverName}`);
+        if (!serverEntry) throw new Error(`server 未註冊: ${serverName}。請先用 gateway__list_servers 確認可用下游 MCP。`);
         const list = Object.entries(serverEntry.tools).map(([ns, t]) =>
-          `• ${ns} — ${t.description}`,
+          `• ${ns} — ${t.description}\n  inputSchema: ${JSON.stringify(t.inputSchema)}`,
         ).join('\n');
+        const actualToolCount = Object.keys(serverEntry.tools).length;
         return {
           content: [{
             type: 'text' as const,
-            text: `${serverName} 共有 ${serverEntry.tool_count} 個工具：\n\n${list}`,
+            text: [
+              `${serverName} 共有 ${actualToolCount} 個工具：`,
+              '',
+              list,
+              '',
+              '這是探索結果，不代表已執行工具。要透過 Gateway 真實呼叫下游 MCP，請使用 gateway__call_tool，並讓 arguments 符合上方 inputSchema。',
+            ].join('\n'),
           }],
         };
       }
@@ -287,8 +336,35 @@ export class ToolRouter {
         };
 
       default:
-        throw new Error(`未知的管理工具: ${toolName}`);
+        throw new Error(`Gateway 本身缺少呼叫入口或管理工具不存在: gateway__${toolName}`);
     }
+  }
+
+  private mergeSearchResults(
+    query: string,
+    gatewayResults: SearchToolsResult[],
+    downstreamResults: SearchToolsResult[],
+    limit: number,
+  ): SearchToolsResult[] {
+    const shouldExposeCallTool = downstreamResults.length > 0 || /call|invoke|呼叫|gateway/i.test(query);
+    const merged = [...gatewayResults, ...downstreamResults];
+    if (shouldExposeCallTool && !merged.some((r) => r.name === 'gateway__call_tool')) {
+      merged.unshift(callToolSearchResult());
+    }
+
+    const seen = new Set<string>();
+    return merged
+      .filter((result) => {
+        if (seen.has(result.name)) return false;
+        seen.add(result.name);
+        return true;
+      })
+      .sort((a, b) => {
+        if (a.name === 'gateway__call_tool') return -1;
+        if (b.name === 'gateway__call_tool') return 1;
+        return 0;
+      })
+      .slice(0, limit);
   }
 
   /** 根據 inputSchema 自動修正參數型別（容錯強轉） */

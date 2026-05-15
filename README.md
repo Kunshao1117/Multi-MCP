@@ -347,6 +347,26 @@ Gateway 啟動後會暴露 12 個管理工具，供 AI 助理直接呼叫：
 | `gateway__list_server_tools` | 列出指定伺服器的所有工具 |
 | `gateway__list_servers` | 列出所有已註冊的伺服器及工具數量 |
 
+`gateway__search_tools` 與 `gateway__list_server_tools` 只負責探索工具與查詢 schema，不代表工具已被執行。若使用者要求「Gateway MCP 真實呼叫」，AI 必須透過 `gateway__call_tool` 呼叫下游 MCP 工具；`stdio` E2E、終端 handler 測試、單元測試或直接啟動下游程序只能作為補充驗證，不能宣稱取代 Gateway 驗證。
+
+### 下游工具呼叫流程
+
+1. 使用 `gateway__search_tools` 搜尋需求，例如 `呼叫 cartridge-system memory_audit` 或 `call downstream MCP tool`。
+2. 使用 `gateway__list_server_tools` 查詢下游工具 schema，例如 `{ "server_name": "cartridge-system" }`。
+3. 使用 `gateway__call_tool` 真實呼叫下游工具：
+
+```json
+{
+  "name": "cartridge-system__memory_audit",
+  "arguments": {
+    "projectRoot": "d:\\your-project"
+  },
+  "workspace": "d:\\your-project"
+}
+```
+
+`cartridge-system__workspace_brief` 與 `cartridge-system__commit_preflight` 也採相同流程。所有 `arguments` 必須符合下游工具的真實 `inputSchema`；例如 `cartridge-system__memory_deps` 使用 `moduleName`，不是 `module`。若 Gateway 找不到呼叫入口、server 未註冊、工具不存在或 schema 不明，AI 應先回報卡點並等待授權，不要自行改用替代驗證方式。
+
 ### 認證管理
 
 | 工具 | 說明 |

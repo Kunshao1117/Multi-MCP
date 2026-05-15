@@ -13,6 +13,10 @@ import { createLogger } from './logger.js';
 const logger = createLogger('registry');
 const DEFAULT_REGISTRY_PATH = 'registry.json';
 
+function actualToolCount(entry: { tool_count: number; tools: Record<string, RegistryToolEntry> }): number {
+  return Object.keys(entry.tools).length;
+}
+
 /** 載入已生成的集成表 */
 export function loadRegistry(registryPath?: string): ToolRegistry {
   const resolvedPath = resolve(registryPath ?? DEFAULT_REGISTRY_PATH);
@@ -170,7 +174,7 @@ export function generateCategorySummary(
       const serverEntry = registry.servers[s];
       if (!serverEntry) continue;
       validServers.push(s);
-      toolCount += serverEntry.tool_count;
+      toolCount += actualToolCount(serverEntry);
       categorized.add(s);
       // 取前 3 個工具作為代表性亮點
       const toolNames = Object.values(serverEntry.tools)
@@ -197,7 +201,7 @@ export function generateCategorySummary(
   for (const [name, entry] of Object.entries(registry.servers)) {
     if (!categorized.has(name)) {
       uncategorized.push(name);
-      uncatToolCount += entry.tool_count;
+      uncatToolCount += actualToolCount(entry);
       const toolNames = Object.values(entry.tools)
         .slice(0, 2)
         .map((t) => t.original_name);

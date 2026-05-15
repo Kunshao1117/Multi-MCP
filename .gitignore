@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+sessions/
 
 # Build output
 dist/
@@ -21,12 +22,14 @@ cartridge_index.json
 #trunk
 %SystemDrive%
 
-#.agents
-.agents/scripts/
-.agents/logs/
-
 #.gitnexus
 .gitnexus/
+
+
 .claude/
 AGENTS.md
 CLAUDE.md
+.cartridge/
+.agents/*
+!.agents/memory/
+.codex/

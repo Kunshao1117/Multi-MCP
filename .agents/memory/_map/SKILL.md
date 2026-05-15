@@ -10,7 +10,7 @@ metadata:
   memory_awareness: full
   tool_scope:
     - 'filesystem:read'
-last_updated: '2026-05-04T21:29:39+08:00'
+last_updated: '2026-05-09T20:16:45+08:00'
 status: stable
 staleness: 0
 ---
@@ -21,7 +21,6 @@ staleness: 0
 本專案為 **Multi-MCP Gateway**，負責集中管理、橋接與協調多種 Model Context Protocol (MCP) 伺服器，為前端或代理人提供單一且統一的工具呼叫介面。專案具備動態設定載入、認證管理與 CLI 操作主控台。
 
 ## Tracked Files
-- (無直接追蹤檔案，作為導航層使用)
 
 ## 架構拓樸 (Architecture Topology)
 

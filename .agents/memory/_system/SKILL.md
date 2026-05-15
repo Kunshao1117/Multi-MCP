@@ -10,10 +10,19 @@ metadata:
   memory_awareness: full
   tool_scope:
     - 'filesystem:read'
-last_updated: '2026-05-04T21:40:59+08:00'
-status: stable
-staleness: 0
+last_updated: '2026-05-15T17:01:12+08:00'
+status: stale
+staleness: 20
 ---
+<!-- CARTRIDGE_SYSTEM_WARNING_START -->
+
+> [!CAUTION]
+> 🟠 **系統強制攔截**：此記憶已過期失真！
+> 追蹤檔案異動：`CHANGELOG.md`、`.gitignore`（2026-05-15T17:17:45+08:00）
+> AI 嚴禁基於此記憶施工，必須優先閱讀最新原始碼並更新此記憶卡。
+> staleness: 20 | threshold: 🟠 顯著過期
+
+<!-- CARTRIDGE_SYSTEM_WARNING_END -->
 
 # Multi-MCP Gateway — System Memory
 
@@ -48,6 +57,7 @@ staleness: 0
 | a11y | 網頁測試 | accessibility-mcp | 無需認證 |
 | context7 | 文件查詢 | @upstash/context7-mcp | 無需認證 |
 | cartridge-system | 記憶管理 | cartridge-system | 無需認證（已停用） |
+| swarm-mcp | 輔助工具 | 本地 swarm-mcp dist/index.js | 無需認證（`.disabled` 保留設定，不由 Gateway 載入） |
 | trunk | 程式碼品質 | https://mcp.trunk.io/mcp (HTTP) | OAuth（/mcp auth trunk） |
 
 ## Config Architecture
@@ -65,18 +75,29 @@ staleness: 0
 - `npm test` — 單元測試 (vitest)
 
 ## Tracked Files
+- README.md
+- CHANGELOG.md
 - package.json
+- package-lock.json
 - tsconfig.json
 - gateway.config.json
 - .gitignore
-- mcps/程式碼品質/eslint.json
-- mcps/安全掃描/snyk.json
+- mcps/程式碼品質/eslint.json.disabled
+- mcps/安全掃描/snyk.json.disabled
 - mcps/資料處理/excel.json
 - mcps/錯誤監控/sentry.json
 - mcps/網頁測試/playwright.json
 - mcps/網頁測試/a11y.json
 - mcps/文件查詢/context7.json
 - mcps/開發工具/gitnexus.json
+- mcps/開發工具/github.json
+- mcps/UI設計/stitch.json
+- mcps/輔助工具/swarm-mcp.disabled
+- mcps/輔助工具/sequentialthinking.json
+- mcps/雲端基礎設施/cloudflare-bindings.json
+- mcps/雲端基礎設施/cloudflare-observability.json
+- mcps/雲端基礎設施/cloudflare-containers.json
+- mcps/記憶管理/cartridge-system.json
 
 ## Key Decisions
 - D01: 使用 `mcps/` 分類目錄結構取代單一設定檔，便於管理大量 MCP
@@ -87,12 +108,14 @@ staleness: 0
 - D06: 審計工作流採「CLI 子代理 + 合併報告 + 主腦只讀」架構，實現上下文隔離
 - D07: Context7 MCP 用於即時查詢框架官方文件，零外部依賴、無需 API Key
 - D08: Trunk MCP 採 HTTP 傳輸（路徑 A），直接寫入 Gemini IDE 全域設定，繞過 Gateway；Gateway 目前僅支援 stdio，HTTP 傳輸需未來擴充
+- D09: `mcps/**/*.disabled` 檔案作為停用 MCP 的保留設定；`config-loader` 只載入 `.json`，所以 `mcps/輔助工具/swarm-mcp.disabled` 不會註冊到 Gateway
 
 ## Known Issues
 - credentials.json 明文儲存密鑰，依賴 .gitignore 保護，缺少加密層
 - Snyk MCP 仍在實驗階段（`--experimental`），API 可能不相容變更
 - 遠端 MCP（Stitch、Cloudflare）掃描時偶發 AbortError 超時
 - Trunk MCP 不在 Gateway 統一管理範疇，認證狀態無法透過 gateway__auth_status 監控
+- swarm-mcp 目前以 `.disabled` 保留設定，需重新命名為 `.json` 並 rescan 後才會進入 Gateway registry
 
 ## Module Lessons
 - L01: ESLint MCP 掃描 TypeScript 需要目標專案自備 `eslint.config.*` + TypeScript parser
@@ -103,6 +126,7 @@ staleness: 0
 - L06: devDependencies 的間接依賴漏洞（如 picomatch ReDoS、path-to-regexp ReDoS）不影響生產執行期，可安全透過 `npm audit fix` 自動排除，可跟蹤 `npm test` 確認零迴歸
 - L07: 記憶卡夾系統停用時，記憶卡需手動更新；恢復後應優先重啟並同步過期索引
 - L08: Trunk MCP 使用 HTTP 傳輸，Gemini IDE `mcp_config.json` 需用 `serverURL` 欄位（非 `httpUrl`）；`httpUrl` 是 `.gemini/settings.json` 格式，兩者欄位名稱不同
+- L09: 停用 MCP 時不要讓記憶卡繼續追蹤不存在的 `.json` 路徑；應改追蹤實際保留的 `.disabled` 檔，避免 ghost file 阻塞提交前檢查
 
 ## Relations
 - gateway-core

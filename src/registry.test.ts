@@ -148,6 +148,15 @@ describe('generateCategorySummary', () => {
     const summaries = generateCategorySummary(registry, categories);
     expect(summaries.find((s) => s.category === '空分類')).toBeUndefined();
   });
+
+  it('分類摘要使用實際 tools 數量避免 stale tool_count', () => {
+    const staleRegistry = createTestRegistry();
+    staleRegistry.servers.supabase.tool_count = 2;
+    const summaries = generateCategorySummary(staleRegistry, { '資料庫管理': ['supabase'] });
+    const dbCat = summaries.find((s) => s.category === '資料庫管理');
+    expect(dbCat).toBeDefined();
+    expect(dbCat!.toolCount).toBe(3);
+  });
 });
 
 describe('formatCategorySummaryText', () => {

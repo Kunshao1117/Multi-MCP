@@ -1,0 +1,9 @@
+{
+  "command": "node",
+  "args": [
+    "D:/Ai_M-MPS/swarm-mcp/dist/index.js"
+  ],
+  "env": {
+    "SWARM_CONFIG_PATH": "D:/Ai_M-MPS/swarm-mcp/swarm.config.json"
+  }
+}

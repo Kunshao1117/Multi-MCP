@@ -35,6 +35,44 @@ function createTestRegistry(): ToolRegistry {
   };
 }
 
+function createRegistryWithCartridgeTools(): ToolRegistry {
+  const toolNames = [
+    'memory_list',
+    'memory_read',
+    'memory_status',
+    'memory_commit',
+    'memory_deps',
+    'memory_audit',
+    'workspace_brief',
+    'commit_preflight',
+  ];
+  const tools = Object.fromEntries(toolNames.map((name) => [
+    `cartridge-system__${name}`,
+    {
+      original_name: name,
+      server_name: 'cartridge-system',
+      description: `cartridge-system ${name} tool`,
+      inputSchema: {
+        type: 'object',
+        properties: name === 'memory_deps'
+          ? { moduleName: { type: 'string' }, projectRoot: { type: 'string' } }
+          : { projectRoot: { type: 'string' } },
+      },
+    },
+  ]));
+  return {
+    version: '1.0.0',
+    generated_at: '2026-01-01T00:00:00+08:00',
+    servers: {
+      'cartridge-system': {
+        tool_count: 7,
+        tools,
+      },
+    },
+    all_tools: Object.fromEntries(toolNames.map((name) => [`cartridge-system__${name}`, 'cartridge-system'])),
+  } as ToolRegistry;
+}
+
 /** 建立最小設定 */
 function createTestConfig(): GatewayConfig {
   return {
@@ -106,6 +144,20 @@ describe('route — 管理工具', () => {
     expect(result.content[0].text).toContain('list_tables');
   });
 
+  it('搜尋 call downstream MCP tool 會找到 gateway__call_tool', async () => {
+    const result = await router.route('gateway__search_tools', { query: 'call downstream MCP tool' }) as { content: Array<{ text: string }> };
+    expect(result.content[0].text).toContain('gateway__call_tool');
+    expect(result.content[0].text).toContain('呼叫下游 MCP 工具');
+  });
+
+  it('搜尋呼叫 cartridge-system memory_audit 會顯示 call_tool 與下游工具', async () => {
+    const cartridgeRouter = new ToolRouter(createRegistryWithCartridgeTools(), pool, createTestConfig());
+    const result = await cartridgeRouter.route('gateway__search_tools', { query: '呼叫 cartridge-system memory_audit' }) as { content: Array<{ text: string }> };
+    expect(result.content[0].text).toContain('gateway__call_tool');
+    expect(result.content[0].text).toContain('cartridge-system__memory_audit');
+    expect(result.content[0].text).toContain('真實執行下游 MCP');
+  });
+
   it('搜尋工具缺少 query 拋錯', async () => {
     await expect(router.route('gateway__search_tools', {})).rejects.toThrow('query');
   });
@@ -121,8 +173,18 @@ describe('route — 管理工具', () => {
     expect(result.content[0].text).toContain('2 個工具');
   });
 
+  it('列出 cartridge-system 工具時使用實際 8 個工具而非 stale tool_count', async () => {
+    const cartridgeRouter = new ToolRouter(createRegistryWithCartridgeTools(), pool, createTestConfig());
+    const result = await cartridgeRouter.route('gateway__list_server_tools', { server_name: 'cartridge-system' }) as { content: Array<{ text: string }> };
+    expect(result.content[0].text).toContain('8 個工具');
+    expect(result.content[0].text).toContain('cartridge-system__memory_audit');
+    expect(result.content[0].text).toContain('cartridge-system__workspace_brief');
+    expect(result.content[0].text).toContain('cartridge-system__commit_preflight');
+    expect(result.content[0].text).toContain('moduleName');
+  });
+
   it('不存在的伺服器拋錯', async () => {
-    await expect(router.route('gateway__list_server_tools', { server_name: 'xxx' })).rejects.toThrow('找不到伺服器');
+    await expect(router.route('gateway__list_server_tools', { server_name: 'xxx' })).rejects.toThrow('server 未註冊');
   });
 
   it('認證狀態查詢', async () => {
@@ -155,7 +217,7 @@ describe('route — 管理工具', () => {
   });
 
   it('未知管理工具拋錯', async () => {
-    await expect(router.route('gateway__nonexistent', {})).rejects.toThrow('未知的管理工具');
+    await expect(router.route('gateway__nonexistent', {})).rejects.toThrow('管理工具不存在');
   });
 });
 
@@ -181,7 +243,11 @@ describe('route — 下游 MCP 呼叫', () => {
   });
 
   it('未知工具拋錯', async () => {
-    await expect(router.route('supabase__nonexistent', {})).rejects.toThrow('未知的工具');
+    await expect(router.route('supabase__nonexistent', {})).rejects.toThrow('工具不存在');
+  });
+
+  it('未知下游 server 拋出 server 未註冊', async () => {
+    await expect(router.route('missing__tool', {})).rejects.toThrow('server 未註冊');
   });
 
   it('認證錯誤降級為操作指引', async () => {
@@ -428,4 +494,3 @@ describe('call_tool — projectRoot 智慧填充', () => {
     );
   });
 });
-
