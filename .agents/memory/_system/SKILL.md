@@ -10,19 +10,10 @@ metadata:
   memory_awareness: full
   tool_scope:
     - 'filesystem:read'
-last_updated: '2026-05-15T17:01:12+08:00'
-status: stale
-staleness: 20
+last_updated: '2026-05-15T20:46:26+08:00'
+status: stable
+staleness: 0
 ---
-<!-- CARTRIDGE_SYSTEM_WARNING_START -->
-
-> [!CAUTION]
-> 🟠 **系統強制攔截**：此記憶已過期失真！
-> 追蹤檔案異動：`CHANGELOG.md`、`.gitignore`（2026-05-15T20:36:18+08:00）
-> AI 嚴禁基於此記憶施工，必須優先閱讀最新原始碼並更新此記憶卡。
-> staleness: 20 | threshold: 🟠 顯著過期
-
-<!-- CARTRIDGE_SYSTEM_WARNING_END -->
 
 # Multi-MCP Gateway — System Memory
 
@@ -66,6 +57,9 @@ staleness: 20
 - `credentials.json` — 多帳號認證儲存（明文，已被 .gitignore 排除）
 - `mcps/` — 分類目錄式 MCP 設定（JSON 檔）
 - `registry.json` — 掃描產出的工具集成表
+- `dist/` — TypeScript 編譯產物；被 `.gitignore` 排除但 Codex/Gemini MCP runtime 以 `node d:/Multi-MCP/dist/index.js` 啟動，修改 `src/` 後必須先 build 並重啟 MCP 連線
+- `.agents/memory/` — 唯一提交到 Git 的 Antigravity agents 目錄；`.agents` 其他框架、技能、工作流檔案為本機 ignored 狀態
+- `.cartridge/` — Cartridge System 本機索引產物；被 `.gitignore` 排除，不提交
 - `C:\Users\homeb\.gemini\antigravity\mcp_config.json` — Gemini IDE 全域 MCP 設定（含 Trunk HTTP 端點）
 
 ## Key Scripts
@@ -73,6 +67,7 @@ staleness: 20
 - `npm run dev:scan` — 開發模式掃描工具
 - `npm run console` — CLI 管理主控台
 - `npm test` — 單元測試 (vitest)
+- `npx tsc` — 直接編譯到 `dist/`；當 Windows session 缺少 `ComSpec` 時，`npm run build` 可能因 npm spawn shell 失敗而無法啟動 script
 
 ## Tracked Files
 - README.md
@@ -109,6 +104,9 @@ staleness: 20
 - D07: Context7 MCP 用於即時查詢框架官方文件，零外部依賴、無需 API Key
 - D08: Trunk MCP 採 HTTP 傳輸（路徑 A），直接寫入 Gemini IDE 全域設定，繞過 Gateway；Gateway 目前僅支援 stdio，HTTP 傳輸需未來擴充
 - D09: `mcps/**/*.disabled` 檔案作為停用 MCP 的保留設定；`config-loader` 只載入 `.json`，所以 `mcps/輔助工具/swarm-mcp.disabled` 不會註冊到 Gateway
+- D10: `.gitignore` 採「忽略 `.agents/*`、只放行 `.agents/memory/`」策略；rules、skills、workflows、scripts、VERSION 屬於本機框架檔，不進倉庫
+- D11: `.cartridge/` 是本機記憶索引快取，不進倉庫；跨機器 clone 後需重新掃描或由 cartridge-system 重建索引
+- D12: Gateway MCP runtime 指向 `dist/index.js`，因此只改 `src/` 不會影響已連線 MCP；完成原始碼變更後必須編譯 `dist/` 並重啟 MCP 連線，否則 Codex tool discovery 可能仍讀到舊工具 metadata
 
 ## Known Issues
 - credentials.json 明文儲存密鑰，依賴 .gitignore 保護，缺少加密層
@@ -116,6 +114,8 @@ staleness: 20
 - 遠端 MCP（Stitch、Cloudflare）掃描時偶發 AbortError 超時
 - Trunk MCP 不在 Gateway 統一管理範疇，認證狀態無法透過 gateway__auth_status 監控
 - swarm-mcp 目前以 `.disabled` 保留設定，需重新命名為 `.json` 並 rescan 後才會進入 Gateway registry
+- 若 Windows 環境變數 `ComSpec` 為空，`npm run build` 可能在 npm script shell spawn 階段失敗；可改用 `npx tsc` 或補回 `ComSpec=C:\Windows\System32\cmd.exe`
+- Codex 當前 session 的 MCP stdio transport 被手動終止後不一定自動重連；需要重啟 Codex session 或重新載入 MCP 連線，才能讓 tool discovery 使用最新 `dist/`
 
 ## Module Lessons
 - L01: ESLint MCP 掃描 TypeScript 需要目標專案自備 `eslint.config.*` + TypeScript parser
@@ -127,6 +127,7 @@ staleness: 20
 - L07: 記憶卡夾系統停用時，記憶卡需手動更新；恢復後應優先重啟並同步過期索引
 - L08: Trunk MCP 使用 HTTP 傳輸，Gemini IDE `mcp_config.json` 需用 `serverURL` 欄位（非 `httpUrl`）；`httpUrl` 是 `.gemini/settings.json` 格式，兩者欄位名稱不同
 - L09: 停用 MCP 時不要讓記憶卡繼續追蹤不存在的 `.json` 路徑；應改追蹤實際保留的 `.disabled` 檔，避免 ghost file 阻塞提交前檢查
+- L10: 修改 Gateway 工具描述後，必須同時驗證 `src/` 測試與實際 `dist/` runtime；`tool_search` 顯示舊描述通常代表 MCP 連線仍在使用舊編譯品或舊 metadata 快取
 
 ## Relations
 - gateway-core
