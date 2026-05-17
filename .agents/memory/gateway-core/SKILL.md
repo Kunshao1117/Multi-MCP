@@ -12,7 +12,7 @@ metadata:
     - 'filesystem:read'
     - 'filesystem:write'
     - 'mcp:cartridge-system'
-last_updated: '2026-05-15T20:59:43+08:00'
+last_updated: '2026-05-17T17:23:03+08:00'
 status: stable
 staleness: 0
 ---
@@ -48,7 +48,7 @@ staleness: 0
 - D06: 測試策略採行為驅動——透過 vi.mock 模擬檔案系統和 MCP SDK，零原始碼修改
 - D07: call_tool 轉發前根據集成表 inputSchema 自動強轉參數型別（string→number、string→boolean），容錯不同 AI 模型/IDE 的型別推斷差異
 - D08: 新增 gateway__set_workspace / gateway__get_workspace 工具，讓 AI 明確宣告目標專案目錄；MCP SDK callTool 不支援 env 注入，workspace 路徑以 ToolRouter 內部狀態儲存，不自動注入下游工具環境變數
-- D09: Gateway 啟動時在 process.chdir() 之前偵測 INIT_CWD / VSCODE_CWD / WORKSPACE_ROOT 環境變數；CLI --workspace= 參數優先於環境變數；偵測結果透過三層建構子縷淯層層傳遞至 ToolRouter
+- D09: Gateway 啟動時在 process.chdir() 之前偵測 INIT_CWD / VSCODE_CWD / WORKSPACE_ROOT 環境變數；CLI --workspace= 參數優先於環境變數；偵測結果透過建構子逐層傳遞至 ToolRouter
 - D10: gateway__call_tool 的 workspace 改為必填參數，AI 必須在每次呼叫時宣告目標專案目錄；workspace 對本次呼叫暫時生效，finallyblock 確保全局狀態不被污染
 - D11: call_tool 轉發前以 `.agents` 目錄存在性驗證 projectRoot——AI 填錯則自動修正為 effectiveWorkspace，未填則自動注入；使用 fs.existsSync 同步檢查，開銷極小
 - D12: Gateway 管理工具 metadata 集中於 `src/gateway-tools.ts`，`GatewayServer` 的 tools/list 與 `ToolRouter` 搜尋提示共用同一份描述，避免 call 入口描述與搜尋結果不同步
@@ -56,6 +56,7 @@ staleness: 0
 - D14: `gateway__list_server_tools` 回傳下游工具 inputSchema 並用實際 tools map 計算數量，避免 registry `tool_count` 快取過期造成分類摘要或工具數量錯誤
 - D15: `gateway__call_tool` 錯誤訊息需區分 server 未註冊、工具不存在、Gateway 管理工具誤用與下游 schema/呼叫失敗，並提醒 AI 先查 inputSchema 不猜參數
 - D16: `dist/index.js` 啟動 Gateway 時會執行 runtime freshness guard；若偵測到非測試 `src/**/*.ts` 比 `dist/**/*.js` 新，直接拒絕啟動並提示先 `npx tsc` 後重啟 MCP 連線
+- D17: 下游工具參數錯誤提示只根據 registry inputSchema 產生；Gateway 可提示未知參數、缺少 required 與高相似度參數名稱，但不自動改寫 arguments 或重試
 
 ## Known Issues
 - credentials.json 明文儲存密鑰，雖被 .gitignore 排除但缺少加密層
@@ -73,3 +74,4 @@ staleness: 0
 - L09: Gateway 工具提示是 AI 行為控制面的一部分；搜尋工具若只回傳下游結果但不露出 `gateway__call_tool`，AI 可能誤判只能瀏覽不能真實呼叫
 - L10: 下游 MCP 工具參數必須以 registry inputSchema 為準；例如 cartridge-system 的 `memory_deps` 使用 `moduleName`，不是模型猜測的 `module`
 - L11: `dist/` 被 `.gitignore` 排除但仍是 Codex/Gemini runtime，不能只靠記憶或文件要求 AI build；啟動期 guard 才能防止舊工具 metadata 靜默上線
+- L12: 參數名稱友善提示必須採保守相似度規則；找不到高信心匹配時只列 schema 接受的 arguments，避免把 AI 導向錯誤參數

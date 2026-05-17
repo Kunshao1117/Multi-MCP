@@ -10,7 +10,7 @@ metadata:
   memory_awareness: full
   tool_scope:
     - 'filesystem:read'
-last_updated: '2026-05-15T20:59:50+08:00'
+last_updated: '2026-05-17T17:26:34+08:00'
 status: stable
 staleness: 0
 ---
@@ -113,6 +113,7 @@ staleness: 0
 - D11: `.cartridge/` 是本機記憶索引快取，不進倉庫；跨機器 clone 後需重新掃描或由 cartridge-system 重建索引
 - D12: Gateway MCP runtime 指向 `dist/index.js`，因此只改 `src/` 不會影響已連線 MCP；完成原始碼變更後必須編譯 `dist/` 並重啟 MCP 連線，否則 Codex tool discovery 可能仍讀到舊工具 metadata
 - D13: `dist/index.js` server mode 會在啟動前檢查非測試 `src/**/*.ts` 是否比 `dist/**/*.js` 新；若 stale 則拒絕啟動，防止其他 AI 或人類忘記 build 後連到舊 Gateway
+- D14: `verify:runtime` 需覆蓋 Gateway 實際 MCP 呼叫的關鍵 AI 行為提示，包含工具發現、cartridge-system 工具數量與錯參數診斷
 
 ## Known Issues
 - credentials.json 明文儲存密鑰，依賴 .gitignore 保護，缺少加密層
@@ -134,6 +135,7 @@ staleness: 0
 - L08: Trunk MCP 使用 HTTP 傳輸，Gemini IDE `mcp_config.json` 需用 `serverURL` 欄位（非 `httpUrl`）；`httpUrl` 是 `.gemini/settings.json` 格式，兩者欄位名稱不同
 - L09: 停用 MCP 時不要讓記憶卡繼續追蹤不存在的 `.json` 路徑；應改追蹤實際保留的 `.disabled` 檔，避免 ghost file 阻塞提交前檢查
 - L10: 修改 Gateway 工具描述後，必須同時驗證 `src/` 測試與實際 `dist/` runtime；`tool_search` 顯示舊描述通常代表 MCP 連線仍在使用舊編譯品或舊 metadata 快取
+- L11: 已連線的 Codex/Gemini MCP process 不會因 `npm run build` 自動熱更新；新 runtime 行為可由 `verify:runtime` 驗證，但目前 IDE 連線仍需重啟後才會看到新 Gateway 訊息
 
 ## Relations
 - gateway-core

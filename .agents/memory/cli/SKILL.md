@@ -12,7 +12,7 @@ metadata:
     - 'filesystem:read'
     - 'filesystem:write'
     - 'mcp:cartridge-system'
-last_updated: '2026-05-15T17:03:07+08:00'
+last_updated: '2026-05-17T17:23:03+08:00'
 status: stable
 staleness: 0
 ---
@@ -20,7 +20,6 @@ staleness: 0
 # CLI Console — Module Memory
 
 ## Tracked Files
-
 - src/cli.ts
 - src/cli/shared.ts
 - src/cli/source-detector.ts
@@ -38,7 +37,6 @@ staleness: 0
 - console.ps1
 
 ## Key Decisions
-
 - D01: CLI 採互動式選單設計，支援安裝/移除/認證/分類/掃描/同步六大功能
 - D02: 安裝 MCP 時三層自動辨識：已知提示 → 試啟動偵測 → 手動輸入
 - D03: 同步認證功能可從 gateway.env 反向匯入到 credentials.json
@@ -60,23 +58,20 @@ staleness: 0
 - D19: console.ps1 加入 Node.js / node_modules 前置檢查，確保外部使用者零門檻啟動
 
 ## Known Issues
-
 - （已解決）cli.ts 原 888 行超過閾值──已完成拆分重構
 - （已解決）主控台新增與更新權限時，空白字串造成無聲音中斷操作（已加入 trim 防錯邏輯與明確錯誤提示）
-- (已解决) 安裝流程輸入 mcpServers JSON 時，殘餘 JSON 行污染後續 prompt 導致檔名錯誤（已在 install-flow.ts 加入預處理快速路徑）
+- （已解決）安裝流程輸入 mcpServers JSON 時，殘餘 JSON 行污染後續 prompt 導致檔名錯誤（已在 install-flow.ts 加入預處理快速路徑）
 - 健康檢查逐一串列測試（非並行），MCP 數量多時較慢
 - 推薦清單 mcp-catalog.json 需手動維護，無自動更新機制
 
 ## Module Lessons
-
 - L01: 拆分互動式 CLI 時，readline 實例不可分散建立，必須集中持有避免 stdin 搶佔
 - L02: 子模組間如需交叉呼叫（如安裝後觸發掃描），應以回呼注入而非直接 import 對方模組
 - L03: config-loader.ts 的 resolveEnvVars 為私有函式，新模組需自行實作環境變數解析
 - L04: Node.js 內建 fetch（18+）足以呼叫 npm 公開 API，無需額外依賴
 - L05: 主控台互動輸入時，若使用者輸入空白（按 Enter），`ask` 會回傳空字串並使狀態防護中斷。應使用 `.trim()` 清理輸入，並在判斷條件失敗時明確印出 `❌ 操作取消` 訊息，避免使用者誤以為保存成功或操作失效。
-- L06: 互動式 CLI 的 readline `ask()` 會逐行消化 stdin；到多行內容（如貼入 JSON）時，残餘行會汚染後續的 prompt 回答。正確做法：在進入流程前先預處理輸入，正常格式引導快速跳出路徑，焦點進入原有流程。
+- L06: 互動式 CLI 的 readline `ask()` 會逐行消化 stdin；遇到多行內容（如貼入 JSON）時，殘餘行會污染後續的 prompt 回答。正確做法：在進入流程前先預處理輸入，正常格式引導快速跳出路徑，焦點進入原有流程。
 
 ## Relations
-
-- \_system
+- _system
 - gateway-core

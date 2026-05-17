@@ -7,6 +7,13 @@ function firstText(result) {
   return result?.content?.find((item) => item.type === 'text')?.text ?? '';
 }
 
+function allText(result) {
+  return result?.content
+    ?.filter((item) => item.type === 'text')
+    .map((item) => item.text)
+    .join('\n') ?? '';
+}
+
 function assertContains(text, expected, context) {
   if (!text.includes(expected)) {
     throw new Error(`${context}: expected output to contain "${expected}"`);
@@ -56,6 +63,19 @@ try {
   const cartridgeListText = firstText(cartridgeList);
   assertContains(cartridgeListText, 'cartridge-system 共有 8 個工具', 'cartridge-system tool count');
   assertContains(cartridgeListText, 'cartridge-system__commit_preflight', 'cartridge-system tool list');
+
+  const badMemoryDepsCall = await client.callTool({
+    name: 'gateway__call_tool',
+    arguments: {
+      name: 'cartridge-system__memory_deps',
+      arguments: { module: '_system', projectRoot },
+      workspace: projectRoot,
+    },
+  });
+  const badMemoryDepsText = allText(badMemoryDepsCall);
+  assertContains(badMemoryDepsText, 'Gateway 參數診斷', 'cartridge-system memory_deps argument diagnostics');
+  assertContains(badMemoryDepsText, '收到未知參數: module', 'cartridge-system memory_deps argument diagnostics');
+  assertContains(badMemoryDepsText, '疑似應改用: module -> moduleName', 'cartridge-system memory_deps argument diagnostics');
 
   console.log('Gateway runtime verification passed.');
 } finally {

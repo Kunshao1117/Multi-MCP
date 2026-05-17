@@ -266,6 +266,87 @@ describe('route — 下游 MCP 呼叫', () => {
 
     await expect(router.route('supabase__list_tables', {})).rejects.toThrow('ECONNREFUSED');
   });
+
+  it('參數名稱疑似錯誤時提示相近 schema 參數', async () => {
+    const registry = createRegistryWithCartridgeTools();
+    router = new ToolRouter(registry, pool, createTestConfig());
+    const mockClient = { callTool: vi.fn().mockRejectedValue(new Error('Required')) };
+    (pool.getClient as ReturnType<typeof vi.fn>).mockResolvedValue(mockClient);
+
+    await expect(router.route('cartridge-system__memory_deps', { module: '_system' }))
+      .rejects.toThrow(/收到未知參數: module[\s\S]*疑似應改用: module -> moduleName[\s\S]*此工具接受的 arguments: moduleName, projectRoot/);
+  });
+
+  it('參數名稱不相近時不亂猜建議', async () => {
+    const registry = createRegistryWithCartridgeTools();
+    router = new ToolRouter(registry, pool, createTestConfig());
+    const mockClient = { callTool: vi.fn().mockRejectedValue(new Error('Validation failed')) };
+    (pool.getClient as ReturnType<typeof vi.fn>).mockResolvedValue(mockClient);
+
+    try {
+      await router.route('cartridge-system__memory_status', { abc: 'x' });
+      throw new Error('Expected route to fail');
+    } catch (err) {
+      const message = (err as Error).message;
+      expect(message).toMatch(/收到未知參數: abc[\s\S]*此工具接受的 arguments: projectRoot/);
+      expect(message).not.toContain('疑似應改用');
+    }
+  });
+
+  it('缺少 required 參數時提示必要參數', async () => {
+    const registry = createTestRegistry();
+    registry.servers.supabase.tools['supabase__execute_sql'].inputSchema = {
+      type: 'object',
+      properties: { query: { type: 'string' } },
+      required: ['query'],
+    };
+    router = new ToolRouter(registry, pool, createTestConfig());
+    const mockClient = { callTool: vi.fn().mockRejectedValue(new Error('Required')) };
+    (pool.getClient as ReturnType<typeof vi.fn>).mockResolvedValue(mockClient);
+
+    await expect(router.route('supabase__execute_sql', {}))
+      .rejects.toThrow(/缺少必要參數: query[\s\S]*此工具接受的 arguments: query/);
+  });
+
+  it('schema 沒有 properties 時不產生假參數建議', async () => {
+    const registry = createTestRegistry();
+    registry.servers.supabase.tools['supabase__list_tables'].inputSchema = { type: 'object' };
+    router = new ToolRouter(registry, pool, createTestConfig());
+    const mockClient = { callTool: vi.fn().mockRejectedValue(new Error('Validation failed')) };
+    (pool.getClient as ReturnType<typeof vi.fn>).mockResolvedValue(mockClient);
+
+    try {
+      await router.route('supabase__list_tables', { module: '_system' });
+      throw new Error('Expected route to fail');
+    } catch (err) {
+      const message = (err as Error).message;
+      expect(message).toContain('Gateway 無法從 inputSchema 判斷可用參數');
+      expect(message).not.toContain('疑似應改用');
+    }
+  });
+
+  it('下游以 error content 回傳 validation error 時附加參數診斷', async () => {
+    const registry = createRegistryWithCartridgeTools();
+    router = new ToolRouter(registry, pool, createTestConfig());
+    const mockClient = {
+      callTool: vi.fn().mockResolvedValue({
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            status: 'error',
+            findings: [{ code: 'validation_error', message: 'Validation Error: moduleName is required' }],
+          }),
+        }],
+      }),
+    };
+    (pool.getClient as ReturnType<typeof vi.fn>).mockResolvedValue(mockClient);
+
+    const result = await router.route('cartridge-system__memory_deps', { module: '_system' }) as { content: Array<{ text: string }> };
+    const text = result.content.map((item) => item.text).join('\n');
+    expect(text).toContain('Gateway 參數診斷');
+    expect(text).toContain('收到未知參數: module');
+    expect(text).toContain('疑似應改用: module -> moduleName');
+  });
 });
 
 // ═══════════════════════════════════

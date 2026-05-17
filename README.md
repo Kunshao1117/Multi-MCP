@@ -369,6 +369,8 @@ Gateway 啟動後會暴露 12 個管理工具，供 AI 助理直接呼叫：
 
 `cartridge-system__workspace_brief` 與 `cartridge-system__commit_preflight` 也採相同流程。所有 `arguments` 必須符合下游工具的真實 `inputSchema`；例如 `cartridge-system__memory_deps` 使用 `moduleName`，不是 `module`。若 Gateway 找不到呼叫入口、server 未註冊、工具不存在或 schema 不明，AI 應先回報卡點並等待授權，不要自行改用替代驗證方式。
 
+若下游工具因參數驗證失敗，Gateway 會根據該工具的 `inputSchema` 產生保守診斷，例如列出未知參數、缺少的 required 參數，以及高相似度的參數名稱建議（如 `module` 可能應改為 `moduleName`）。這只是輔助提示，Gateway 不會自動改寫 arguments 或重試；AI 必須確認 schema 後重新透過 `gateway__call_tool` 呼叫。
+
 ### 認證管理
 
 | 工具 | 說明 |

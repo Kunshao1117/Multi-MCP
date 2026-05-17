@@ -73,9 +73,13 @@ export class ToolRouter {
     const coercedArgs = toolEntry
       ? this.coerceArgs(args, toolEntry.inputSchema)
       : args;
+    const argumentDiagnostics = toolEntry
+      ? this.formatArgumentDiagnostics(coercedArgs, toolEntry.inputSchema)
+      : [];
 
     try {
-      return await client.callTool({ name: originalToolName, arguments: coercedArgs });
+      const result = await client.callTool({ name: originalToolName, arguments: coercedArgs });
+      return this.appendArgumentDiagnosticsToErrorResult(result, argumentDiagnostics);
     } catch (err) {
       const errorMsg = (err as Error).message;
 
@@ -107,7 +111,8 @@ export class ToolRouter {
       throw new Error([
         `下游工具呼叫失敗: ${namespacedName}`,
         `錯誤: ${errorMsg}`,
-        '若這是 schema 驗證失敗，請先用 gateway__search_tools 或 gateway__list_server_tools 查詢下游工具 inputSchema，arguments 必須使用真實參數名稱。',
+        ...argumentDiagnostics,
+        '請先用 gateway__search_tools 或 gateway__list_server_tools 查詢下游工具 inputSchema，arguments 必須使用真實參數名稱。',
       ].join('\n'));
     }
   }
@@ -396,6 +401,109 @@ export class ToolRouter {
       logger.info('參數型別強轉', { before: args, after: result });
     }
     return result;
+  }
+
+  private appendArgumentDiagnosticsToErrorResult(result: unknown, diagnostics: string[]): unknown {
+    if (diagnostics.length === 0 || !this.isValidationErrorResult(result)) return result;
+    const content = (result as { content?: unknown }).content;
+    if (!Array.isArray(content)) return result;
+
+    return {
+      ...(result as Record<string, unknown>),
+      content: [
+        ...content,
+        {
+          type: 'text' as const,
+          text: [
+            'Gateway 參數診斷:',
+            ...diagnostics.map((line) => line.replace(/^參數診斷:$/, '').trim()).filter(Boolean),
+            '請先用 gateway__search_tools 或 gateway__list_server_tools 查詢下游工具 inputSchema，arguments 必須使用真實參數名稱。',
+          ].join('\n'),
+        },
+      ],
+    };
+  }
+
+  private isValidationErrorResult(result: unknown): boolean {
+    if (!result || typeof result !== 'object') return false;
+    const maybeResult = result as { isError?: unknown; content?: unknown };
+    if (maybeResult.isError === true) return true;
+    if (!Array.isArray(maybeResult.content)) return false;
+
+    return maybeResult.content.some((item) => {
+      if (!item || typeof item !== 'object') return false;
+      const text = (item as { text?: unknown }).text;
+      if (typeof text !== 'string') return false;
+      const lowerText = text.toLowerCase();
+      if (lowerText.includes('validation error') || lowerText.includes('schema validation')) return true;
+
+      try {
+        const parsed = JSON.parse(text) as { status?: unknown; findings?: unknown };
+        return parsed.status === 'error'
+          && Array.isArray(parsed.findings)
+          && parsed.findings.some((finding) => {
+            if (!finding || typeof finding !== 'object') return false;
+            const code = (finding as { code?: unknown }).code;
+            return typeof code === 'string' && code.toLowerCase().includes('validation');
+          });
+      } catch {
+        return false;
+      }
+    });
+  }
+
+  /** 根據 inputSchema 產生保守的參數錯誤診斷，不自動修正或重試 */
+  private formatArgumentDiagnostics(
+    args: Record<string, unknown>,
+    schema: Record<string, unknown>,
+  ): string[] {
+    const properties = schema['properties'] as Record<string, unknown> | undefined;
+    if (!properties) {
+      return ['參數診斷: Gateway 無法從 inputSchema 判斷可用參數，請先查詢下游工具 schema。'];
+    }
+
+    const acceptedKeys = Object.keys(properties);
+    const receivedKeys = Object.keys(args);
+    const unknownKeys = receivedKeys.filter((key) => !acceptedKeys.includes(key));
+    const required = Array.isArray(schema['required'])
+      ? (schema['required'] as unknown[]).filter((key): key is string => typeof key === 'string')
+      : [];
+    const missingRequired = required.filter((key) => !(key in args));
+
+    const diagnostics = ['參數診斷:'];
+    if (unknownKeys.length > 0) {
+      diagnostics.push(`- 收到未知參數: ${unknownKeys.join(', ')}`);
+      const suggestions = unknownKeys
+        .map((key) => {
+          const suggestion = this.findSimilarArgumentName(key, acceptedKeys);
+          return suggestion ? `${key} -> ${suggestion}` : undefined;
+        })
+        .filter((item): item is string => Boolean(item));
+      if (suggestions.length > 0) {
+        diagnostics.push(`- 疑似應改用: ${suggestions.join(', ')}`);
+      }
+    }
+    if (missingRequired.length > 0) {
+      diagnostics.push(`- 缺少必要參數: ${missingRequired.join(', ')}`);
+    }
+    diagnostics.push(`- 此工具接受的 arguments: ${acceptedKeys.length > 0 ? acceptedKeys.join(', ') : '(無)'}`);
+
+    return diagnostics;
+  }
+
+  private findSimilarArgumentName(receivedKey: string, acceptedKeys: string[]): string | undefined {
+    const normalizedReceived = this.normalizeArgumentName(receivedKey);
+    if (!normalizedReceived) return undefined;
+
+    return acceptedKeys.find((acceptedKey) => {
+      const normalizedAccepted = this.normalizeArgumentName(acceptedKey);
+      return normalizedAccepted.startsWith(normalizedReceived)
+        || normalizedReceived.startsWith(normalizedAccepted);
+    });
+  }
+
+  private normalizeArgumentName(key: string): string {
+    return key.toLowerCase().replace(/[\s_-]/g, '');
   }
 
   /** 判斷錯誤訊息是否與認證相關 */
