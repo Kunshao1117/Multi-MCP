@@ -11,5 +11,6 @@ Multi-MCP Manager provides a VS Code Activity Bar dashboard for managing the loc
 - Safe removal flow that shows config and credential impact before deleting an MCP.
 - Credentials are masked in the UI while keeping compatibility with `gateway.env` and `credentials.json`.
 - English by default, with Traditional Chinese UI when VS Code runs with `zh-tw`.
+- Gateway network-node icon for the extension details page and Activity Bar.
 
 Runtime compatibility intentionally keeps the existing Gateway files in the local user-data folder.

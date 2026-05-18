@@ -10,7 +10,7 @@ metadata:
   memory_awareness: full
   tool_scope:
     - 'filesystem:read'
-last_updated: '2026-05-19T06:30:33+08:00'
+last_updated: '2026-05-19T06:47:32+08:00'
 status: stable
 staleness: 0
 ---
@@ -77,7 +77,7 @@ staleness: 0
 - `npm run dev:scan` — 開發模式掃描工具
 - `npm run console` — 顯示互動式 CLI 已停用與 VS Code extension 遷移提示
 - `npm run build:extension` — 編譯 Gateway 與 VS Code extension
-- `npm run package:extension` — 打包 `extensions/vscode-multi-mcp-manager/vscode-multi-mcp-manager-0.1.0.vsix`
+- `npm run package:extension` — 打包 `extensions/vscode-multi-mcp-manager/vscode-multi-mcp-manager-0.1.1.vsix`
 - `npm run preflight:extension` — 編譯並執行 extension smoke test
 - `npm test` — 單元測試 (vitest)
 - `npx tsc` — 直接編譯到 `dist/`；`.npmrc` 已固定 npm script shell，`npm run build` 與 `npx tsc` 皆可作為建置入口

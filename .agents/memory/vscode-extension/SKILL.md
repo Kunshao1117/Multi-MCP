@@ -12,7 +12,7 @@ metadata:
     - 'filesystem:read'
     - 'filesystem:write'
     - 'mcp:cartridge-system'
-last_updated: '2026-05-19T06:35:45+08:00'
+last_updated: '2026-05-19T06:49:49+08:00'
 status: stable
 staleness: 0
 scopePath: extensions/vscode-multi-mcp-manager
@@ -33,13 +33,14 @@ dependencies:
 - extensions/vscode-multi-mcp-manager/README.md
 - extensions/vscode-multi-mcp-manager/LICENSE
 - extensions/vscode-multi-mcp-manager/l10n/bundle.l10n.zh-tw.json
+- extensions/vscode-multi-mcp-manager/resources/icon.png
 - extensions/vscode-multi-mcp-manager/resources/multi-mcp.svg
 - extensions/vscode-multi-mcp-manager/src/extension.ts
 - extensions/vscode-multi-mcp-manager/src/localization.ts
 - extensions/vscode-multi-mcp-manager/src/webview.ts
 - extensions/vscode-multi-mcp-manager/test/runTest.ts
 - extensions/vscode-multi-mcp-manager/test/suite/index.ts
-- extensions/vscode-multi-mcp-manager/vscode-multi-mcp-manager-0.1.0.vsix
+- extensions/vscode-multi-mcp-manager/vscode-multi-mcp-manager-0.1.1.vsix
 
 ## Key Decisions
 - D01: Extension 使用 VS Code Activity Bar view container `multiMcp`，並以單一 `multiMcp.dashboard` Webview View 作為主要管理儀表板。
@@ -49,7 +50,7 @@ dependencies:
 - D05: 密鑰輸入使用 VS Code password input；UI 只顯示管理 API 回傳的遮罩摘要，不將完整 token 寫入 output channel。
 - D06: Extension 不再露出推薦清單 / Catalog UI；安裝入口只保留來源安裝與 `mcpServers` JSON 匯入。
 - D07: Extension 測試採 `@vscode/test-electron` 最小啟動 smoke，驗證 extension activate、核心 commands 註冊與 dashboard state 可取得。
-- D08: VSIX artifact `vscode-multi-mcp-manager-0.1.0.vsix` 保留在 repo 供本機安裝驗證；`out/` 與 `.vscode-test/` 為可重建產物，應由 `.gitignore` 排除。
+- D08: VSIX artifact `vscode-multi-mcp-manager-0.1.1.vsix` 保留在 repo 供本機安裝驗證；`out/` 與 `.vscode-test/` 為可重建產物，應由 `.gitignore` 排除。
 - D09: 本卡依賴 `management-api`，因 extension 不直接操作 Gateway user-data 檔案格式，所有業務規則都應透過 headless API。
 - D10: Manifest 文字使用 `package.nls*.json`，runtime 文字使用 `vscode.l10n.t()` 與 `l10n/bundle.l10n.zh-tw.json`；Webview 目前以繁中管理頁文案為主。
 - D11: 安裝流程採相容性優先，支援 npm/remote source 與貼上 `mcpServers` JSON，並可選擇覆蓋、設定 Token、安裝後 rescan。
@@ -60,9 +61,10 @@ dependencies:
 - D16: `multiMcp.openMarketplace` 使用 QuickPick 提供 PulseMCP、官方 MCP Registry、Glama、Smithery 外部目錄，不恢復 extension 內建推薦清單或 Catalog UI。
 - D17: Webview 以側邊欄寬度自適應為優先，`<=520px` 採緊湊單欄，`521px-860px` 採單欄卡片，寬版才允許分類內多欄卡片 grid。
 - D18: VSIX package script 使用 `vsce package --no-dependencies`，因 extension 已 bundle 管理 API；CI 不應掃入 extension `node_modules` 或 root 相依檔。
+- D19: Extension `icon` 使用 `resources/icon.png` 供 details page / Marketplace 顯示，Activity Bar 使用同源但單色的 `resources/multi-mcp.svg`。
 
 ## Known Issues
-- v0.1.0 extension 尚未提供 SecretStorage migration；credential 仍寫入 `gateway.env` / `credentials.json` 以保持 Gateway runtime 相容。
+- v0.1.1 extension 尚未提供 SecretStorage migration；credential 仍寫入 `gateway.env` / `credentials.json` 以保持 Gateway runtime 相容。
 - `checkVersions` output 只列 npm latest 查詢結果，尚未支援一鍵更新或詳細 diff。
 - VSIX publisher 目前為 `kunshao`；正式 Marketplace 發布前需確認 publisher、repository metadata 與授權資訊。
 - Webview 文字目前以繁中為主，英文使用者仍可透過 manifest 與 Quick Pick 看到部分英文 fallback；若正式上 Marketplace 需補完整 Webview runtime i18n。

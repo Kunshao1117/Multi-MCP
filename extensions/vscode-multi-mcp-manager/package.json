@@ -2,8 +2,9 @@
   "name": "vscode-multi-mcp-manager",
   "displayName": "%ext.displayName%",
   "description": "%ext.description%",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "kunshao",
+  "icon": "resources/icon.png",
   "license": "MIT",
   "type": "module",
   "engines": {

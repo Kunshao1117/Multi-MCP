@@ -4,7 +4,8 @@
 
 ### 新增功能
 
-- **Multi-MCP Manager VS Code 延伸模組**：新增 `extensions/vscode-multi-mcp-manager`，提供 Activity Bar 儀表板管理 MCP 安裝、移除、啟用、停用、認證、工具掃描與 npm 版本檢查，並可打包 `vscode-multi-mcp-manager-0.1.0.vsix`。
+- **Multi-MCP Manager VS Code 延伸模組**：新增 `extensions/vscode-multi-mcp-manager`，提供 Activity Bar 儀表板管理 MCP 安裝、移除、啟用、停用、認證、工具掃描與 npm 版本檢查，並可打包 `vscode-multi-mcp-manager-0.1.1.vsix`。
+- **VS Code extension 圖示**：新增 Marketplace / extension 詳細頁使用的 Gateway 網路節點 PNG 圖示，並同步 Activity Bar 單色圖示。
 - **Webview 管理儀表板**：Multi-MCP Manager 從多段 Tree View 側邊欄改為單一 Webview 儀表板，用狀態摘要、頁首工具列、分類區段與內縮 MCP 列提供更清楚的管理介面。
 - **儀表板體驗優化**：安裝流程可選既有分類或新增分類，已安裝 MCP 可展開查看工具摘要，窄側邊欄會維持分類、MCP、工具三層層級，並新增 PulseMCP、官方 Registry、Glama、Smithery 外部探索入口。
 - **完整安裝與安全移除流程**：安裝支援 npm/remote 來源與 `mcpServers` JSON，並可選擇覆蓋、設定 Token 與安裝後掃描；移除 MCP 前會顯示設定檔與認證影響並要求確認。
