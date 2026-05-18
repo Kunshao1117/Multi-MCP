@@ -12,7 +12,7 @@ metadata:
     - 'filesystem:read'
     - 'filesystem:write'
     - 'mcp:cartridge-system'
-last_updated: '2026-05-19T06:30:03+08:00'
+last_updated: '2026-05-19T06:35:45+08:00'
 status: stable
 staleness: 0
 scopePath: extensions/vscode-multi-mcp-manager
@@ -59,6 +59,7 @@ dependencies:
 - D15: 已安裝 MCP 採分類區段、內縮 MCP 列與工具摘要三層資訊架構；分類 header 顯示 MCP 數、啟用數與工具數，分類與單一 MCP 都可收合。
 - D16: `multiMcp.openMarketplace` 使用 QuickPick 提供 PulseMCP、官方 MCP Registry、Glama、Smithery 外部目錄，不恢復 extension 內建推薦清單或 Catalog UI。
 - D17: Webview 以側邊欄寬度自適應為優先，`<=520px` 採緊湊單欄，`521px-860px` 採單欄卡片，寬版才允許分類內多欄卡片 grid。
+- D18: VSIX package script 使用 `vsce package --no-dependencies`，因 extension 已 bundle 管理 API；CI 不應掃入 extension `node_modules` 或 root 相依檔。
 
 ## Known Issues
 - v0.1.0 extension 尚未提供 SecretStorage migration；credential 仍寫入 `gateway.env` / `credentials.json` 以保持 Gateway runtime 相容。

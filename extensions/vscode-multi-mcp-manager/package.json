@@ -199,7 +199,7 @@
     "compile": "npm run clean && npm run check && npm run bundle && npm run compile-tests",
     "watch": "tsc -watch -p ./ --noEmit",
     "test": "npm run compile && node ./out/test/runTest.js",
-    "package": "npm run compile && vsce package --allow-missing-repository"
+    "package": "npm run compile && vsce package --allow-missing-repository --no-dependencies"
   },
   "devDependencies": {
     "@types/node": "^22.13.0",
