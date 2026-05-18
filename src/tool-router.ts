@@ -17,18 +17,11 @@ const logger = createLogger('tool-router');
 const AUTH_KEYWORDS = ['unauthorized', 'forbidden', '401', '403', 'auth', 'token', 'credential'];
 
 export class ToolRouter {
-  /** 目前設定的目標專案工作目錄（由 gateway__set_workspace 設定） */
-  private workspacePath: string | null = null;
-
   constructor(
     private registry: ToolRegistry,
     private readonly processPool: ProcessPool,
     private readonly config: GatewayConfig,
-    initWorkspace: string | null = null,
-  ) {
-    // 若啟動時已偵測到工作目錄，直接初始化
-    this.workspacePath = initWorkspace;
-  }
+  ) {}
 
   /** 熱替換集成表（掃描後呼叫） */
   updateRegistry(newRegistry: ToolRegistry): void {
@@ -245,8 +238,11 @@ export class ToolRouter {
       case 'call_tool': {
         const toolName = args.name as string;
         const toolArgs = (args.arguments ?? {}) as Record<string, unknown>;
-        const callWorkspace = args.workspace as string | undefined;
+        const callWorkspace = typeof args.workspace === 'string' ? args.workspace.trim() : '';
         if (!toolName) throw new Error('缺少 name 參數');
+        if (!callWorkspace) {
+          throw new Error('缺少 workspace 參數。gateway__call_tool 必須在每次呼叫時明確傳入當前專案絕對路徑，避免跨專案共用 Gateway 時誤用固定工作目錄。');
+        }
         const parsed = this.parseToolName(toolName);
         if (parsed.serverName === GATEWAY_TOOL_PREFIX) {
           throw new Error('Gateway 呼叫入口使用錯誤: gateway__call_tool 只能呼叫下游 MCP 工具，不能包裝呼叫 Gateway 管理工具。');
@@ -257,13 +253,10 @@ export class ToolRouter {
         if (!this.registry.all_tools[toolName]) {
           throw new Error(`工具不存在: ${toolName}。請先用 gateway__search_tools 或 gateway__list_server_tools 查詢正確工具名稱與 inputSchema。`);
         }
-        // 本次呼叫暫時套用 workspace，結束後自動還原（不污染全局狀態）
-        const previousWorkspace = this.workspacePath;
-        if (callWorkspace) this.workspacePath = callWorkspace;
 
-        // ── projectRoot 智慧填充 ──
-        const effectiveWorkspace = this.workspacePath;
-        if (effectiveWorkspace && typeof toolArgs.projectRoot === 'string') {
+        // workspace 是每次呼叫的唯一可信專案來源，不在 Gateway 內保存全域狀態。
+        const effectiveWorkspace = callWorkspace;
+        if (typeof toolArgs.projectRoot === 'string') {
           const agentsAtArg = path.join(toolArgs.projectRoot, '.agents');
           const agentsAtWs = path.join(effectiveWorkspace, '.agents');
           if (!fs.existsSync(agentsAtArg) && fs.existsSync(agentsAtWs)) {
@@ -273,16 +266,12 @@ export class ToolRouter {
             });
             toolArgs.projectRoot = effectiveWorkspace;
           }
-        } else if (effectiveWorkspace && !('projectRoot' in toolArgs)) {
+        } else if (!('projectRoot' in toolArgs)) {
           toolArgs.projectRoot = effectiveWorkspace;
           logger.info('projectRoot 自動注入', { value: effectiveWorkspace });
         }
 
-        try {
-          return await this.route(toolName, toolArgs);
-        } finally {
-          this.workspacePath = previousWorkspace;
-        }
+        return this.route(toolName, toolArgs);
       }
 
       case 'list_server_tools': {
@@ -321,24 +310,6 @@ export class ToolRouter {
         const total = Object.keys(newRegistry.all_tools).length;
         return { content: [{ type: 'text' as const, text: `✅ 重新掃描完成！共 ${total} 個工具已更新` }] };
       }
-
-      case 'set_workspace': {
-        const wsPath = args.path as string;
-        if (!wsPath) throw new Error('缺少 path 參數');
-        this.workspacePath = wsPath;
-        logger.info('工作目錄已設定', { path: wsPath });
-        return { content: [{ type: 'text' as const, text: `✅ 工作目錄已設定為: ${wsPath}` }] };
-      }
-
-      case 'get_workspace':
-        return {
-          content: [{
-            type: 'text' as const,
-            text: this.workspacePath
-              ? `📁 目前工作目錄: ${this.workspacePath}`
-              : '⚠️ 尚未設定工作目錄。請使用 gateway__set_workspace 設定，例如: { "path": "d:\\\\BartenderMap" }',
-          }],
-        };
 
       default:
         throw new Error(`Gateway 本身缺少呼叫入口或管理工具不存在: gateway__${toolName}`);

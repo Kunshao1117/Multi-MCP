@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ToolRouter } from './tool-router.js';
 import type { ToolRegistry, GatewayConfig } from './types.js';
 import type { ProcessPool } from './process-pool.js';
+import { GATEWAY_TOOL_DEFINITIONS } from './gateway-tools.js';
 
 /** 建立測試用集成表 */
 function createTestRegistry(): ToolRegistry {
@@ -148,6 +149,16 @@ describe('route — 管理工具', () => {
     const result = await router.route('gateway__search_tools', { query: 'call downstream MCP tool' }) as { content: Array<{ text: string }> };
     expect(result.content[0].text).toContain('gateway__call_tool');
     expect(result.content[0].text).toContain('呼叫下游 MCP 工具');
+    expect(result.content[0].text).toContain('每次呼叫都要明確傳入');
+  });
+
+  it('Gateway 管理工具不再暴露固定 workspace 工具', () => {
+    const names = GATEWAY_TOOL_DEFINITIONS.map((tool) => tool.name);
+    expect(names).toHaveLength(10);
+    expect(names).toContain('gateway__call_tool');
+    expect(names).toContain('gateway__search_tools');
+    expect(names).not.toContain('gateway__set_workspace');
+    expect(names).not.toContain('gateway__get_workspace');
   });
 
   it('搜尋呼叫 cartridge-system memory_audit 會顯示 call_tool 與下游工具', async () => {
@@ -218,6 +229,11 @@ describe('route — 管理工具', () => {
 
   it('未知管理工具拋錯', async () => {
     await expect(router.route('gateway__nonexistent', {})).rejects.toThrow('管理工具不存在');
+  });
+
+  it('固定 workspace 管理工具已移除', async () => {
+    await expect(router.route('gateway__set_workspace', { path: 'd:\\Project' })).rejects.toThrow('管理工具不存在');
+    await expect(router.route('gateway__get_workspace', {})).rejects.toThrow('管理工具不存在');
   });
 });
 
@@ -423,41 +439,6 @@ describe('coerceArgs — 參數型別容錯強轉', () => {
 });
 
 // ═══════════════════════════════════
-// 工作目錄管理
-// ═══════════════════════════════════
-
-describe('route — 工作目錄管理', () => {
-  let pool: ReturnType<typeof createMockPool>;
-  let router: ToolRouter;
-
-  beforeEach(() => {
-    pool = createMockPool();
-    router = new ToolRouter(createTestRegistry(), pool, createTestConfig());
-  });
-
-  it('未設定時 get_workspace 回傳提示訊息', async () => {
-    const result = await router.route('gateway__get_workspace', {}) as { content: Array<{ text: string }> };
-    expect(result.content[0].text).toContain('尚未設定');
-  });
-
-  it('設定工作目錄成功', async () => {
-    const result = await router.route('gateway__set_workspace', { path: 'd:\\BartenderMap' }) as { content: Array<{ text: string }> };
-    expect(result.content[0].text).toContain('工作目錄已設定');
-    expect(result.content[0].text).toContain('d:\\BartenderMap');
-  });
-
-  it('設定後 get_workspace 回傳正確路徑', async () => {
-    await router.route('gateway__set_workspace', { path: 'd:\\BartenderMap' });
-    const result = await router.route('gateway__get_workspace', {}) as { content: Array<{ text: string }> };
-    expect(result.content[0].text).toContain('d:\\BartenderMap');
-  });
-
-  it('缺少 path 參數時拋錯', async () => {
-    await expect(router.route('gateway__set_workspace', {})).rejects.toThrow('path');
-  });
-});
-
-// ═══════════════════════════════════
 // call_tool — projectRoot 智慧填充
 // ═══════════════════════════════════
 
@@ -561,16 +542,37 @@ describe('call_tool — projectRoot 智慧填充', () => {
     );
   });
 
-  it('workspace 為 null（未設定）→ 不做任何填充', async () => {
-    // 未設定 workspace，也不提供 callWorkspace
+  it('缺少 workspace 時拒絕呼叫，避免使用固定全域路徑', async () => {
+    await expect(router.route('gateway__call_tool', {
+      name: 'cartridge-system__memory_list',
+      arguments: {},
+    })).rejects.toThrow('缺少 workspace 參數');
+
+    expect(mockClient.callTool).not.toHaveBeenCalled();
+  });
+
+  it('不同呼叫的 workspace 只影響本次 projectRoot 注入', async () => {
     await router.route('gateway__call_tool', {
       name: 'cartridge-system__memory_list',
       arguments: {},
+      workspace: 'd:\\ProjectA',
+    });
+    await router.route('gateway__call_tool', {
+      name: 'cartridge-system__memory_list',
+      arguments: {},
+      workspace: 'd:\\ProjectB',
     });
 
-    expect(mockClient.callTool).toHaveBeenCalledWith(
+    expect(mockClient.callTool).toHaveBeenNthCalledWith(
+      1,
       expect.objectContaining({
-        arguments: expect.not.objectContaining({ projectRoot: expect.anything() }),
+        arguments: expect.objectContaining({ projectRoot: 'd:\\ProjectA' }),
+      }),
+    );
+    expect(mockClient.callTool).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        arguments: expect.objectContaining({ projectRoot: 'd:\\ProjectB' }),
       }),
     );
   });

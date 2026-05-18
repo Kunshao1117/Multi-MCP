@@ -86,7 +86,7 @@ CLI 主控台內建 npm 搜尋整合，可直接搜尋、安裝、設定新的 M
 │              Multi-MCP Gateway                      │
 │  ┌──────────────────────────────────────────────┐   │
 │  │  GatewayServer                               │   │
-│  │  ├─ 12 個管理工具 (gateway__*)               │   │
+│  │  ├─ 10 個管理工具 (gateway__*)               │   │
 │  │  ├─ ToolRouter (命名空間路由 + 模糊搜尋)     │   │
 │  │  └─ ProcessPool (按需啟動 + 閒置回收)        │   │
 │  └──────────────────────────────────────────────┘   │
@@ -115,9 +115,9 @@ CLI 主控台內建 npm 搜尋整合，可直接搜尋、安裝、設定新的 M
 
 | 模組 | 檔案 | 職責 |
 |------|------|------|
-| **進入點** | `src/index.ts` | 啟動分流（伺服器模式 / 掃描模式）、Windows 環境修正、工作目錄偵測 |
+| **進入點** | `src/index.ts` | 啟動分流（伺服器模式 / 掃描模式）、Windows 環境修正、使用者資料資料夾初始化 |
 | **路徑管理** | `src/paths.ts` | 分離 npm package 位置與使用者資料位置，初始化本機設定資料夾 |
-| **閘道器主體** | `src/gateway-server.ts` | MCP Server 實例化、12 個管理工具定義、請求處理器註冊 |
+| **閘道器主體** | `src/gateway-server.ts` | MCP Server 實例化、10 個管理工具定義、請求處理器註冊 |
 | **工具路由器** | `src/tool-router.ts` | 命名空間解析、管理工具分發、下游工具代理呼叫、模糊搜尋 |
 | **程序池** | `src/process-pool.ts` | 子程序生命週期管理（啟動/閒置回收/崩潰重啟/健康檢查） |
 | **設定載入器** | `src/config-loader.ts` | 設定檔讀取、`gateway.env` 注入、`mcps/` 目錄掃描、環境變數模板解析 |
@@ -396,7 +396,7 @@ mcps/
 
 ## 閘道器管理工具
 
-Gateway 啟動後會暴露 12 個管理工具，供 AI 助理直接呼叫：
+Gateway 啟動後會暴露 10 個管理工具，供 AI 助理直接呼叫：
 
 ### 工具發現與呼叫
 
@@ -427,6 +427,8 @@ Gateway 啟動後會暴露 12 個管理工具，供 AI 助理直接呼叫：
 
 `cartridge-system__workspace_brief` 與 `cartridge-system__commit_preflight` 也採相同流程。所有 `arguments` 必須符合下游工具的真實 `inputSchema`；例如 `cartridge-system__memory_deps` 使用 `moduleName`，不是 `module`。若 Gateway 找不到呼叫入口、server 未註冊、工具不存在或 schema 不明，AI 應先回報卡點並等待授權，不要自行改用替代驗證方式。
 
+`workspace` 是每次呼叫的唯一可信專案來源。Gateway 不保存固定全域工作目錄，也不再使用啟動時的 `--workspace` 或 IDE 環境變數作為預設值；AI 應在確認當前專案後，於每次 `gateway__call_tool` 呼叫中明確帶入該專案的絕對路徑，避免多專案共用同一 Gateway 時路徑互相污染。
+
 若下游工具因參數驗證失敗，Gateway 會根據該工具的 `inputSchema` 產生保守診斷，例如列出未知參數、缺少的 required 參數，以及高相似度的參數名稱建議（如 `module` 可能應改為 `moduleName`）。這只是輔助提示，Gateway 不會自動改寫 arguments 或重試；AI 必須確認 schema 後重新透過 `gateway__call_tool` 呼叫。
 
 ### 認證管理
@@ -444,15 +446,6 @@ Gateway 啟動後會暴露 12 個管理工具，供 AI 助理直接呼叫：
 | `gateway__server_status` | 查看所有伺服器的運行狀態（JSON） |
 | `gateway__reload_server` | 重新載入指定伺服器（更新密鑰後使用） |
 | `gateway__rescan` | 熱掃描所有 MCP 並更新集成表（無需重啟） |
-
-### 工作目錄管理
-
-| 工具 | 說明 |
-|------|------|
-| `gateway__set_workspace` | 設定 AI 的目標專案目錄 |
-| `gateway__get_workspace` | 查詢目前設定的工作目錄 |
-
----
 
 ## CLI 管理主控台
 

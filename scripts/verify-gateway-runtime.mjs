@@ -28,7 +28,7 @@ const transport = new StdioClientTransport({
 });
 
 const client = new Client(
-  { name: 'gateway-runtime-verifier', version: '1.0.0' },
+  { name: 'gateway-runtime-verifier', version: '1.1.0' },
   { capabilities: {} },
 );
 
@@ -36,11 +36,21 @@ try {
   await client.connect(transport);
 
   const tools = await client.listTools();
+  const toolNames = tools.tools.map((tool) => tool.name);
+  if (toolNames.length !== 10) {
+    throw new Error(`tools/list expected 10 Gateway tools, got ${toolNames.length}: ${toolNames.join(', ')}`);
+  }
+  for (const removed of ['gateway__set_workspace', 'gateway__get_workspace']) {
+    if (toolNames.includes(removed)) {
+      throw new Error(`tools/list still exposed removed workspace tool: ${removed}`);
+    }
+  }
   const callTool = tools.tools.find((tool) => tool.name === 'gateway__call_tool');
   if (!callTool) {
     throw new Error('tools/list did not expose gateway__call_tool');
   }
   assertContains(callTool.description ?? '', '呼叫下游 MCP 工具的 Gateway 真實執行入口', 'gateway__call_tool description');
+  assertContains(callTool.description ?? '', '每次呼叫都要明確傳入', 'gateway__call_tool workspace policy');
   assertContains(callTool.description ?? '', 'call downstream MCP tool', 'gateway__call_tool discovery terms');
 
   const englishSearch = await client.callTool({

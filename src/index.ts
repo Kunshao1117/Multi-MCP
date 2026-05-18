@@ -21,11 +21,6 @@ import { setLogLevel, createLogger } from './logger.js';
 import { assertDistFresh } from './runtime-guard.js';
 import { ensureUserDataDir, getGatewayPaths, getPackageRoot } from './paths.js';
 
-// 在 process.chdir 覆蓋前，先擷取 IDE 注入的原始專案目錄
-const IDE_WORKSPACE_ENVS = ['INIT_CWD', 'VSCODE_CWD', 'WORKSPACE_ROOT'] as const;
-const detectedWorkspace: string | null =
-  IDE_WORKSPACE_ENVS.map((k) => process.env[k] ?? '').find(Boolean) ?? null;
-
 // 自動定位專案根目錄（腳本在 dist/ 或 src/ 下，往上一層即為專案根）
 const __filename = fileURLToPath(import.meta.url);
 const PROJECT_ROOT = getPackageRoot();
@@ -43,9 +38,7 @@ async function main(): Promise<void> {
 
   const isScanMode = args.includes('--scan');
   const configPath = args.find((a) => a.startsWith('--config='))?.split('=')[1];
-  const cliWorkspace = args.find((a) => a.startsWith('--workspace='))?.split('=').slice(1).join('=') ?? null;
-  // CLI 參數優先於環境變數偵測
-  const initWorkspace = cliWorkspace ?? detectedWorkspace;
+  const disabledWorkspaceArg = args.find((a) => a.startsWith('--workspace='));
   const paths = ensureUserDataDir(getGatewayPaths());
   process.chdir(paths.dataDir);
 
@@ -53,6 +46,9 @@ async function main(): Promise<void> {
     // 載入設定（含 gateway.env 認證檔案）
     const config = loadConfig(configPath ?? paths.configPath);
     setLogLevel(config.gateway.log_level);
+    if (disabledWorkspaceArg) {
+      logger.warn('--workspace 啟動參數已停用；請在每次 gateway__call_tool 呼叫中傳入 workspace，避免跨專案共用 Gateway 時誤用固定工作目錄。');
+    }
 
     if (isScanMode) {
       // === 掃描模式 ===
@@ -66,10 +62,7 @@ async function main(): Promise<void> {
       assertDistFresh({ entryFile: __filename, projectRoot: PROJECT_ROOT });
       logger.info('=== Multi-MCP Gateway: 伺服器模式 ===');
       const registry = loadRegistry(paths.registryPath);
-      const server = new GatewayServer(config, registry, initWorkspace);
-      if (initWorkspace) {
-        logger.info('工作目錄已自動偵測', { workspace: initWorkspace, source: cliWorkspace ? 'cli-arg' : 'env-var' });
-      }
+      const server = new GatewayServer(config, registry);
       await server.start();
     }
   } catch (err) {

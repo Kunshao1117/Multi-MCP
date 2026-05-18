@@ -76,6 +76,7 @@ export const GATEWAY_TOOL_DEFINITIONS: GatewayToolDefinition[] = [
       '呼叫下游 MCP 工具的 Gateway 真實執行入口。search_tools 與 list_server_tools 只負責探索；要實際執行 cartridge-system、GitHub、Sentry 等下游工具，必須呼叫本工具。',
       'name 必須是完整命名空間工具名，例如 cartridge-system__memory_audit、cartridge-system__workspace_brief、cartridge-system__commit_preflight。',
       'arguments 必須符合下游工具 inputSchema。參數不明時，先用 gateway__search_tools 或 gateway__list_server_tools 查 schema；不要自行猜參數名。例如 cartridge-system__memory_deps 使用 moduleName，不是 module。',
+      'workspace 必須是本次操作的當前專案絕對路徑，且每次呼叫都要明確傳入；Gateway 不保存固定全域 workspace，避免多專案共用時路徑互相污染。',
       '當使用者明確要求 Gateway MCP 真實呼叫時，不要用 stdio E2E、終端 handler、單元測試或其他替代方案取代本工具；替代方案只能標示為補充驗證。',
       'English discovery terms: call tool, call downstream MCP tool, Gateway call, invoke downstream tool.',
     ].join('\n'),
@@ -111,20 +112,6 @@ export const GATEWAY_TOOL_DEFINITIONS: GatewayToolDefinition[] = [
     description: '重新掃描所有 MCP 並熱更新集成表（安裝、移除或下游工具數量變更後使用，無需重啟 Gateway）',
     inputSchema: { type: 'object', properties: {} },
   },
-  {
-    name: `${GATEWAY_TOOL_PREFIX}${NAMESPACE_SEPARATOR}set_workspace`,
-    description: '設定 AI 工作的目標專案目錄路徑（讓 ESLint、Playwright、cartridge-system 等工具在正確的專案下執行）',
-    inputSchema: {
-      type: 'object',
-      properties: { path: { type: 'string', description: '目標專案的絕對路徑，例如 d:\\BartenderMap' } },
-      required: ['path'],
-    },
-  },
-  {
-    name: `${GATEWAY_TOOL_PREFIX}${NAMESPACE_SEPARATOR}get_workspace`,
-    description: '查詢目前 Gateway 設定的工作目錄路徑',
-    inputSchema: { type: 'object', properties: {} },
-  },
 ];
 
 export function buildGatewayTools(
@@ -142,6 +129,7 @@ export function buildGatewayTools(
   searchTool.description = [
     '探索可用 Gateway 與下游 MCP 工具。此工具只負責搜尋與讀取 schema，不會執行下游工具。',
     '找到工具後，若要真實呼叫下游 MCP，請使用 gateway__call_tool。gateway__call_tool 是呼叫下游 MCP 工具的唯一 Gateway 入口。',
+    'gateway__call_tool 的 workspace 是唯一可信專案來源，必須在每次呼叫時明確傳入目前專案絕對路徑。',
     '',
     '可用下游分類摘要：',
     summaryText,

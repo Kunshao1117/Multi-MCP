@@ -1,5 +1,18 @@
 # 更新紀錄
 
+## v1.1.0 — 2026-05-18
+
+### 問題修復
+
+- **跨專案 workspace 安全修正**：移除 Gateway 全域固定工作目錄狀態，`gateway__call_tool.workspace` 成為每次下游工具呼叫的唯一可信專案來源，避免多專案共用同一 Gateway process 時路徑互相污染。
+- **管理工具面收斂**：移除 `gateway__set_workspace` 與 `gateway__get_workspace`，管理工具數量由 12 個回到 10 個。
+- **啟動參數降級**：`--workspace=` 啟動參數不再套用為預設專案目錄，只輸出停用提醒；Gateway 不再自動讀取 IDE workspace 環境變數作為下游工具路徑。
+
+### 測試
+
+- 補強 `gateway__call_tool` 缺少 `workspace` 時的拒絕測試，並驗證不同呼叫的 workspace 只影響本次 `projectRoot` 注入。
+- Runtime 驗證確認 tools/list 只暴露 10 個 Gateway 管理工具，且不再包含固定 workspace 工具。
+
 ## v1.0.0 — 2026-05-18
 
 ### 新增功能

@@ -12,7 +12,7 @@ metadata:
     - 'filesystem:read'
     - 'filesystem:write'
     - 'mcp:cartridge-system'
-last_updated: '2026-05-18T15:35:42+08:00'
+last_updated: '2026-05-18T17:48:03+08:00'
 status: stable
 staleness: 0
 ---
@@ -49,9 +49,9 @@ staleness: 0
 - D05: Registry 搜尋引擎使用加權評分（名稱×3、命名空間×2、描述×1）
 - D06: 測試策略採行為驅動——透過 vi.mock 模擬檔案系統和 MCP SDK，零原始碼修改
 - D07: call_tool 轉發前根據集成表 inputSchema 自動強轉參數型別（string→number、string→boolean），容錯不同 AI 模型/IDE 的型別推斷差異
-- D08: 新增 gateway__set_workspace / gateway__get_workspace 工具，讓 AI 明確宣告目標專案目錄；MCP SDK callTool 不支援 env 注入，workspace 路徑以 ToolRouter 內部狀態儲存，不自動注入下游工具環境變數
-- D09: Gateway 啟動時在 process.chdir() 之前偵測 INIT_CWD / VSCODE_CWD / WORKSPACE_ROOT 環境變數；CLI --workspace= 參數優先於環境變數；偵測結果透過建構子逐層傳遞至 ToolRouter
-- D10: gateway__call_tool 的 workspace 改為必填參數，AI 必須在每次呼叫時宣告目標專案目錄；workspace 對本次呼叫暫時生效，finallyblock 確保全局狀態不被污染
+- D08: 1.1.0 起移除 gateway__set_workspace / gateway__get_workspace，Gateway 不再保存固定全域 workspace，避免多專案共用同一 process 時路徑互相污染
+- D09: Gateway 不再自動套用 INIT_CWD / VSCODE_CWD / WORKSPACE_ROOT 或 --workspace 作為預設專案目錄；--workspace 僅輸出停用提醒，不影響下游工具呼叫
+- D10: gateway__call_tool 的 workspace 為必填參數，也是每次呼叫的唯一可信專案來源；projectRoot 注入與修正只依本次 workspace 執行，不保存跨呼叫狀態
 - D11: call_tool 轉發前以 `.agents` 目錄存在性驗證 projectRoot——AI 填錯則自動修正為 effectiveWorkspace，未填則自動注入；使用 fs.existsSync 同步檢查，開銷極小
 - D12: Gateway 管理工具 metadata 集中於 `src/gateway-tools.ts`，`GatewayServer` 的 tools/list 與 `ToolRouter` 搜尋提示共用同一份描述，避免 call 入口描述與搜尋結果不同步
 - D13: `gateway__search_tools` 現在會把 Gateway 管理工具納入搜尋；查詢 call tool、呼叫工具、Gateway 呼叫或下游工具名稱時，優先露出 `gateway__call_tool`
@@ -72,11 +72,11 @@ staleness: 0
 - L01: vi.fn 泛型語法 vi.fn<[], T>() 在 TypeScript 5.7+vitest 3.0 下報 TS2558，需改為無泛型呼叫
 - L02: 模擬 MCP SDK 需用 vi.hoisted 宣告 mock 函式，確保 vi.mock 工廠可引用外部變數
 - L03: 不同 AI 模型/IDE 可能將數字參數傳為字串，下游 MCP 的 Zod 驗證器會拒絕；閘道器應在轉發前根據 schema 容錯強轉
-- L04: MCP SDK Client.callTool() 僅接受 name 與 arguments，不支援 env 欄位；工作目錄注入需透過其他機制（如 process-pool spawn cwd）實現，本次採狀態儲存方案
-- L05: IDE 啟動子程序時原始 cwd 儲存於 INIT_CWD 環境變數（npm/npx 標準）；必須在 process.chdir() 覆蓋之前擷取，否則變數仍存在但已失去參考意義
-- L06: INIT_CWD 偵測到的是 IDE 自身安裝目錄而非使用者專案；環境變數對於跨專案共用的 Gateway 不可靠
+- L04: MCP SDK Client.callTool() 僅接受 name 與 arguments，不支援 env 欄位；專案工作目錄不得依賴隱式 process cwd，必須由 Gateway 工具 schema 明確傳入
+- L05: IDE / npx 注入的 INIT_CWD、VSCODE_CWD、WORKSPACE_ROOT 可能是 IDE 安裝目錄、套件快取或上一個專案；只能作為診斷線索，不可默默套用為下游工具 workspace
+- L06: 跨專案安全優先於省略參數；AI 可在對話中記住使用者確認的路徑，但每次 gateway__call_tool 仍必須明確傳入 workspace
 - L07: projectRoot 路徑驗證使用 `!('projectRoot' in toolArgs)` 而非 `!toolArgs.projectRoot`，區分「AI 刻意傳了空值」與「AI 完全沒傳」，只在後者才注入
-- L08: set_workspace case 中 `const path = args.path` 會遮蔽頂部 `import path from 'node:path'`，需重命名為 `wsPath` 避免影響同檔案其他 case 的 path 引用
+- L08: 固定 workspace 管理工具已移除；若未來新增 workspace 候選偵測，必須只回傳候選並由 AI 詢問操作者確認，不能在 Gateway process 內保存全域預設
 - L09: Gateway 工具提示是 AI 行為控制面的一部分；搜尋工具若只回傳下游結果但不露出 `gateway__call_tool`，AI 可能誤判只能瀏覽不能真實呼叫
 - L10: 下游 MCP 工具參數必須以 registry inputSchema 為準；例如 cartridge-system 的 `memory_deps` 使用 `moduleName`，不是模型猜測的 `module`
 - L11: `dist/` 被 `.gitignore` 排除但仍是 Codex/Gemini runtime，不能只靠記憶或文件要求 AI build；啟動期 guard 才能防止舊工具 metadata 靜默上線

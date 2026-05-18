@@ -1,7 +1,7 @@
 /**
  * Multi-MCP Gateway — 閘道器主體
  * 使用 MCP SDK 建立 Server，聚合所有下游工具並處理請求
- * 含 12 個管理工具（基本 5 + 認證增值 3 + 工具路由 2 + 工作目錄 2）
+ * 含 10 個管理工具（基本 5 + 認證增值 3 + 工具路由 2）
  */
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -23,14 +23,13 @@ export class GatewayServer {
   constructor(
     private readonly config: GatewayConfig,
     private readonly registry: ToolRegistry,
-    private readonly initWorkspace: string | null = null,
   ) {
     this.processPool = new ProcessPool(config);
-    this.toolRouter = new ToolRouter(registry, this.processPool, config, initWorkspace);
+    this.toolRouter = new ToolRouter(registry, this.processPool, config);
     this.gatewayTools = buildGatewayTools(registry, config.categories ?? {});
 
     this.server = new Server(
-      { name: 'multi-mcp-gateway', version: '0.2.0' },
+      { name: 'multi-mcp-gateway', version: '1.1.0' },
       { capabilities: { tools: {} } },
     );
     this.registerHandlers();

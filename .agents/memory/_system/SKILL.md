@@ -10,7 +10,7 @@ metadata:
   memory_awareness: full
   tool_scope:
     - 'filesystem:read'
-last_updated: '2026-05-18T16:25:07+08:00'
+last_updated: '2026-05-18T17:48:03+08:00'
 status: stable
 staleness: 0
 ---
@@ -124,6 +124,7 @@ staleness: 0
 - D17: `MULTI_MCP_HOME` 是唯一正式的使用者資料夾覆寫入口；測試與 runtime verify 可用它將資料位置指回 repo
 - D18: `1.0.0` 作為 npm 公開發布候選版；正式 `npm publish` 前必須完成完整健檢、tarball smoke 與 npm 套件名稱/登入狀態檢查
 - D19: 1.0.0 發布前供應鏈門檻要求 `npm audit --omit=dev --json` 與 `npm audit --json` 皆為 0 vulnerabilities；若 npm 未登入，視為 publish blocker 但不影響程式碼發布候選狀態
+- D20: `1.1.0` 作為跨專案 workspace 安全修正版；Gateway 不保存固定全域專案路徑，所有下游工具呼叫必須透過 `gateway__call_tool.workspace` 明確帶入當前專案絕對路徑
 
 ## Known Issues
 - credentials.json 明文儲存密鑰，依賴 .gitignore 保護，缺少加密層
