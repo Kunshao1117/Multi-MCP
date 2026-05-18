@@ -10,7 +10,7 @@ metadata:
   memory_awareness: full
   tool_scope:
     - 'filesystem:read'
-last_updated: '2026-05-18T21:58:10+08:00'
+last_updated: '2026-05-18T22:25:56+08:00'
 status: stable
 staleness: 0
 ---
@@ -66,6 +66,7 @@ staleness: 0
 - `dist/` — TypeScript 編譯產物；被 `.gitignore` 排除但 Codex/Gemini MCP runtime 以 `node d:/Multi-MCP/dist/index.js` 啟動，修改 `src/` 後必須先 build 並重啟 MCP 連線
 - `scripts/verify-gateway-runtime.mjs` — 以 MCP stdio 啟動 `dist/index.js`，驗證 Gateway 管理工具描述、搜尋流程與 cartridge-system 12 個工具
 - `.agents/memory/` — 唯一提交到 Git 的 Antigravity agents 目錄；`.agents` 其他框架、技能、工作流檔案為本機 ignored 狀態
+- `.gitignore` — 採繁中分區與狀態註解，說明哪些檔案可重建、哪些是本機框架檔、哪些絕不可提交；只改善可讀性，不承擔 npm 發布白名單
 - `.cartridge/` — Cartridge System 本機索引產物；被 `.gitignore` 排除，不提交
 - `C:\Users\homeb\.gemini\antigravity\mcp_config.json` — Gemini IDE 全域 MCP 設定（含 Trunk HTTP 端點）
 
@@ -133,6 +134,7 @@ staleness: 0
 - D24: 1.1.1 預設 seed 全部採 explicit package 形式 `npx -y --package <pkg> -- <bin>`；tarball smoke 已驗證直接 `npx -y <pkg>@latest` 在 Windows nested npx 情境會誤解析
 - D25: Cloudflare bindings、containers、observability 設定改以 `.disabled` 檔保留，`_system` 只追蹤實際存在的 disabled 檔，不再追蹤已刪除的 `.json` 路徑。
 - D26: `default-mcps.seed.json` 是使用者資料 marker；開發驗證若以 repo root 作為 `MULTI_MCP_HOME` 會產生此檔，因此必須被 `.gitignore` 排除且不得提交。
+- D27: `.gitignore` 使用繁中區塊與狀態註解維護可讀性；整理註解時不得改變既有 ignore 行為，npm package 邊界仍以 `package.json.files` 為準。
 
 ## Known Issues
 - credentials.json 明文儲存密鑰，依賴 .gitignore 保護，缺少加密層
@@ -162,6 +164,7 @@ staleness: 0
 - L16: 預設 MCP 不應透過 npm package 打包整個 `mcps/`，而應由初始化流程在 user-data 產生；這能避免私人路徑、金鑰佔位與 disabled 設定被公開發布
 - L17: `gitnexus@latest` 在 Windows npx smoke 中可能觸發 npm exec 錯誤；預設 seed 應使用已驗證的 explicit `--package gitnexus@1.6.5 -- gitnexus mcp` 形式，等 latest 修復後再放寬
 - L18: Gateway 若本身由 `npx --package <tgz>` 啟動，下游 `npx -y <pkg>@latest` 可能被 cmd 拆成錯誤指令；預設 seed 與 smoke 測試需使用 explicit package 形態驗證
+- L19: `.gitignore` 重排時要用 `git check-ignore -v` 驗證關鍵檔案，避免註解整理意外改變 `.agents/memory/` 放行或認證檔忽略行為
 
 ## Relations
 - gateway-core

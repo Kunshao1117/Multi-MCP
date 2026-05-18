@@ -1,36 +1,47 @@
-# Dependencies
+# 依賴與執行快取
+# 狀態：可重新安裝或重新產生，不提交
 node_modules/
 sessions/
 
-# Build output
+# 建構輸出
+# 狀態：可重新建構，npm 發布內容由 package.json 的 files 白名單控制
 dist/
 
-# Credentials (NEVER commit)
+# 認證與本機密鑰
+# 狀態：絕不可提交，僅保留在操作者本機
 gateway.env
 credentials.json
 
-# Generated files
+# Gateway 產生檔
+# 狀態：可重新掃描或重新初始化，不提交
 registry.json
 default-mcps.seed.json
 
-# IDE
+# 編輯器與本機工具
+# 狀態：本機偏好或工具狀態，不提交
 .idea/
 .vscode/
 *.swp
-cartridge_index.json
 .markdownlint.yaml
 
-#trunk
+# Trunk / Windows 工具殘留
+# 狀態：本機工具產物，不提交
 %SystemDrive%
 
-#.gitnexus
+# GitNexus / Cartridge 本機索引
+# 狀態：本機索引快取，可重建，不提交
 .gitnexus/
-
-
-.claude/
-AGENTS.md
-CLAUDE.md
+cartridge_index.json
 .cartridge/
+
+# AI 治理框架本機檔
+# 狀態：本機框架檔；只放行 .agents/memory/ 記憶卡
+.claude/
 .agents/*
 !.agents/memory/
 .codex/
+
+# 本機專案規則文件
+# 狀態：由本機框架管理，不提交到此套件倉庫
+AGENTS.md
+CLAUDE.md
