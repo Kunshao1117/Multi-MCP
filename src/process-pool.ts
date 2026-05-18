@@ -7,6 +7,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import type { GatewayConfig, McpServerConfig, ProcessState, AuthStatus, ServerHealthInfo } from './types.js';
 import { checkEnvVarsConfigured } from './auth-guides.js';
 import { createLogger } from './logger.js';
+import { createDownstreamEnv } from './subprocess-env.js';
 
 const logger = createLogger('process-pool');
 
@@ -89,11 +90,11 @@ export class ProcessPool {
       logger.info(`啟動: ${serverName}`);
 
       try {
-        // 建立傳輸層，完整繼承當前環境（確保認證資訊可用）
+        // 建立傳輸層，保留認證環境並清掉外層 npm/npx runtime 變數。
         const transport = new StdioClientTransport({
           command: serverConfig.command,
           args: serverConfig.args,
-          env: { ...process.env, ...(serverConfig.env ?? {}) } as Record<string, string>,
+          env: createDownstreamEnv(serverConfig.env ?? {}),
         });
 
         const client = new Client(

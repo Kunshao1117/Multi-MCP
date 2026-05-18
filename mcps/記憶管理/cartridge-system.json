@@ -1,8 +1,10 @@
 {
-  "command": "node",
+  "command": "npx",
   "args": [
-    "d:/cartridge_system/dist/mcp-server.js",
-    "--workspace",
-    "d:/cartridge_system"
+    "-y",
+    "--package",
+    "cartridge-system@latest",
+    "--",
+    "cartridge-system"
   ]
 }

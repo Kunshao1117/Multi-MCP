@@ -10,7 +10,7 @@ metadata:
   memory_awareness: full
   tool_scope:
     - 'filesystem:read'
-last_updated: '2026-05-18T17:48:03+08:00'
+last_updated: '2026-05-18T21:58:10+08:00'
 status: stable
 staleness: 0
 ---
@@ -35,19 +35,19 @@ staleness: 0
 | supabase | 資料庫管理 | @supabase/mcp-server-supabase | arg (--access-token) |
 | stitch | UI設計 | mcp-remote (googleapis) | header (X-Goog-Api-Key) |
 | github | 開發工具 | @modelcontextprotocol/server-github | env (GITHUB_PERSONAL_ACCESS_TOKEN) |
-| gitnexus | 開發工具 | gitnexus@latest | 無需認證 |
-| sequentialthinking | 輔助工具 | @modelcontextprotocol/server-sequential-thinking | 無需認證 |
-| cloudflare-bindings | 雲端基礎設施 | mcp-remote (bindings.mcp.cloudflare) | env (CLOUDFLARE_API_TOKEN) |
-| cloudflare-containers | 雲端基礎設施 | mcp-remote (containers.mcp.cloudflare) | env (CLOUDFLARE_API_TOKEN) |
-| cloudflare-observability | 雲端基礎設施 | mcp-remote (observability.mcp.cloudflare) | env (CLOUDFLARE_API_TOKEN) |
+| gitnexus | 開發工具 | npx --package gitnexus@1.6.5 -- gitnexus mcp | 無需認證 |
+| sequentialthinking | 輔助工具 | npx --package @modelcontextprotocol/server-sequential-thinking@latest -- mcp-server-sequential-thinking | 無需認證 |
+| cloudflare-bindings | 雲端基礎設施 | mcp-remote (bindings.mcp.cloudflare) | env (CLOUDFLARE_API_TOKEN，已停用 `.disabled`) |
+| cloudflare-containers | 雲端基礎設施 | mcp-remote (containers.mcp.cloudflare) | env (CLOUDFLARE_API_TOKEN，已停用 `.disabled`) |
+| cloudflare-observability | 雲端基礎設施 | mcp-remote (observability.mcp.cloudflare) | env (CLOUDFLARE_API_TOKEN，已停用 `.disabled`) |
 | eslint | 程式碼品質 | @eslint/mcp | 無需認證（已停用） |
 | snyk | 安全掃描 | snyk mcp (內建 CLI) | 本地 Token（snyk auth） |
-| excel | 資料處理 | @shmaxi/excel-mcp-server | 無需認證 |
+| excel | 資料處理 | npx --package @shmaxi/excel-mcp-server@latest -- excel-mcp-server stdio | 無需認證 |
 | sentry | 錯誤監控 | @sentry/mcp-server | env (SENTRY_AUTH_TOKEN) |
-| playwright | 網頁測試 | @playwright/mcp | 無需認證 |
-| a11y | 網頁測試 | accessibility-mcp | 無需認證 |
-| context7 | 文件查詢 | @upstash/context7-mcp | 無需認證 |
-| cartridge-system | 記憶管理 | cartridge-system | 無需認證（已停用） |
+| playwright | 網頁測試 | npx --package @playwright/mcp@latest -- playwright-mcp | 無需認證 |
+| a11y | 網頁測試 | npx --package accessibility-mcp@latest -- accessibility-mcp | 無需認證 |
+| context7 | 文件查詢 | npx --package @upstash/context7-mcp@latest -- context7-mcp | 無需認證 |
+| cartridge-system | 記憶管理 | npx --package cartridge-system@latest -- cartridge-system | 無需認證 |
 | swarm-mcp | 輔助工具 | 本地 swarm-mcp dist/index.js | 無需認證（`.disabled` 保留設定，不由 Gateway 載入） |
 | trunk | 程式碼品質 | https://mcp.trunk.io/mcp (HTTP) | OAuth（/mcp auth trunk） |
 
@@ -57,6 +57,7 @@ staleness: 0
 - `MULTI_MCP_HOME` — 覆寫使用者資料夾；開發驗證可指向 repo 根目錄以沿用示範設定
 - `gateway.config.json` — 閘道器設定（超時、重試、日誌等級），相對路徑以此檔案所在資料夾解析
 - `gateway.env` — 認證檔案（由 CLI 主控台自動產生）
+- `default-mcps.seed.json` — 預設 MCP 一次性初始化紀錄；存在時不再自動補回被刪除的預設 MCP，屬於 user-data 產物且已由 `.gitignore` 排除
 - `.npmrc` — 固定 npm script shell 為 `cmd.exe`，避免 Windows session 缺少 `ComSpec` 時 npm script 無法 spawn
 - `credentials.json` — 多帳號認證儲存（明文，已被 .gitignore 排除）
 - `mcps/` — 分類目錄式 MCP 設定（JSON 檔）
@@ -85,6 +86,7 @@ staleness: 0
 - package.json
 - package-lock.json
 - tsconfig.json
+- mcp-catalog.json
 - gateway.config.json
 - .gitignore
 - mcps/程式碼品質/eslint.json.disabled
@@ -99,9 +101,9 @@ staleness: 0
 - mcps/UI設計/stitch.json
 - mcps/輔助工具/swarm-mcp.disabled
 - mcps/輔助工具/sequentialthinking.json
-- mcps/雲端基礎設施/cloudflare-bindings.json
-- mcps/雲端基礎設施/cloudflare-observability.json
-- mcps/雲端基礎設施/cloudflare-containers.json
+- mcps/雲端基礎設施/cloudflare-bindings.disabled
+- mcps/雲端基礎設施/cloudflare-observability.disabled
+- mcps/雲端基礎設施/cloudflare-containers.disabled
 - mcps/記憶管理/cartridge-system.json
 
 ## Key Decisions
@@ -125,6 +127,12 @@ staleness: 0
 - D18: `1.0.0` 作為 npm 公開發布候選版；正式 `npm publish` 前必須完成完整健檢、tarball smoke 與 npm 套件名稱/登入狀態檢查
 - D19: 1.0.0 發布前供應鏈門檻要求 `npm audit --omit=dev --json` 與 `npm audit --json` 皆為 0 vulnerabilities；若 npm 未登入，視為 publish blocker 但不影響程式碼發布候選狀態
 - D20: `1.1.0` 作為跨專案 workspace 安全修正版；Gateway 不保存固定全域專案路徑，所有下游工具呼叫必須透過 `gateway__call_tool.workspace` 明確帶入當前專案絕對路徑
+- D21: `mcps/記憶管理/cartridge-system.json` 改用 npm runtime `npx -y --package cartridge-system@latest -- cartridge-system`，不再依賴本機 `d:/cartridge_system/dist/mcp-server.js` 或固定 `--workspace`
+- D22: `1.1.1` 起首次 user-data 初始化會一次性 seed 可攜、無金鑰 MCP；seed marker 存在後尊重使用者刪除，不會自動補回
+- D23: `mcps/開發工具/gitnexus.json` 改用 npm runtime `npx -y --package gitnexus@1.6.5 -- gitnexus mcp`，禁止公開設定依賴 `C:\gitnexus-src\...` 這類本機絕對路徑
+- D24: 1.1.1 預設 seed 全部採 explicit package 形式 `npx -y --package <pkg> -- <bin>`；tarball smoke 已驗證直接 `npx -y <pkg>@latest` 在 Windows nested npx 情境會誤解析
+- D25: Cloudflare bindings、containers、observability 設定改以 `.disabled` 檔保留，`_system` 只追蹤實際存在的 disabled 檔，不再追蹤已刪除的 `.json` 路徑。
+- D26: `default-mcps.seed.json` 是使用者資料 marker；開發驗證若以 repo root 作為 `MULTI_MCP_HOME` 會產生此檔，因此必須被 `.gitignore` 排除且不得提交。
 
 ## Known Issues
 - credentials.json 明文儲存密鑰，依賴 .gitignore 保護，缺少加密層
@@ -150,6 +158,10 @@ staleness: 0
 - L12: npm package 化後，公開可複製命令也是產品面；README 需同時提供 MCP client JSON、管理台 `console`、`--scan`、`MULTI_MCP_HOME` 與發布 dry-run 驗證方式
 - L13: Windows 本機 tarball smoke 應使用 `npx -y --package <tgz> -- multi-mcp-gateway ...` 驗證 bin；直接 `npx -y <tgz>` 可能 exit 0 但未穩定啟動 package bin
 - L14: MCP SDK minor 升級不一定會刷新間接依賴；發布前安全修復需在升級後跑 `npm audit fix`，確認 lockfile 實際解析到 patched transitive versions
+- L15: cartridge-system 5.2.0 起可直接作為 npm MCP runtime；在 Multi-MCP Gateway 內應避免下游設定固定 `--workspace`，由每次 `gateway__call_tool.workspace` 決定目標專案
+- L16: 預設 MCP 不應透過 npm package 打包整個 `mcps/`，而應由初始化流程在 user-data 產生；這能避免私人路徑、金鑰佔位與 disabled 設定被公開發布
+- L17: `gitnexus@latest` 在 Windows npx smoke 中可能觸發 npm exec 錯誤；預設 seed 應使用已驗證的 explicit `--package gitnexus@1.6.5 -- gitnexus mcp` 形式，等 latest 修復後再放寬
+- L18: Gateway 若本身由 `npx --package <tgz>` 啟動，下游 `npx -y <pkg>@latest` 可能被 cmd 拆成錯誤指令；預設 seed 與 smoke 測試需使用 explicit package 形態驗證
 
 ## Relations
 - gateway-core

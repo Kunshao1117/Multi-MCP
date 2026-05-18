@@ -2,6 +2,9 @@
   "command": "npx",
   "args": [
     "-y",
-    "@modelcontextprotocol/server-sequential-thinking"
+    "--package",
+    "@modelcontextprotocol/server-sequential-thinking@latest",
+    "--",
+    "mcp-server-sequential-thinking"
   ]
 }

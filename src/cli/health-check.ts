@@ -4,6 +4,7 @@
  */
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { createDownstreamEnv } from '../subprocess-env.js';
 import { pause, header, c, loadMcpsByCategory, type McpServerDef } from './shared.js';
 
 interface CheckResult {
@@ -59,7 +60,7 @@ export async function healthCheckMenu(): Promise<void> {
       transport = new StdioClientTransport({
         command: config.command,
         args: resolvedArgs,
-        env: { ...process.env, ...resolvedEnv } as Record<string, string>,
+        env: createDownstreamEnv(resolvedEnv),
       });
 
       const client = new Client(

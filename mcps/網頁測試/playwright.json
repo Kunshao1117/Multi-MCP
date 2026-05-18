@@ -2,6 +2,9 @@
   "command": "npx",
   "args": [
     "-y",
-    "@playwright/mcp@latest"
+    "--package",
+    "@playwright/mcp@latest",
+    "--",
+    "playwright-mcp"
   ]
 }

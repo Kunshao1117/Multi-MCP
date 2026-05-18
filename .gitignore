@@ -11,6 +11,7 @@ credentials.json
 
 # Generated files
 registry.json
+default-mcps.seed.json
 
 # IDE
 .idea/

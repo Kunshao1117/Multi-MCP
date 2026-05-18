@@ -12,7 +12,7 @@ metadata:
     - 'filesystem:read'
     - 'filesystem:write'
     - 'mcp:cartridge-system'
-last_updated: '2026-05-18T15:32:51+08:00'
+last_updated: '2026-05-18T21:37:29+08:00'
 status: stable
 staleness: 0
 ---
@@ -59,6 +59,9 @@ staleness: 0
 - D20: CLI 共用路徑改由 `src/paths.ts` 提供；`PROJECT_ROOT` 保留舊名稱相容，但語義已改為使用者資料根目錄
 - D21: `rescan()` 直接呼叫 `loadConfig(CONFIG_PATH)` 與 `scanAndGenerateRegistry(config, REGISTRY_PATH)`，不再 shell out 到 `npx tsx src/index.ts --scan`
 - D22: 推薦清單固定讀取 npm package 內的 `mcp-catalog.json`；使用者的 MCP 設定與 registry 則寫入本機資料夾
+- D23: `mcp-catalog.json` 只作為 console marketplace 推薦清單，不等於預設啟用清單；預設啟用由 `src/paths.ts` 的一次性 seed 控制
+- D24: 需要 Token 的 GitHub、Sentry、Stitch 可保留在 catalog 供 console 安裝與認證引導，但不得進入無金鑰預設 seed
+- D25: CLI 健康檢查與認證需求探測啟動下游 MCP 時使用 `createDownstreamEnv()`，避免 Gateway 由 npm/npx 啟動時外層 npm lifecycle 變數污染內層 npx
 
 ## Known Issues
 - （已解決）cli.ts 原 888 行超過閾值──已完成拆分重構
@@ -75,6 +78,8 @@ staleness: 0
 - L05: 主控台互動輸入時，若使用者輸入空白（按 Enter），`ask` 會回傳空字串並使狀態防護中斷。應使用 `.trim()` 清理輸入，並在判斷條件失敗時明確印出 `❌ 操作取消` 訊息，避免使用者誤以為保存成功或操作失效。
 - L06: 互動式 CLI 的 readline `ask()` 會逐行消化 stdin；遇到多行內容（如貼入 JSON）時，殘餘行會污染後續的 prompt 回答。正確做法：在進入流程前先預處理輸入，正常格式引導快速跳出路徑，焦點進入原有流程。
 - L07: CLI 隨 npm package 執行時不能依賴 repo 內的 `src/` 或目前工作目錄；掃描、認證、匯出匯入與工具瀏覽都必須走共用 user-data paths
+- L08: catalog 內的 `package` 欄位會被 install flow 當作使用者提示來源；若 npm 套件不存在或 deprecated，文件描述必須明確標示風險，避免公開安裝流程導向壞端點
+- L09: 若 CLI/健康檢查是在 tarball npx 情境中執行，下游 package 最好使用 explicit `--package <pkg> -- <bin>` 形態；單純 `npx -y <pkg>@latest` 在 Windows nested npx 下可能被誤解析
 
 ## Relations
 - _system

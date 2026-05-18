@@ -3,7 +3,7 @@
  *
  * 程式碼可安裝在 npm package 目錄，設定與金鑰必須留在使用者本機資料夾。
  */
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, isAbsolute, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -19,6 +19,7 @@ export interface GatewayPaths {
   registryPath: string;
   mcpsDir: string;
   catalogPath: string;
+  defaultMcpSeedPath: string;
 }
 
 export interface GatewayPathEnv {
@@ -65,6 +66,7 @@ export function getGatewayPaths(dataDir = getUserDataDir()): GatewayPaths {
     registryPath: resolve(resolvedDataDir, 'registry.json'),
     mcpsDir: resolve(resolvedDataDir, 'mcps'),
     catalogPath: resolve(packageRoot, 'mcp-catalog.json'),
+    defaultMcpSeedPath: resolve(resolvedDataDir, 'default-mcps.seed.json'),
   };
 }
 
@@ -81,8 +83,99 @@ export function ensureUserDataDir(paths = getGatewayPaths()): GatewayPaths {
   if (!existsSync(paths.registryPath)) {
     writeFileSync(paths.registryPath, defaultRegistry(), 'utf-8');
   }
+  seedDefaultMcps(paths);
 
   return paths;
+}
+
+interface DefaultMcpSeed {
+  category: string;
+  name: string;
+  config: {
+    command: string;
+    args: string[];
+  };
+}
+
+export const DEFAULT_MCP_SEEDS: readonly DefaultMcpSeed[] = [
+  {
+    category: '記憶管理',
+    name: 'cartridge-system',
+    config: { command: 'npx', args: ['-y', '--package', 'cartridge-system@latest', '--', 'cartridge-system'] },
+  },
+  {
+    category: '文件查詢',
+    name: 'context7',
+    config: { command: 'npx', args: ['-y', '--package', '@upstash/context7-mcp@latest', '--', 'context7-mcp'] },
+  },
+  {
+    category: '網頁測試',
+    name: 'playwright',
+    config: { command: 'npx', args: ['-y', '--package', '@playwright/mcp@latest', '--', 'playwright-mcp'] },
+  },
+  {
+    category: '網頁測試',
+    name: 'a11y',
+    config: { command: 'npx', args: ['-y', '--package', 'accessibility-mcp@latest', '--', 'accessibility-mcp'] },
+  },
+  {
+    category: '資料處理',
+    name: 'excel',
+    config: { command: 'npx', args: ['-y', '--package', '@shmaxi/excel-mcp-server@latest', '--', 'excel-mcp-server', 'stdio'] },
+  },
+  {
+    category: '輔助工具',
+    name: 'sequentialthinking',
+    config: { command: 'npx', args: ['-y', '--package', '@modelcontextprotocol/server-sequential-thinking@latest', '--', 'mcp-server-sequential-thinking'] },
+  },
+  {
+    category: '開發工具',
+    name: 'gitnexus',
+    config: { command: 'npx', args: ['-y', '--package', 'gitnexus@1.6.5', '--', 'gitnexus', 'mcp'] },
+  },
+];
+
+function seedDefaultMcps(paths: GatewayPaths): void {
+  if (existsSync(paths.defaultMcpSeedPath)) return;
+
+  const seeded: Array<{ category: string; name: string; path?: string; skipped?: string }> = [];
+
+  for (const seed of DEFAULT_MCP_SEEDS) {
+    if (mcpConfigExists(paths.mcpsDir, seed.name)) {
+      seeded.push({ category: seed.category, name: seed.name, skipped: 'existing' });
+      continue;
+    }
+
+    const categoryDir = resolve(paths.mcpsDir, seed.category);
+    const targetPath = resolve(categoryDir, `${seed.name}.json`);
+    mkdirSync(categoryDir, { recursive: true });
+    writeFileSync(targetPath, `${JSON.stringify(seed.config, null, 2)}\n`, 'utf-8');
+    seeded.push({ category: seed.category, name: seed.name, path: targetPath });
+  }
+
+  writeFileSync(paths.defaultMcpSeedPath, `${JSON.stringify({
+    version: '1.1.1',
+    generated_at: new Date().toISOString(),
+    seeded,
+  }, null, 2)}\n`, 'utf-8');
+}
+
+function mcpConfigExists(mcpsDir: string, name: string): boolean {
+  if (!existsSync(mcpsDir)) return false;
+  const reservedNames = new Set([
+    `${name}.json`,
+    `${name}.disabled`,
+    `${name}.json.disabled`,
+  ]);
+
+  for (const category of readdirSync(mcpsDir)) {
+    const categoryPath = resolve(mcpsDir, category);
+    if (!statSync(categoryPath).isDirectory()) continue;
+    for (const file of readdirSync(categoryPath)) {
+      if (reservedNames.has(file)) return true;
+    }
+  }
+  return false;
 }
 
 function defaultGatewayConfig(): string {

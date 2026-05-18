@@ -10,7 +10,7 @@ metadata:
   memory_awareness: full
   tool_scope:
     - 'filesystem:read'
-last_updated: '2026-05-18T15:32:51+08:00'
+last_updated: '2026-05-18T21:49:06+08:00'
 status: stable
 staleness: 0
 ---
@@ -48,12 +48,14 @@ staleness: 0
 - D01: `_map` 作為 Layer 1 頂層導航卡，只描述模組邊界、關聯與適用技能，不承擔具體業務檔案歸屬。
 - D02: 具體檔案異動應歸屬於 `_system`、`gateway-core` 或 `cli` 子模組；跨模組修改前先讀取本卡確認邊界。
 - D03: `AGENTS.md` 目前承載 GitNexus 治理橋接；修改程式符號前需先做 impact analysis，提交前需做 detect-changes 範圍檢查。
+- D04: 若 GitNexus 回報索引 stale，需先執行 `npx gitnexus analyze` 更新索引，再繼續架構探索、影響分析或提交前檢查。
 
 ## Known Issues
 - 無已知導航卡阻塞問題。
 
 ## Module Lessons
 - L01: 導航卡不得取代子模組記憶；只需要修改特定邏輯時，直接讀取對應子模組記憶卡可降低上下文噪音。
+- L02: `AGENTS.md` 是本專案治理入口，不保存業務程式碼細節；更新時只需同步治理橋接規則與索引入口，不應把子模組檔案責任塞進 `_map`。
 
 ## Known Architectural Guidelines
 - `_map` 作為 Layer 1 的頂層導航，**不追蹤** 具體的 `.ts` 業務邏輯檔案。所有的檔案異動與錯誤修復應歸屬於 `gateway-core` 或 `cli` 子模組。

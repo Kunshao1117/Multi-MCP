@@ -2,6 +2,9 @@
   "command": "npx",
   "args": [
     "-y",
-    "accessibility-mcp@latest"
+    "--package",
+    "accessibility-mcp@latest",
+    "--",
+    "accessibility-mcp"
   ]
 }

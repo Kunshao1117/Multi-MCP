@@ -4,6 +4,7 @@
  * 以及試啟動 MCP 偵測所需環境變數。
  */
 import { ask, DATA_DIR, type McpServerDef } from './shared.js';
+import { createDownstreamEnv } from '../subprocess-env.js';
 
 // ─── 試啟動認證偵測 ───
 
@@ -45,7 +46,7 @@ export async function probeAuthRequirements(config: McpServerDef): Promise<strin
       const child = spawn(config.command, config.args, {
         cwd: DATA_DIR,
         stdio: ['pipe', 'pipe', 'pipe'],
-        env: { ...process.env, ...config.env },
+        env: createDownstreamEnv(config.env ?? {}),
         shell: true,
       });
       child.stderr?.on('data', (data: Buffer) => { output += data.toString(); });

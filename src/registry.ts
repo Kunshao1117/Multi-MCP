@@ -5,6 +5,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import type { GatewayConfig, ToolRegistry, RegistryToolEntry, SearchToolsResult, CategorySummary } from './types.js';
 import { NAMESPACE_SEPARATOR } from './types.js';
 import { createLogger } from './logger.js';
+import { createDownstreamEnv } from './subprocess-env.js';
 
 const logger = createLogger('registry');
 const DEFAULT_REGISTRY_PATH = 'registry.json';
@@ -59,7 +60,7 @@ export async function scanAndGenerateRegistry(
       transport = new StdioClientTransport({
         command: serverConfig.command,
         args: serverConfig.args,
-        env: { ...process.env, ...(serverConfig.env ?? {}) } as Record<string, string>,
+        env: createDownstreamEnv(serverConfig.env ?? {}),
       });
 
       const client = new Client(

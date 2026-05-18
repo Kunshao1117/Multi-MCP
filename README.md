@@ -169,7 +169,9 @@ CLI 主控台內建 npm 搜尋整合，可直接搜尋、安裝、設定新的 M
 }
 ```
 
-首次啟動時會自動建立本機設定資料夾，包含 `gateway.config.json`、`gateway.env`、`mcps/` 與 `registry.json`。
+首次啟動時會自動建立本機設定資料夾，包含 `gateway.config.json`、`gateway.env`、`mcps/`、`registry.json` 與一次性預設 MCP seed 狀態檔。新資料夾會預設啟用可攜、無金鑰的 MCP，例如 `cartridge-system`、`context7`、`playwright`、`a11y`、`excel`、`sequentialthinking` 與 `gitnexus`。
+
+預設 MCP 只在第一次初始化時建立；若你刪除某個 MCP 設定，Gateway 不會在下次啟動時自動補回。需要 Token 的 MCP（如 GitHub、Sentry、Stitch）請用主控台安裝並設定金鑰。
 
 啟動互動式管理主控台：
 
@@ -333,6 +335,7 @@ CLOUDFLARE_API_TOKEN=xxxxxxxxxxxx
 | `credentials.json` | CLI 管理的多帳號認證資料 |
 | `mcps/` | 使用者安裝的下游 MCP 設定 |
 | `registry.json` | 掃描生成的工具目錄 |
+| `default-mcps.seed.json` | 預設 MCP 一次性初始化紀錄；存在時不再自動補回被刪除的預設 MCP |
 
 若需自訂位置，設定 `MULTI_MCP_HOME` 即可。開發與驗證腳本可用這個變數指向 repo 根目錄，以沿用本專案內的示範設定。
 
@@ -365,9 +368,9 @@ mcps/
 │   ├── github.json
 │   └── gitnexus.json
 ├── 雲端基礎設施/
-│   ├── cloudflare-bindings.json
-│   ├── cloudflare-containers.json
-│   └── cloudflare-observability.json
+│   ├── cloudflare-bindings.disabled
+│   ├── cloudflare-containers.disabled
+│   └── cloudflare-observability.disabled
 ├── 安全掃描/
 │   └── snyk.json
 ├── 程式碼品質/
@@ -377,6 +380,21 @@ mcps/
 ```
 
 每個 JSON 檔案的格式：
+
+首次 user-data 初始化會自動建立以下無金鑰預設 MCP：`cartridge-system`、`context7`、`playwright`、`a11y`、`excel`、`sequentialthinking`、`gitnexus`。這些設定由 npm package 程式產生，不是直接把 repo 的 `mcps/` 打包到 npm；因此私人路徑、Token 設定與 `.disabled` 檔案不會被發布出去。
+
+預設 MCP 都使用 explicit package 形式（`npx -y --package <package> -- <bin>`）。這可避免 Gateway 自己由 npm/npx 啟動時，Windows 內層 `npx` 把 scoped package 或 `@latest` 規格誤判成 shell 指令。`gitnexus` 目前固定使用已驗證的 `gitnexus@1.6.5`。
+
+`mcps/記憶管理/cartridge-system.json` 使用 npm runtime：
+
+```json
+{
+  "command": "npx",
+  "args": ["-y", "--package", "cartridge-system@latest", "--", "cartridge-system"]
+}
+```
+
+Gateway 呼叫 `cartridge-system` 時會以每次 `gateway__call_tool.workspace` 注入當前專案路徑，因此示範設定不再固定本機 `d:/cartridge_system` 或 `--workspace`。
 
 ```json
 {
@@ -512,7 +530,7 @@ npx -y multi-mcp-gateway@latest console
 | **語言** | TypeScript 5.7+（strict 模式） |
 | **模組系統** | ESM（`"type": "module"`） |
 | **執行環境** | Node.js 18+ |
-| **核心依賴** | `@modelcontextprotocol/sdk` ^1.12.1 |
+| **核心依賴** | `@modelcontextprotocol/sdk` ^1.29.0 |
 | **開發工具** | tsx 4.19+、Vitest 3.0+ |
 | **建構** | tsc → `dist/` |
 

@@ -1,6 +1,22 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.1",
   "categories": {
+    "記憶管理": [
+      {
+        "name": "cartridge-system",
+        "package": "cartridge-system",
+        "description": "Cartridge System 記憶卡 MCP — workspace brief、memory audit、commit preflight 與記憶歸卡",
+        "authRequired": false
+      }
+    ],
+    "文件查詢": [
+      {
+        "name": "context7",
+        "package": "@upstash/context7-mcp",
+        "description": "Context7 文件查詢 — 即時框架文件與官方 API 查詢",
+        "authRequired": false
+      }
+    ],
     "資料庫管理": [
       {
         "name": "supabase",
@@ -13,8 +29,14 @@
       {
         "name": "github",
         "package": "@modelcontextprotocol/server-github",
-        "description": "GitHub 官方 MCP — 倉庫/Issue/PR 管理、程式碼搜尋",
+        "description": "GitHub MCP — 倉庫/Issue/PR 管理、程式碼搜尋；此 npm 套件目前標示 deprecated，安裝前請確認替代方案",
         "authRequired": true
+      },
+      {
+        "name": "gitnexus",
+        "package": "gitnexus",
+        "description": "GitNexus 程式碼智慧索引 — impact analysis、context、detect-changes 與 repo query",
+        "authRequired": false
       },
       {
         "name": "eslint",
@@ -26,8 +48,16 @@
     "雲端服務": [
       {
         "name": "sentry",
-        "package": "@sentry/mcp-server-node",
+        "package": "@sentry/mcp-server",
         "description": "Sentry 錯誤監控 — 問題追蹤、效能分析",
+        "authRequired": true
+      }
+    ],
+    "UI設計": [
+      {
+        "name": "stitch",
+        "package": "https://stitch.googleapis.com/mcp",
+        "description": "Stitch MCP — Google Stitch UI 設計工作流；需設定 STITCH_API_KEY",
         "authRequired": true
       }
     ],
@@ -42,7 +72,7 @@
     "資料處理": [
       {
         "name": "excel",
-        "package": "@anthropic/excel-mcp-server",
+        "package": "@shmaxi/excel-mcp-server",
         "description": "Excel 檔案讀寫 — 試算表操作與資料處理",
         "authRequired": false
       }
@@ -52,6 +82,12 @@
         "name": "playwright",
         "package": "@playwright/mcp",
         "description": "Playwright 瀏覽器自動化 — 網頁測試與操作",
+        "authRequired": false
+      },
+      {
+        "name": "a11y",
+        "package": "accessibility-mcp",
+        "description": "Accessibility MCP — 網頁可及性掃描與 WCAG 檢查",
         "authRequired": false
       }
     ]

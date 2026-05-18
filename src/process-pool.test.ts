@@ -26,6 +26,7 @@ vi.mock('@modelcontextprotocol/sdk/client/stdio.js', () => ({
   })),
 }));
 
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { ProcessPool } from './process-pool.js';
 
 /** 建立測試設定（禁用閒置回收和重試以加速測試） */
@@ -117,9 +118,19 @@ describe('ProcessPool — 動態管理', () => {
 // ═══════════════════════════════════
 
 describe('ProcessPool — 懶啟動', () => {
+  const originalNpmLifecycleEvent = process.env.npm_lifecycle_event;
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockConnect.mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    if (originalNpmLifecycleEvent === undefined) {
+      delete process.env.npm_lifecycle_event;
+    } else {
+      process.env.npm_lifecycle_event = originalNpmLifecycleEvent;
+    }
   });
 
   it('getClient 成功啟動並回傳 client', async () => {
@@ -152,6 +163,19 @@ describe('ProcessPool — 懶啟動', () => {
     const c2 = await pool.getClient('test-server');
     expect(c1).toBe(c2);
     expect(mockConnect).toHaveBeenCalledTimes(1);
+  });
+
+  it('啟動下游時移除外層 npm runtime 變數並保留 MCP env', async () => {
+    process.env.npm_lifecycle_event = 'preflight:gateway';
+    const pool = new ProcessPool(testConfig({
+      'test-server': { command: 'npx', args: ['-y', '@scope/mcp'], env: { TOKEN: 'secret' } },
+    }));
+
+    await pool.getClient('test-server');
+
+    const options = vi.mocked(StdioClientTransport).mock.calls[0]?.[0] as { env: Record<string, string> };
+    expect(options.env.npm_lifecycle_event).toBeUndefined();
+    expect(options.env.TOKEN).toBe('secret');
   });
 });
 

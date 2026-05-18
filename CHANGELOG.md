@@ -1,5 +1,23 @@
 # 更新紀錄
 
+## v1.1.1 — 2026-05-18
+
+### 新增功能
+
+- **預設 MCP 一次性 seed**：首次建立 user-data 時自動建立可攜、無金鑰的預設 MCP 設定，包含 `cartridge-system`、`context7`、`playwright`、`a11y`、`excel`、`sequentialthinking` 與 `gitnexus`；使用者刪除後不會自動補回。
+
+### 架構調整
+
+- **預設 MCP npm runtime**：所有無金鑰預設 MCP 示範設定改用 `npx -y --package <pkg> -- <bin>` explicit package 形式，避免 Gateway 由 npm/npx 啟動時，Windows 內層 `npx` 誤解析 scoped package 或 `@latest`。
+- **記憶管理 MCP npm runtime**：`cartridge-system` 移除本機 `d:/cartridge_system` 路徑與固定 `--workspace` 預設，改由 Gateway 每次呼叫的 `workspace` 決定目標專案。
+- **GitNexus 可攜端點**：`gitnexus` 示範設定改用已驗證的 `npx -y --package gitnexus@1.6.5 -- gitnexus mcp`，移除 `C:\gitnexus-src\...` 本機絕對路徑。
+- **下游程序環境隔離**：掃描、runtime process pool、CLI 健康檢查與認證探測會清除外層 npm lifecycle 變數，再啟動下游 MCP。
+- **推薦清單同步**：`mcp-catalog.json` 補上記憶管理、文件查詢、GitNexus、Stitch 與 a11y 推薦項，將 Sentry 套件名修正為 `@sentry/mcp-server`，並將 Excel 推薦套件對齊為 `@shmaxi/excel-mcp-server`。
+
+### 發布
+
+- 版本升級至 `1.1.1`；npm package 仍不打包整個 `mcps/`，預設 MCP 由初始化流程產生，避免公開本機私人設定。
+
 ## v1.1.0 — 2026-05-18
 
 ### 問題修復

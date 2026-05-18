@@ -2,7 +2,10 @@
   "command": "npx",
   "args": [
     "-y",
-    "@shmaxi/excel-mcp-server",
+    "--package",
+    "@shmaxi/excel-mcp-server@latest",
+    "--",
+    "excel-mcp-server",
     "stdio"
   ]
 }

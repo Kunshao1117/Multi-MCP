@@ -12,7 +12,7 @@ metadata:
     - 'filesystem:read'
     - 'filesystem:write'
     - 'mcp:cartridge-system'
-last_updated: '2026-05-18T17:48:03+08:00'
+last_updated: '2026-05-18T21:37:29+08:00'
 status: stable
 staleness: 0
 ---
@@ -32,6 +32,8 @@ staleness: 0
 - src/gateway-tools.ts
 - src/gateway-server.ts
 - src/process-pool.ts
+- src/subprocess-env.ts
+- src/subprocess-env.test.ts
 - src/tool-router.ts
 - src/auth-guides.ts
 - src/registry.ts
@@ -63,6 +65,10 @@ staleness: 0
 - D19: `src/index.ts` 是 npm bin 入口，含 shebang，支援 `console` 子命令與 `--scan`，啟動前會建立使用者資料夾並切換到 data dir
 - D20: `config-loader` 將 `gateway.env` 與 `mcps_dir` 相對路徑改以設定檔所在資料夾解析，避免 npm package 安裝位置污染使用者設定
 - D21: `registry` 的 load/scan 支援自訂 registry path，寫入前會建立目標資料夾；CLI 與 server 可共用使用者資料夾內的 registry
+- D22: `ensureUserDataDir()` 會在沒有 `default-mcps.seed.json` 時一次性建立可攜、無金鑰的預設 MCP 設定；marker 存在後不再補回被刪除的預設 MCP
+- D23: 預設 seed 寫入前會掃描所有分類，若同名 `.json`、`.disabled` 或 `.json.disabled` 已存在則跳過，避免覆蓋使用者自訂或停用意圖
+- D24: 預設 seed 全部使用 explicit package 形式 `npx -y --package <pkg> -- <bin>`；這是 tarball smoke 驗證後的 Windows nested npx 相容策略
+- D25: `registry` 掃描與 `ProcessPool` runtime 啟動下游 MCP 時，統一透過 `createDownstreamEnv()` 清掉外層 npm lifecycle 變數並保留 MCP 認證 env
 
 ## Known Issues
 - credentials.json 明文儲存密鑰，雖被 .gitignore 排除但缺少加密層
@@ -82,3 +88,6 @@ staleness: 0
 - L11: `dist/` 被 `.gitignore` 排除但仍是 Codex/Gemini runtime，不能只靠記憶或文件要求 AI build；啟動期 guard 才能防止舊工具 metadata 靜默上線
 - L12: 參數名稱友善提示必須採保守相似度規則；找不到高信心匹配時只列 schema 接受的 arguments，避免把 AI 導向錯誤參數
 - L13: npm package 化後，Gateway 核心不得假設目前工作目錄就是 repo root；所有使用者設定路徑都必須從 `src/paths.ts` 或 config file directory 取得
+- L14: user-data default seed 必須有狀態檔，否則使用者刪除預設 MCP 後會被下次啟動重新建立，造成「可刪除」語義失效
+- L15: default seed 中的 npm CLI 若使用 `npx -y <pkg>@latest` 形式在 tarball smoke 失敗，應採 `npx --package <pkg>@<verified-or-latest> -- <bin>` 並用 MCP client smoke 驗證
+- L16: 下游 stdio 程序不能完整繼承外層 npm/npx runtime env；至少要清掉 `npm_lifecycle_*`、`npm_package_*`、`npm_execpath` 等變數，避免 Windows 內層 npx 解析錯亂

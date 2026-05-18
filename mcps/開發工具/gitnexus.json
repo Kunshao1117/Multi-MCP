@@ -1,7 +1,11 @@
 {
-  "command": "node",
+  "command": "npx",
   "args": [
-    "C:\\gitnexus-src\\gitnexus\\dist\\cli\\index.js",
+    "-y",
+    "--package",
+    "gitnexus@1.6.5",
+    "--",
+    "gitnexus",
     "mcp"
   ]
 }
