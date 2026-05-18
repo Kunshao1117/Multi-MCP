@@ -3,9 +3,9 @@
  * 路徑常數、互動式輸入、設定檔讀寫等所有 CLI 模組共用的基礎工具。
  */
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 import { createInterface } from 'node:readline';
+import { ensureUserDataDir, getGatewayPaths } from '../paths.js';
 
 // ─── ANSI 色碼 ───
 
@@ -25,13 +25,21 @@ export const c = {
 
 // ─── 路徑常數 ───
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-/** 專案根目錄 */
-export const PROJECT_ROOT = resolve(__dirname, '..', '..');
+export const PATHS = ensureUserDataDir(getGatewayPaths());
+/** npm package 根目錄 */
+export const PACKAGE_ROOT = PATHS.packageRoot;
+/** 使用者資料根目錄 */
+export const DATA_DIR = PATHS.dataDir;
+/** 舊名稱相容：CLI 的 PROJECT_ROOT 現在代表使用者資料根目錄 */
+export const PROJECT_ROOT = DATA_DIR;
 /** 閘道器設定檔路徑 */
-export const CONFIG_PATH = resolve(PROJECT_ROOT, 'gateway.config.json');
+export const CONFIG_PATH = PATHS.configPath;
 /** MCP 分類目錄根路徑 */
-export const MCPS_DIR = resolve(PROJECT_ROOT, 'mcps');
+export const MCPS_DIR = PATHS.mcpsDir;
+/** 工具集成表路徑 */
+export const REGISTRY_PATH = PATHS.registryPath;
+/** 推薦清單路徑 */
+export const CATALOG_PATH = PATHS.catalogPath;
 
 // ─── readline 單例 ───
 

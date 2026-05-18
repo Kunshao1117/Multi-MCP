@@ -2,9 +2,20 @@
  * Multi-MCP Gateway — 集成表引擎單元測試
  * 測試搜尋功能與分類總表生成
  */
-import { describe, it, expect } from 'vitest';
-import { searchTools, generateCategorySummary, formatCategorySummaryText } from './registry.js';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { afterEach, describe, it, expect } from 'vitest';
+import { searchTools, generateCategorySummary, formatCategorySummaryText, loadRegistry } from './registry.js';
 import type { ToolRegistry } from './types.js';
+
+const tempRoots: string[] = [];
+
+afterEach(() => {
+  for (const root of tempRoots.splice(0)) {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 
 /** 建立測試用集成表 */
 function createTestRegistry(): ToolRegistry {
@@ -168,5 +179,19 @@ describe('formatCategorySummaryText', () => {
     expect(text).toContain('📦');
     expect(text).toContain('資料庫管理');
     expect(text).toContain('3 個工具');
+  });
+});
+
+describe('loadRegistry', () => {
+  it('可從自訂 registry 路徑載入集成表', () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'gateway-registry-'));
+    tempRoots.push(root);
+    const registryPath = path.join(root, 'registry.json');
+    writeFileSync(registryPath, JSON.stringify(createTestRegistry()), 'utf-8');
+
+    const registry = loadRegistry(registryPath);
+
+    expect(registry.servers).toHaveProperty('supabase');
+    expect(registry.all_tools).toHaveProperty('supabase__list_tables');
   });
 });

@@ -3,7 +3,7 @@
  * 支援 GitHub URL、npm 套件名、遠端 MCP URL 三種來源格式辨識，
  * 以及試啟動 MCP 偵測所需環境變數。
  */
-import { ask, PROJECT_ROOT, type McpServerDef } from './shared.js';
+import { ask, DATA_DIR, type McpServerDef } from './shared.js';
 
 // ─── 試啟動認證偵測 ───
 
@@ -43,7 +43,7 @@ export async function probeAuthRequirements(config: McpServerDef): Promise<strin
     let output = '';
     try {
       const child = spawn(config.command, config.args, {
-        cwd: PROJECT_ROOT,
+        cwd: DATA_DIR,
         stdio: ['pipe', 'pipe', 'pipe'],
         env: { ...process.env, ...config.env },
         shell: true,

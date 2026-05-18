@@ -12,7 +12,7 @@ metadata:
     - 'filesystem:read'
     - 'filesystem:write'
     - 'mcp:cartridge-system'
-last_updated: '2026-05-17T17:23:03+08:00'
+last_updated: '2026-05-18T15:35:42+08:00'
 status: stable
 staleness: 0
 ---
@@ -21,6 +21,8 @@ staleness: 0
 
 ## Tracked Files
 - src/index.ts
+- src/paths.ts
+- src/paths.test.ts
 - src/runtime-guard.ts
 - src/runtime-guard.test.ts
 - src/types.ts
@@ -57,6 +59,10 @@ staleness: 0
 - D15: `gateway__call_tool` 錯誤訊息需區分 server 未註冊、工具不存在、Gateway 管理工具誤用與下游 schema/呼叫失敗，並提醒 AI 先查 inputSchema 不猜參數
 - D16: `dist/index.js` 啟動 Gateway 時會執行 runtime freshness guard；若偵測到非測試 `src/**/*.ts` 比 `dist/**/*.js` 新，直接拒絕啟動並提示先 `npx tsc` 後重啟 MCP 連線
 - D17: 下游工具參數錯誤提示只根據 registry inputSchema 產生；Gateway 可提示未知參數、缺少 required 與高相似度參數名稱，但不自動改寫 arguments 或重試
+- D18: `src/paths.ts` 集中解析 package root 與使用者資料 root；預設資料夾依平台決定，`MULTI_MCP_HOME` 可覆寫
+- D19: `src/index.ts` 是 npm bin 入口，含 shebang，支援 `console` 子命令與 `--scan`，啟動前會建立使用者資料夾並切換到 data dir
+- D20: `config-loader` 將 `gateway.env` 與 `mcps_dir` 相對路徑改以設定檔所在資料夾解析，避免 npm package 安裝位置污染使用者設定
+- D21: `registry` 的 load/scan 支援自訂 registry path，寫入前會建立目標資料夾；CLI 與 server 可共用使用者資料夾內的 registry
 
 ## Known Issues
 - credentials.json 明文儲存密鑰，雖被 .gitignore 排除但缺少加密層
@@ -75,3 +81,4 @@ staleness: 0
 - L10: 下游 MCP 工具參數必須以 registry inputSchema 為準；例如 cartridge-system 的 `memory_deps` 使用 `moduleName`，不是模型猜測的 `module`
 - L11: `dist/` 被 `.gitignore` 排除但仍是 Codex/Gemini runtime，不能只靠記憶或文件要求 AI build；啟動期 guard 才能防止舊工具 metadata 靜默上線
 - L12: 參數名稱友善提示必須採保守相似度規則；找不到高信心匹配時只列 schema 接受的 arguments，避免把 AI 導向錯誤參數
+- L13: npm package 化後，Gateway 核心不得假設目前工作目錄就是 repo root；所有使用者設定路徑都必須從 `src/paths.ts` 或 config file directory 取得

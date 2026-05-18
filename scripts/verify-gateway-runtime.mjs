@@ -24,6 +24,7 @@ const transport = new StdioClientTransport({
   command: 'node',
   args: ['dist/index.js'],
   cwd: projectRoot,
+  env: { ...process.env, MULTI_MCP_HOME: projectRoot },
 });
 
 const client = new Client(
@@ -61,7 +62,7 @@ try {
     arguments: { server_name: 'cartridge-system' },
   });
   const cartridgeListText = firstText(cartridgeList);
-  assertContains(cartridgeListText, 'cartridge-system 共有 8 個工具', 'cartridge-system tool count');
+  assertContains(cartridgeListText, 'cartridge-system 共有 12 個工具', 'cartridge-system tool count');
   assertContains(cartridgeListText, 'cartridge-system__commit_preflight', 'cartridge-system tool list');
 
   const badMemoryDepsCall = await client.callTool({

@@ -3,8 +3,7 @@
  * npm 即時搜尋、精選推薦清單、批次安裝、手動輸入。
  */
 import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { ask, pause, header, c, PROJECT_ROOT, getAllMcpNames } from './shared.js';
+import { ask, pause, header, c, CATALOG_PATH, getAllMcpNames } from './shared.js';
 import { installMCP } from './install-flow.js';
 
 /** npm 搜尋結果條目 */
@@ -103,7 +102,7 @@ async function npmSearch(rescanFn: () => Promise<void>): Promise<void> {
 async function catalogMenu(rescanFn: () => Promise<void>): Promise<void> {
   header('⭐ 推薦清單');
 
-  const catalogPath = resolve(PROJECT_ROOT, 'mcp-catalog.json');
+  const catalogPath = CATALOG_PATH;
   if (!existsSync(catalogPath)) {
     console.log('  ⚠️ 推薦清單檔案不存在（mcp-catalog.json）');
     await pause();

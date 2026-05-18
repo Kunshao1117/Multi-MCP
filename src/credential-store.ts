@@ -3,13 +3,11 @@
  * 管理 credentials.json，支援多帳號/多金鑰切換
  */
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { ensureUserDataDir, getGatewayPaths } from './paths.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const PROJECT_ROOT = resolve(__dirname, '..');
-const CRED_PATH = resolve(PROJECT_ROOT, 'credentials.json');
-const ENV_PATH = resolve(PROJECT_ROOT, 'gateway.env');
+const paths = getGatewayPaths();
+const CRED_PATH = paths.credentialsPath;
+const ENV_PATH = paths.envPath;
 
 /** 單一帳號 */
 export interface AccountEntry {
@@ -39,6 +37,7 @@ export function loadCredentials(): CredentialStore {
 
 /** 儲存認證資料 */
 export function saveCredentials(store: CredentialStore): void {
+  ensureUserDataDir();
   writeFileSync(CRED_PATH, JSON.stringify(store, null, 2) + '\n', 'utf-8');
 }
 
@@ -108,9 +107,10 @@ export function updateAccountValue(
 
 /** 將所有使用中帳號的密鑰同步到 gateway.env */
 export function syncToEnvFile(store: CredentialStore): void {
+  ensureUserDataDir();
   const lines = [
     '# Multi-MCP Gateway — 認證（由主控台自動產生，請勿手動編輯）',
-    '# 使用 npm run console 管理帳號與密鑰',
+    '# 使用 npx -y multi-mcp-gateway@latest console 管理帳號與密鑰',
     '',
   ];
 

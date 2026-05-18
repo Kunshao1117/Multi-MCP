@@ -3,8 +3,7 @@
  * 顯示系統摘要：MCP 數量、認證狀態、工具數量、上次掃描時間。
  */
 import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { c, PROJECT_ROOT, getAllMcpNames } from './shared.js';
+import { c, REGISTRY_PATH, getAllMcpNames } from './shared.js';
 import { loadCredentials } from '../credential-store.js';
 
 /** 計算相對時間描述 */
@@ -33,7 +32,7 @@ export function renderDashboard(): void {
   }).length;
 
   // 工具數量 + 掃描時間
-  const registryPath = resolve(PROJECT_ROOT, 'registry.json');
+  const registryPath = REGISTRY_PATH;
   let toolCount = '--';
   let scanTime = '尚未掃描';
   if (existsSync(registryPath)) {

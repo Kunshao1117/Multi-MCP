@@ -6,12 +6,14 @@ import { existsSync, unlinkSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
   ask, pause, header,
-  PROJECT_ROOT, MCPS_DIR,
+  CONFIG_PATH, MCPS_DIR, REGISTRY_PATH,
   loadMcpsByCategory, getAllMcpNames, findMcpCategory,
 } from './shared.js';
 import {
   loadCredentials, saveCredentials, syncToEnvFile,
 } from '../credential-store.js';
+import { loadConfig } from '../config-loader.js';
+import { scanAndGenerateRegistry } from '../registry.js';
 
 // ═══════════════════════════════════
 // 檢視已安裝的 MCP
@@ -132,8 +134,8 @@ export async function removeMCP(rescanFn: () => Promise<void>): Promise<void> {
 export async function rescan(): Promise<void> {
   console.log('\n  🔄 掃描中...\n');
   try {
-    const { execSync } = await import('node:child_process');
-    execSync('npx tsx src/index.ts --scan', { cwd: PROJECT_ROOT, stdio: 'inherit' });
+    const config = loadConfig(CONFIG_PATH);
+    await scanAndGenerateRegistry(config, REGISTRY_PATH);
     console.log('\n  ✅ 掃描完成！');
   } catch {
     console.log('\n  ⚠️ 掃描失敗');

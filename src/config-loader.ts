@@ -3,7 +3,7 @@
  * 支援 gateway.env 集中認證管理 + 環境變數模板解析
  */
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import type { GatewayConfig, LogLevel, McpServerConfig } from './types.js';
 import { createLogger } from './logger.js';
 
@@ -168,6 +168,7 @@ function validateConfig(config: unknown): config is GatewayConfig {
 /** 載入設定檔 */
 export function loadConfig(configPath?: string): GatewayConfig {
   const resolvedPath = resolve(configPath ?? 'gateway.config.json');
+  const configDir = dirname(resolvedPath);
   logger.info('載入設定檔', { path: resolvedPath });
 
   let rawContent: string;
@@ -188,7 +189,7 @@ export function loadConfig(configPath?: string): GatewayConfig {
   const gateway = (parsed as Record<string, unknown>).gateway as Record<string, unknown> | undefined;
   const envFile = gateway?.env_file as string | undefined;
   if (envFile) {
-    loadEnvFile(envFile);
+    loadEnvFile(resolve(configDir, envFile));
   }
 
   // 先做環境變數解析
@@ -200,7 +201,7 @@ export function loadConfig(configPath?: string): GatewayConfig {
   // 資料夾模式：從 mcps/ 資料夾掃描 MCP 設定
   const mcpsDir = config.gateway.mcps_dir;
   if (mcpsDir) {
-    const { mcpServers, categories } = loadMcpsFromDirectory(mcpsDir);
+    const { mcpServers, categories } = loadMcpsFromDirectory(resolve(configDir, mcpsDir));
     // 解析 MCP 設定中的環境變數模板
     const resolvedMcps = deepResolveEnvVars(mcpServers) as Record<string, McpServerConfig>;
     const mutableConfig = config as unknown as Record<string, unknown>;

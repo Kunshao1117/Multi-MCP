@@ -16,6 +16,7 @@
 - [系統架構](#系統架構)
 - [快速開始](#快速開始)
 - [設定檔說明](#設定檔說明)
+- [使用者資料位置](#使用者資料位置)
 - [MCP 資料夾結構](#mcp-資料夾結構)
 - [閘道器管理工具](#閘道器管理工具)
 - [CLI 管理主控台](#cli-管理主控台)
@@ -58,6 +59,9 @@ Multi-MCP Gateway 將所有 MCP 伺服器整合在一個統一的閘道器之下
 
 ### 🔐 集中認證管理
 透過統一的 `gateway.env` 檔案管理所有 API 金鑰與認證令牌，支援 `${VAR}` 環境變數模板語法，自動注入到各個下游 MCP 的執行環境中。
+
+### 🚀 一行 npx 啟動
+可作為 npm 套件直接由 MCP Client 以 `npx` 啟動。程式碼由 npm 下載，使用者設定、認證與工具目錄保存在本機資料夾，不需要 clone 專案。
 
 ### 📂 分類目錄式設定
 MCP 設定檔按功能分類存放在 `mcps/` 資料夾中（如 `mcps/開發工具/github.json`），直覺且易於維護。
@@ -112,6 +116,7 @@ CLI 主控台內建 npm 搜尋整合，可直接搜尋、安裝、設定新的 M
 | 模組 | 檔案 | 職責 |
 |------|------|------|
 | **進入點** | `src/index.ts` | 啟動分流（伺服器模式 / 掃描模式）、Windows 環境修正、工作目錄偵測 |
+| **路徑管理** | `src/paths.ts` | 分離 npm package 位置與使用者資料位置，初始化本機設定資料夾 |
 | **閘道器主體** | `src/gateway-server.ts` | MCP Server 實例化、12 個管理工具定義、請求處理器註冊 |
 | **工具路由器** | `src/tool-router.ts` | 命名空間解析、管理工具分發、下游工具代理呼叫、模糊搜尋 |
 | **程序池** | `src/process-pool.ts` | 子程序生命週期管理（啟動/閒置回收/崩潰重啟/健康檢查） |
@@ -149,7 +154,36 @@ CLI 主控台內建 npm 搜尋整合，可直接搜尋、安裝、設定新的 M
 - **Node.js** >= 18（ESM 支援）
 - **npm** >= 9
 
-### 安裝
+### 一行啟動（一般使用者）
+
+在 MCP Client 設定中加入 Multi-MCP Gateway：
+
+```json
+{
+  "mcpServers": {
+    "multi-mcp-gateway": {
+      "command": "npx",
+      "args": ["-y", "multi-mcp-gateway@latest"]
+    }
+  }
+}
+```
+
+首次啟動時會自動建立本機設定資料夾，包含 `gateway.config.json`、`gateway.env`、`mcps/` 與 `registry.json`。
+
+啟動互動式管理主控台：
+
+```bash
+npx -y multi-mcp-gateway@latest console
+```
+
+若要固定設定資料夾位置，可設定：
+
+```bash
+MULTI_MCP_HOME=D:/my-mcp-home
+```
+
+### 原始碼安裝（開發者）
 
 ```bash
 git clone https://github.com/Kunshao1117/Multi-MCP.git
@@ -161,7 +195,7 @@ npm install
 
 #### 1. 設定認證檔案
 
-建立 `gateway.env`，填入你的 API 金鑰：
+建立或透過 CLI 主控台維護 `gateway.env`，填入你的 API 金鑰：
 
 ```env
 # GitHub
@@ -201,7 +235,7 @@ mkdir -p mcps/開發工具
 #### 3. 掃描並生成工具目錄
 
 ```bash
-npm run dev:scan
+npx -y multi-mcp-gateway@latest --scan
 ```
 
 此指令會依序連接所有已設定的 MCP 伺服器，取得工具清單，並生成 `registry.json`。
@@ -209,7 +243,7 @@ npm run dev:scan
 #### 4. 啟動 Gateway
 
 ```bash
-npm run dev
+npx -y multi-mcp-gateway@latest
 ```
 
 ### 連接到 IDE
@@ -221,14 +255,14 @@ npm run dev
 {
   "mcpServers": {
     "multi-mcp-gateway": {
-      "command": "node",
-      "args": ["D:/Multi-MCP/dist/index.js"]
+      "command": "npx",
+      "args": ["-y", "multi-mcp-gateway@latest"]
     }
   }
 }
 ```
 
-> 💡 開發期間可使用 `tsx src/index.ts` 取代 `node dist/index.js`。
+> 💡 開發期間可使用 `tsx src/index.ts` 或 `node dist/index.js` 取代 `npx`。
 
 > ⚠️ Codex/Gemini 若使用 `node D:/Multi-MCP/dist/index.js` 啟動 Gateway，修改 `src/` 後必須先重新建置。Gateway 會在啟動時檢查 `src/` 是否比 `dist/` 新；若偵測到舊編譯產物，會拒絕啟動並提示執行 `npx tsc`，避免 AI 連到舊版工具描述。
 
@@ -260,9 +294,9 @@ npm run dev
 | `startup_timeout_ms` | 子程序啟動超時（毫秒） | `60000` (1 分鐘) |
 | `max_retries` | 子程序崩潰後的最大重試次數 | `3` |
 | `log_level` | 日誌等級：`debug` / `info` / `warn` / `error` | `info` |
-| `env_file` | 認證檔案路徑（相對於專案根目錄） | `gateway.env` |
+| `env_file` | 認證檔案路徑（相對於 `gateway.config.json` 所在資料夾） | `gateway.env` |
 | `health_check_on_start` | 啟動時是否執行認證健康檢查 | `false` |
-| `mcps_dir` | MCP 設定檔資料夾路徑（啟用分類目錄模式） | `mcps` |
+| `mcps_dir` | MCP 設定檔資料夾路徑（相對於 `gateway.config.json` 所在資料夾） | `mcps` |
 
 ### `gateway.env`
 
@@ -278,9 +312,33 @@ SENTRY_AUTH_TOKEN=sntrys_xxxxxxxxxxxx
 CLOUDFLARE_API_TOKEN=xxxxxxxxxxxx
 ```
 
+---
+
+## 使用者資料位置
+
+`npx` 模式會把程式碼與使用者資料分開：
+
+| 平台 | 預設資料夾 |
+|------|------------|
+| Windows | `%APPDATA%/multi-mcp-gateway` |
+| macOS | `~/Library/Application Support/multi-mcp-gateway` |
+| Linux | `~/.config/multi-mcp-gateway` |
+
+資料夾內容：
+
+| 檔案/資料夾 | 說明 |
+|-------------|------|
+| `gateway.config.json` | Gateway 啟動設定 |
+| `gateway.env` | API key 與 token |
+| `credentials.json` | CLI 管理的多帳號認證資料 |
+| `mcps/` | 使用者安裝的下游 MCP 設定 |
+| `registry.json` | 掃描生成的工具目錄 |
+
+若需自訂位置，設定 `MULTI_MCP_HOME` 即可。開發與驗證腳本可用這個變數指向 repo 根目錄，以沿用本專案內的示範設定。
+
 ### `registry.json`
 
-由 `npm run dev:scan` 自動生成的工具目錄快取，包含所有下游 MCP 的工具清單、參數結構、命名空間映射。**此檔案不需要手動編輯。**
+由 `npx -y multi-mcp-gateway@latest --scan` 或 `npm run dev:scan` 自動生成的工具目錄快取，包含所有下游 MCP 的工具清單、參數結構、命名空間映射。**此檔案不需要手動編輯。**
 
 ---
 
@@ -401,8 +459,10 @@ Gateway 啟動後會暴露 12 個管理工具，供 AI 助理直接呼叫：
 啟動互動式管理主控台：
 
 ```bash
-npm run console
+npx -y multi-mcp-gateway@latest console
 ```
+
+開發模式也可使用 `npm run console`。
 
 主控台提供以下功能：
 
@@ -450,6 +510,7 @@ npm run console
 | `npm run scan` | 生產模式掃描工具 |
 | `npm test` | 執行單元測試（Vitest） |
 | `npm run test:watch` | 監看模式執行測試 |
+| `npm pack --dry-run --json` | 檢查 npm 發布內容，不應包含本機認證與開發治理資料 |
 
 ### 技術堆疊
 
@@ -467,7 +528,7 @@ npm run console
 1. 在 `mcps/` 下建立或選擇分類資料夾
 2. 建立 JSON 設定檔（檔名即為伺服器名稱）
 3. 如需認證，將金鑰加入 `gateway.env`，在 JSON 中使用 `${VAR}` 引用
-4. 執行 `npm run dev:scan` 掃描並註冊
+4. 執行 `npx -y multi-mcp-gateway@latest --scan` 或 `npm run dev:scan` 掃描並註冊
 5. （選用）使用 CLI 主控台確認工具已就緒
 
 ### 日誌系統
@@ -504,10 +565,12 @@ npm run test:watch
 
 | 測試檔案 | 覆蓋模組 | 測試重點 |
 |----------|----------|----------|
-| `config-loader.test.ts` | 設定載入器 | JSON 解析、環境變數替換、目錄掃描、驗證邏輯 |
-| `registry.test.ts` | 集成表引擎 | 命名空間化、模糊搜尋排序、分類總表生成 |
+| `paths.test.ts` | 路徑管理 | 使用者資料夾、package root、資料路徑生成 |
+| `config-loader.test.ts` | 設定載入器 | JSON 解析、相對路徑解析、環境變數替換、目錄掃描、驗證邏輯 |
+| `registry.test.ts` | 集成表引擎 | 自訂 registry 路徑、命名空間化、模糊搜尋排序、分類總表生成 |
 | `tool-router.test.ts` | 工具路由器 | 命名空間解析、管理工具分發、下游代理、錯誤處理 |
 | `process-pool.test.ts` | 程序池 | 啟動/關閉生命週期、閒置回收、崩潰重啟 |
+| `runtime-guard.test.ts` | Runtime 防護 | 阻擋 stale `dist/` 啟動 |
 
 ---
 
@@ -530,6 +593,7 @@ Multi-MCP/
 │
 ├── src/
 │   ├── index.ts                # 進入點（伺服器 / 掃描模式分流）
+│   ├── paths.ts                # package 與使用者資料路徑管理
 │   ├── gateway-server.ts       # 閘道器主體（GatewayServer 類別）
 │   ├── tool-router.ts          # 工具路由器（ToolRouter 類別）
 │   ├── process-pool.ts         # 程序池（ProcessPool 類別）

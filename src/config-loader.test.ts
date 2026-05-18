@@ -186,6 +186,23 @@ describe('loadConfig — 環境變數解析', () => {
     const config = loadConfig();
     expect(config.mcpServers.test.args).toContain('from_system');
   });
+
+  it('相對 env_file 以設定檔所在資料夾解析', () => {
+    const readPaths: string[] = [];
+    mockReadFileSync.mockImplementation(((path: string) => {
+      const p = String(path);
+      readPaths.push(p);
+      if (p.includes('gateway.config')) return gatewayJSON({ env_file: 'nested/gateway.env' });
+      if (p.includes('nested') && p.includes('gateway.env')) return '__RELATIVE_ENV__=ok\n';
+      throw new Error(`Unexpected: ${p}`);
+    }) as typeof mockReadFileSync);
+    mockExistsSync.mockReturnValue(true);
+
+    loadConfig('D:/portable/gateway.config.json');
+
+    expect(process.env.__RELATIVE_ENV__).toBe('ok');
+    expect(readPaths.some((p) => p.endsWith('portable\\nested\\gateway.env'))).toBe(true);
+  });
 });
 
 // ═══════════════════════════════════
@@ -228,5 +245,36 @@ describe('loadConfig — MCP 目錄掃描', () => {
     expect(config.mcpServers).toHaveProperty('my-mcp');
     expect(config.mcpServers['my-mcp'].command).toBe('node');
     expect(config.categories).toHaveProperty('測試分類');
+  });
+
+  it('相對 mcps_dir 以設定檔所在資料夾解析', () => {
+    const readdirPaths: string[] = [];
+    mockReadFileSync.mockImplementation(((path: string) => {
+      const p = String(path);
+      if (p.includes('gateway.config')) return gatewayJSON({ mcps_dir: 'custom-mcps' });
+      if (p.endsWith('.json') && p.includes('custom-mcps')) {
+        return JSON.stringify({ command: 'node', args: ['server.js'] });
+      }
+      throw new Error(`Unexpected: ${p}`);
+    }) as typeof mockReadFileSync);
+
+    mockExistsSync.mockImplementation(((path: string) =>
+      String(path).includes('custom-mcps')
+    ) as typeof mockExistsSync);
+
+    mockReaddirSync.mockImplementation(((path: string) => {
+      const p = String(path);
+      readdirPaths.push(p);
+      if (p.endsWith('custom-mcps')) return ['分類'] as unknown as ReturnType<typeof mockReaddirSync>;
+      if (p.includes('分類')) return ['tool.json'] as unknown as ReturnType<typeof mockReaddirSync>;
+      return [] as unknown as ReturnType<typeof mockReaddirSync>;
+    }) as typeof mockReaddirSync);
+
+    mockStatSync.mockReturnValue({ isDirectory: () => true } as ReturnType<typeof mockStatSync>);
+
+    const config = loadConfig('D:/portable/gateway.config.json');
+
+    expect(config.mcpServers).toHaveProperty('tool');
+    expect(readdirPaths.some((p) => p.endsWith('portable\\custom-mcps'))).toBe(true);
   });
 });

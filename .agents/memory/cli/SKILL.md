@@ -12,7 +12,7 @@ metadata:
     - 'filesystem:read'
     - 'filesystem:write'
     - 'mcp:cartridge-system'
-last_updated: '2026-05-17T17:23:03+08:00'
+last_updated: '2026-05-18T15:32:51+08:00'
 status: stable
 staleness: 0
 ---
@@ -56,6 +56,9 @@ staleness: 0
 - D17: 版本檢查直接查詢 npm 公開 API，遠端 MCP 自動跳過
 - D18: 同步認證從主選單獨立項目整合至認證管理子選單（[S] 選項）
 - D19: console.ps1 加入 Node.js / node_modules 前置檢查，確保外部使用者零門檻啟動
+- D20: CLI 共用路徑改由 `src/paths.ts` 提供；`PROJECT_ROOT` 保留舊名稱相容，但語義已改為使用者資料根目錄
+- D21: `rescan()` 直接呼叫 `loadConfig(CONFIG_PATH)` 與 `scanAndGenerateRegistry(config, REGISTRY_PATH)`，不再 shell out 到 `npx tsx src/index.ts --scan`
+- D22: 推薦清單固定讀取 npm package 內的 `mcp-catalog.json`；使用者的 MCP 設定與 registry 則寫入本機資料夾
 
 ## Known Issues
 - （已解決）cli.ts 原 888 行超過閾值──已完成拆分重構
@@ -71,6 +74,7 @@ staleness: 0
 - L04: Node.js 內建 fetch（18+）足以呼叫 npm 公開 API，無需額外依賴
 - L05: 主控台互動輸入時，若使用者輸入空白（按 Enter），`ask` 會回傳空字串並使狀態防護中斷。應使用 `.trim()` 清理輸入，並在判斷條件失敗時明確印出 `❌ 操作取消` 訊息，避免使用者誤以為保存成功或操作失效。
 - L06: 互動式 CLI 的 readline `ask()` 會逐行消化 stdin；遇到多行內容（如貼入 JSON）時，殘餘行會污染後續的 prompt 回答。正確做法：在進入流程前先預處理輸入，正常格式引導快速跳出路徑，焦點進入原有流程。
+- L07: CLI 隨 npm package 執行時不能依賴 repo 內的 `src/` 或目前工作目錄；掃描、認證、匯出匯入與工具瀏覽都必須走共用 user-data paths
 
 ## Relations
 - _system

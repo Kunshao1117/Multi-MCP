@@ -3,14 +3,13 @@
  * 互動式搜尋與瀏覽已安裝的工具。
  */
 import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { ask, pause, header, c, PROJECT_ROOT } from './shared.js';
+import { ask, pause, header, c, REGISTRY_PATH } from './shared.js';
 import { searchTools } from '../registry.js';
 import type { ToolRegistry } from '../types.js';
 
 /** 工具瀏覽器主流程 */
 export async function toolBrowserMenu(): Promise<void> {
-  const registryPath = resolve(PROJECT_ROOT, 'registry.json');
+  const registryPath = REGISTRY_PATH;
   if (!existsSync(registryPath)) {
     header('🔍 工具瀏覽器');
     console.log('  ⚠️ 集成表不存在，請先執行「重新掃描工具」');

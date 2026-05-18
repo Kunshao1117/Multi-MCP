@@ -1,9 +1,5 @@
-/**
- * Multi-MCP Gateway — 集成表引擎
- * 掃描下游 MCP 生成工具目錄 / 載入已生成的目錄
- */
-import { readFileSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import type { GatewayConfig, ToolRegistry, RegistryToolEntry, SearchToolsResult, CategorySummary } from './types.js';
@@ -17,7 +13,6 @@ function actualToolCount(entry: { tool_count: number; tools: Record<string, Regi
   return Object.keys(entry.tools).length;
 }
 
-/** 載入已生成的集成表 */
 export function loadRegistry(registryPath?: string): ToolRegistry {
   const resolvedPath = resolve(registryPath ?? DEFAULT_REGISTRY_PATH);
   logger.info('載入集成表', { path: resolvedPath });
@@ -38,15 +33,10 @@ export function loadRegistry(registryPath?: string): ToolRegistry {
   return registry;
 }
 
-/** 將工具名稱加上伺服器前綴 */
 export function namespaceTool(serverName: string, toolName: string): string {
   return `${serverName}${NAMESPACE_SEPARATOR}${toolName}`;
 }
 
-/**
- * 掃描所有下游 MCP 並生成集成表
- * 依序連接每個 MCP，取得工具清單，然後關閉
- */
 export async function scanAndGenerateRegistry(
   config: GatewayConfig,
   registryPath?: string,
@@ -103,12 +93,12 @@ export async function scanAndGenerateRegistry(
     }
   }
 
+  mkdirSync(dirname(resolvedPath), { recursive: true });
   writeFileSync(resolvedPath, JSON.stringify(registry, null, 2), 'utf-8');
   logger.info('集成表產生完成', { totalTools: Object.keys(registry.all_tools).length });
   return registry;
 }
 
-/** 模糊搜尋工具清冊 */
 export function searchTools(
   registry: ToolRegistry,
   query: string,
@@ -157,7 +147,6 @@ export function searchTools(
     .map((s) => s.entry);
 }
 
-/** 從集成表 + 分類設定產生分類總表 */
 export function generateCategorySummary(
   registry: ToolRegistry,
   categories: Record<string, string[]>,
@@ -221,7 +210,6 @@ export function generateCategorySummary(
   return summaries;
 }
 
-/** 將分類總表格式化為精簡文字（嵌入工具描述用） */
 export function formatCategorySummaryText(summaries: CategorySummary[]): string {
   const icons: Record<string, string> = {
     '資料庫管理': '📦', '雲端基礎設施': '☁️', 'UI設計': '🎨',

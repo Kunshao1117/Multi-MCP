@@ -1,5 +1,23 @@
 # 更新紀錄
 
+## v0.9.0 — 2026-05-18
+
+### 新增功能
+
+- **npm 一行啟動模式**：新增 `multi-mcp-gateway` bin 入口，支援 MCP Client 以 `npx -y multi-mcp-gateway@latest` 直接啟動 Gateway，不需 clone repo。
+- **使用者資料資料夾**：新增 package root / user data root 分離機制，首次啟動會建立 `gateway.config.json`、`gateway.env`、`mcps/` 與 `registry.json`。
+- **CLI npm 包相容**：`npx -y multi-mcp-gateway@latest console` 可直接開啟主控台，MCP 安裝、認證、掃描與匯出匯入都使用本機資料夾。
+
+### 架構調整
+
+- **相對路徑基準修正**：`gateway.env` 與 `mcps_dir` 現在以 `gateway.config.json` 所在資料夾解析，避免 npm package 目錄與使用者資料混在一起。
+- **發布內容白名單**：npm package 僅包含 `dist/`、`mcp-catalog.json`、README 與 CHANGELOG，避免帶入本機認證、示範 MCP 設定與治理資料。
+
+### 測試
+
+- 新增路徑解析測試，補強 config 相對路徑與自訂 registry 載入測試。
+- `verify:runtime` 會以 `MULTI_MCP_HOME` 指向 repo 根目錄，確保開發驗證仍可使用本專案示範設定。
+
 ## v0.8.4 — 2026-05-17
 
 ### 新增功能

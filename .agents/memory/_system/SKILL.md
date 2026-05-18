@@ -10,7 +10,7 @@ metadata:
   memory_awareness: full
   tool_scope:
     - 'filesystem:read'
-last_updated: '2026-05-17T17:26:34+08:00'
+last_updated: '2026-05-18T15:32:51+08:00'
 status: stable
 staleness: 0
 ---
@@ -52,14 +52,18 @@ staleness: 0
 | trunk | 程式碼品質 | https://mcp.trunk.io/mcp (HTTP) | OAuth（/mcp auth trunk） |
 
 ## Config Architecture
-- `gateway.config.json` — 閘道器設定（超時、重試、日誌等級）
+- npm package 只承載程式碼與公開資源；使用者設定、金鑰、MCP 清單與 registry 預設放在本機使用者資料夾
+- 預設使用者資料夾：Windows `%APPDATA%\multi-mcp-gateway`、macOS `~/Library/Application Support/multi-mcp-gateway`、Linux `$XDG_CONFIG_HOME/multi-mcp-gateway` 或 `~/.config/multi-mcp-gateway`
+- `MULTI_MCP_HOME` — 覆寫使用者資料夾；開發驗證可指向 repo 根目錄以沿用示範設定
+- `gateway.config.json` — 閘道器設定（超時、重試、日誌等級），相對路徑以此檔案所在資料夾解析
 - `gateway.env` — 認證檔案（由 CLI 主控台自動產生）
 - `.npmrc` — 固定 npm script shell 為 `cmd.exe`，避免 Windows session 缺少 `ComSpec` 時 npm script 無法 spawn
 - `credentials.json` — 多帳號認證儲存（明文，已被 .gitignore 排除）
 - `mcps/` — 分類目錄式 MCP 設定（JSON 檔）
 - `registry.json` — 掃描產出的工具集成表
+- `mcp-catalog.json` — npm package 內建推薦清單；CLI 讀 package 內檔案，不寫入使用者資料夾
 - `dist/` — TypeScript 編譯產物；被 `.gitignore` 排除但 Codex/Gemini MCP runtime 以 `node d:/Multi-MCP/dist/index.js` 啟動，修改 `src/` 後必須先 build 並重啟 MCP 連線
-- `scripts/verify-gateway-runtime.mjs` — 以 MCP stdio 啟動 `dist/index.js`，驗證 Gateway 管理工具描述、搜尋流程與 cartridge-system 工具數量
+- `scripts/verify-gateway-runtime.mjs` — 以 MCP stdio 啟動 `dist/index.js`，驗證 Gateway 管理工具描述、搜尋流程與 cartridge-system 12 個工具
 - `.agents/memory/` — 唯一提交到 Git 的 Antigravity agents 目錄；`.agents` 其他框架、技能、工作流檔案為本機 ignored 狀態
 - `.cartridge/` — Cartridge System 本機索引產物；被 `.gitignore` 排除，不提交
 - `C:\Users\homeb\.gemini\antigravity\mcp_config.json` — Gemini IDE 全域 MCP 設定（含 Trunk HTTP 端點）
@@ -70,8 +74,9 @@ staleness: 0
 - `npm run console` — CLI 管理主控台
 - `npm test` — 單元測試 (vitest)
 - `npx tsc` — 直接編譯到 `dist/`；`.npmrc` 已固定 npm script shell，`npm run build` 與 `npx tsc` 皆可作為建置入口
-- `npm run verify:runtime` — 驗證 `dist/` runtime 實際暴露新版 Gateway 工具與 cartridge-system 8 個工具
+- `npm run verify:runtime` — 驗證 `dist/` runtime 實際暴露新版 Gateway 工具與 cartridge-system 12 個工具；開發時以 `MULTI_MCP_HOME` 指向 repo 根目錄
 - `npm run preflight:gateway` — typecheck、核心測試、build、runtime verify 的完整 Gateway 上線前檢查
+- `npm pack --dry-run --json` — 檢查 npm 發布內容；白名單只應包含 `dist/`、`mcp-catalog.json`、README、CHANGELOG 與 package metadata
 
 ## Tracked Files
 - README.md
@@ -114,6 +119,9 @@ staleness: 0
 - D12: Gateway MCP runtime 指向 `dist/index.js`，因此只改 `src/` 不會影響已連線 MCP；完成原始碼變更後必須編譯 `dist/` 並重啟 MCP 連線，否則 Codex tool discovery 可能仍讀到舊工具 metadata
 - D13: `dist/index.js` server mode 會在啟動前檢查非測試 `src/**/*.ts` 是否比 `dist/**/*.js` 新；若 stale 則拒絕啟動，防止其他 AI 或人類忘記 build 後連到舊 Gateway
 - D14: `verify:runtime` 需覆蓋 Gateway 實際 MCP 呼叫的關鍵 AI 行為提示，包含工具發現、cartridge-system 工具數量與錯參數診斷
+- D15: A 方案採本機 stdio + npm 一行啟動，不建置雲端 SaaS 或 HTTP transport；MCP Client 設定使用 `npx -y multi-mcp-gateway@latest`
+- D16: 發布內容採 `package.json.files` 白名單，避免把 `.agents/`、`mcps/`、`gateway.env`、`credentials.json`、測試輸出或治理資料打進 npm package
+- D17: `MULTI_MCP_HOME` 是唯一正式的使用者資料夾覆寫入口；測試與 runtime verify 可用它將資料位置指回 repo
 
 ## Known Issues
 - credentials.json 明文儲存密鑰，依賴 .gitignore 保護，缺少加密層
@@ -136,6 +144,7 @@ staleness: 0
 - L09: 停用 MCP 時不要讓記憶卡繼續追蹤不存在的 `.json` 路徑；應改追蹤實際保留的 `.disabled` 檔，避免 ghost file 阻塞提交前檢查
 - L10: 修改 Gateway 工具描述後，必須同時驗證 `src/` 測試與實際 `dist/` runtime；`tool_search` 顯示舊描述通常代表 MCP 連線仍在使用舊編譯品或舊 metadata 快取
 - L11: 已連線的 Codex/Gemini MCP process 不會因 `npm run build` 自動熱更新；新 runtime 行為可由 `verify:runtime` 驗證，但目前 IDE 連線仍需重啟後才會看到新 Gateway 訊息
+- L12: npm package 化後，公開可複製命令也是產品面；README 需同時提供 MCP client JSON、管理台 `console`、`--scan`、`MULTI_MCP_HOME` 與發布 dry-run 驗證方式
 
 ## Relations
 - gateway-core

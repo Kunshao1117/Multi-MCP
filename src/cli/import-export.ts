@@ -6,7 +6,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
   ask, pause, header, c,
-  PROJECT_ROOT,
+  DATA_DIR,
   loadMcpsByCategory, saveMcpConfig, getAllMcpNames,
   type McpServerDef,
 } from './shared.js';
@@ -61,7 +61,7 @@ async function exportConfig(): Promise<void> {
     categories: cleanCategories,
   };
 
-  const defaultPath = resolve(PROJECT_ROOT, 'gateway-export.json');
+  const defaultPath = resolve(DATA_DIR, 'gateway-export.json');
   const pathInput = await ask(`? 匯出路徑 [${defaultPath}]: `);
   const outputPath = pathInput || defaultPath;
 
