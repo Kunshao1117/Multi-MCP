@@ -1,6 +1,6 @@
 {
   "name": "multi-mcp-gateway",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "統一 MCP 閘道器 — 單一插槽代理多個下游 MCP 伺服器",
   "type": "module",
   "main": "dist/index.js",
@@ -27,7 +27,7 @@
     "preflight:gateway": "npm run typecheck && vitest run src/paths.test.ts src/config-loader.test.ts src/process-pool.test.ts src/registry.test.ts src/tool-router.test.ts src/runtime-guard.test.ts && npm run build && npm run verify:runtime"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.12.1"
+    "@modelcontextprotocol/sdk": "^1.29.0"
   },
   "devDependencies": {
     "@types/node": "^22.13.0",

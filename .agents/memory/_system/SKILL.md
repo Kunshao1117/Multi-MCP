@@ -10,7 +10,7 @@ metadata:
   memory_awareness: full
   tool_scope:
     - 'filesystem:read'
-last_updated: '2026-05-18T15:32:51+08:00'
+last_updated: '2026-05-18T16:25:07+08:00'
 status: stable
 staleness: 0
 ---
@@ -20,7 +20,7 @@ staleness: 0
 ## Tech Stack
 - **語言**: TypeScript 5.7+ (strict, ES2022, Node16 module)
 - **執行環境**: Node.js (ESM, `type: module`)
-- **核心依賴**: `@modelcontextprotocol/sdk ^1.12.1`
+- **核心依賴**: `@modelcontextprotocol/sdk ^1.29.0`
 - **開發工具**: tsx 4.19+, vitest 3.0+
 - **建構**: tsc → dist/
 - **套件管理**: npm
@@ -122,6 +122,8 @@ staleness: 0
 - D15: A 方案採本機 stdio + npm 一行啟動，不建置雲端 SaaS 或 HTTP transport；MCP Client 設定使用 `npx -y multi-mcp-gateway@latest`
 - D16: 發布內容採 `package.json.files` 白名單，避免把 `.agents/`、`mcps/`、`gateway.env`、`credentials.json`、測試輸出或治理資料打進 npm package
 - D17: `MULTI_MCP_HOME` 是唯一正式的使用者資料夾覆寫入口；測試與 runtime verify 可用它將資料位置指回 repo
+- D18: `1.0.0` 作為 npm 公開發布候選版；正式 `npm publish` 前必須完成完整健檢、tarball smoke 與 npm 套件名稱/登入狀態檢查
+- D19: 1.0.0 發布前供應鏈門檻要求 `npm audit --omit=dev --json` 與 `npm audit --json` 皆為 0 vulnerabilities；若 npm 未登入，視為 publish blocker 但不影響程式碼發布候選狀態
 
 ## Known Issues
 - credentials.json 明文儲存密鑰，依賴 .gitignore 保護，缺少加密層
@@ -145,6 +147,8 @@ staleness: 0
 - L10: 修改 Gateway 工具描述後，必須同時驗證 `src/` 測試與實際 `dist/` runtime；`tool_search` 顯示舊描述通常代表 MCP 連線仍在使用舊編譯品或舊 metadata 快取
 - L11: 已連線的 Codex/Gemini MCP process 不會因 `npm run build` 自動熱更新；新 runtime 行為可由 `verify:runtime` 驗證，但目前 IDE 連線仍需重啟後才會看到新 Gateway 訊息
 - L12: npm package 化後，公開可複製命令也是產品面；README 需同時提供 MCP client JSON、管理台 `console`、`--scan`、`MULTI_MCP_HOME` 與發布 dry-run 驗證方式
+- L13: Windows 本機 tarball smoke 應使用 `npx -y --package <tgz> -- multi-mcp-gateway ...` 驗證 bin；直接 `npx -y <tgz>` 可能 exit 0 但未穩定啟動 package bin
+- L14: MCP SDK minor 升級不一定會刷新間接依賴；發布前安全修復需在升級後跑 `npm audit fix`，確認 lockfile 實際解析到 patched transitive versions
 
 ## Relations
 - gateway-core

@@ -1,6 +1,6 @@
 # 更新紀錄
 
-## v0.9.0 — 2026-05-18
+## v1.0.0 — 2026-05-18
 
 ### 新增功能
 
@@ -12,11 +12,13 @@
 
 - **相對路徑基準修正**：`gateway.env` 與 `mcps_dir` 現在以 `gateway.config.json` 所在資料夾解析，避免 npm package 目錄與使用者資料混在一起。
 - **發布內容白名單**：npm package 僅包含 `dist/`、`mcp-catalog.json`、README 與 CHANGELOG，避免帶入本機認證、示範 MCP 設定與治理資料。
+- **發布前依賴安全修復**：升級 MCP SDK 與相關間接依賴，讓正式發布前的 `npm audit` 全量檢查歸零。
 
 ### 測試
 
 - 新增路徑解析測試，補強 config 相對路徑與自訂 registry 載入測試。
 - `verify:runtime` 會以 `MULTI_MCP_HOME` 指向 repo 根目錄，確保開發驗證仍可使用本專案示範設定。
+- 1.0.0 發布候選版需通過 production/full audit、preflight、runtime verify 與本機 tarball smoke。
 
 ## v0.8.4 — 2026-05-17
 
