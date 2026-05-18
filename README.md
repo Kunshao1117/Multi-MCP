@@ -19,7 +19,7 @@
 - [使用者資料位置](#使用者資料位置)
 - [MCP 資料夾結構](#mcp-資料夾結構)
 - [閘道器管理工具](#閘道器管理工具)
-- [CLI 管理主控台](#cli-管理主控台)
+- [VS Code 延伸模組](#vs-code-延伸模組)
 - [開發指南](#開發指南)
 - [測試](#測試)
 - [專案結構](#專案結構)
@@ -69,8 +69,8 @@ MCP 設定檔按功能分類存放在 `mcps/` 資料夾中（如 `mcps/開發工
 ### 🏥 健康檢查與認證診斷
 內建認證狀態監控、伺服器健康檢查、授權引導指南，確保所有工具在任何時刻都處於可用狀態。
 
-### 🛒 MCP 市集
-CLI 主控台內建 npm 搜尋整合，可直接搜尋、安裝、設定新的 MCP 伺服器。
+### 🧩 VS Code 儀表板管理
+Multi-MCP Manager 延伸模組提供 Activity Bar 儀表板，可安裝、移除、啟用、停用、掃描 MCP，並管理相容的 `gateway.env` / `credentials.json` 認證檔。
 
 ---
 
@@ -124,14 +124,16 @@ CLI 主控台內建 npm 搜尋整合，可直接搜尋、安裝、設定新的 M
 | **集成表引擎** | `src/registry.ts` | 下游 MCP 掃描、工具目錄生成、模糊搜尋、分類總表產生 |
 | **認證引導** | `src/auth-guides.ts` | 各 MCP 的授權步驟指南生成（環境變數 / OAuth / API Key） |
 | **認證儲存** | `src/credential-store.ts` | 多帳號認證資料的讀寫管理 |
+| **Headless 管理 API** | `src/management/` | 提供 extension 與未來 UI 共用的安裝、移除、啟停、掃描、認證與版本檢查能力 |
 | **日誌系統** | `src/logger.ts` | 結構化 JSON 日誌，輸出至 stderr（避免干擾 stdio 通訊） |
 | **型別定義** | `src/types.ts` | 全域共用型別（GatewayConfig、ToolRegistry、ProcessState 等） |
 
-### CLI 管理主控台模組
+### VS Code 延伸模組與舊 CLI 模組
 
 | 模組 | 檔案 | 職責 |
 |------|------|------|
-| **主控台入口** | `src/cli.ts` | 主選單路由與互動式介面 |
+| **VS Code extension** | `extensions/vscode-multi-mcp-manager/` | Activity Bar Webview 儀表板管理 MCP、認證、掃描與版本檢查，並可打包 VSIX |
+| **舊主控台入口** | `src/cli.ts` | 舊互動式選單程式碼保留於原始碼，但 npm `console` 入口已停用並導向 VS Code extension |
 | **儀表板** | `src/cli/dashboard.ts` | MCP 總覽儀表板渲染 |
 | **MCP 管理** | `src/cli/mcp-manager.ts` | 檢視、移除、重新掃描 MCP |
 | **市集** | `src/cli/marketplace.ts` | npm 搜尋整合與一鍵安裝 |
@@ -171,13 +173,15 @@ CLI 主控台內建 npm 搜尋整合，可直接搜尋、安裝、設定新的 M
 
 首次啟動時會自動建立本機設定資料夾，包含 `gateway.config.json`、`gateway.env`、`mcps/`、`registry.json` 與一次性預設 MCP seed 狀態檔。新資料夾會預設啟用可攜、無金鑰的 MCP，例如 `cartridge-system`、`context7`、`playwright`、`a11y`、`excel`、`sequentialthinking` 與 `gitnexus`。
 
-預設 MCP 只在第一次初始化時建立；若你刪除某個 MCP 設定，Gateway 不會在下次啟動時自動補回。需要 Token 的 MCP（如 GitHub、Sentry、Stitch）請用主控台安裝並設定金鑰。
+預設 MCP 只在第一次初始化時建立；若你刪除某個 MCP 設定，Gateway 不會在下次啟動時自動補回。需要 Token 的 MCP（如 GitHub、Sentry、Stitch）請用 Multi-MCP Manager VS Code 延伸模組安裝並設定金鑰。
 
-啟動互動式管理主控台：
+安裝本 repo 打包出的 VSIX 後，從 VS Code 左側 **Multi-MCP** 圖示開啟管理儀表板：
 
 ```bash
-npx -y multi-mcp-gateway@latest console
+code --install-extension extensions/vscode-multi-mcp-manager/vscode-multi-mcp-manager-0.1.0.vsix
 ```
+
+`npx -y multi-mcp-gateway@latest console` 目前只會顯示遷移提示，不再啟動互動式選單。
 
 若要固定設定資料夾位置，可設定：
 
@@ -197,7 +201,7 @@ npm install
 
 #### 1. 設定認證檔案
 
-建立或透過 CLI 主控台維護 `gateway.env`，填入你的 API 金鑰：
+建立或透過 Multi-MCP Manager VS Code 延伸模組維護 `gateway.env`，填入你的 API 金鑰：
 
 ```env
 # GitHub
@@ -332,7 +336,7 @@ CLOUDFLARE_API_TOKEN=xxxxxxxxxxxx
 |-------------|------|
 | `gateway.config.json` | Gateway 啟動設定 |
 | `gateway.env` | API key 與 token |
-| `credentials.json` | CLI 管理的多帳號認證資料 |
+| `credentials.json` | 管理介面維護的多帳號認證資料 |
 | `mcps/` | 使用者安裝的下游 MCP 設定 |
 | `registry.json` | 掃描生成的工具目錄 |
 | `default-mcps.seed.json` | 預設 MCP 一次性初始化紀錄；存在時不再自動補回被刪除的預設 MCP |
@@ -465,42 +469,40 @@ Gateway 啟動後會暴露 10 個管理工具，供 AI 助理直接呼叫：
 | `gateway__reload_server` | 重新載入指定伺服器（更新密鑰後使用） |
 | `gateway__rescan` | 熱掃描所有 MCP 並更新集成表（無需重啟） |
 
-## CLI 管理主控台
+## VS Code 延伸模組
 
-啟動互動式管理主控台：
+Multi-MCP Manager 是本 repo 內的 VS Code extension，提供 Activity Bar 儀表板管理本機 Multi-MCP Gateway user-data。介面會依 VS Code 語言顯示英文或繁體中文，並保留 MCP、Gateway、Token、Registry 等技術術語。
+
+點選左側 Multi-MCP 圖示後會開啟單一管理儀表板：
+
+- **狀態總覽**：以摘要卡查看 Gateway 狀態、版本、已啟用 MCP、工具數與最後掃描時間。
+- **頁首工具列**：直接執行來源安裝、匯入 `mcpServers` JSON、探索 MCP 目錄、重新掃描、檢查版本、開啟資料夾與重新整理。
+- **已安裝 MCP**：依分類區段顯示內縮 MCP 列，每個分類與 MCP 都可收合；展開 MCP 後可查看設定、認證與工具摘要，窄側欄會維持清楚的三層層級。
+
+安裝流程支援 npm package / remote URL，以及貼上 `mcpServers` JSON；安裝時可從既有分類中選擇或新增分類，也可選擇覆蓋既有設定、立即設定 Token、安裝後立即掃描。移除 MCP 會先顯示名稱、分類、設定檔與認證影響，確認後才刪除設定與對應 credential。探索 MCP 會提供 PulseMCP、官方 MCP Registry、Glama 與 Smithery 等外部目錄，不在 extension 內維護推薦清單。
+
+本機打包：
 
 ```bash
-npx -y multi-mcp-gateway@latest console
+npm run package:extension
 ```
 
-開發模式也可使用 `npm run console`。
+安裝 VSIX：
 
-主控台提供以下功能：
+```bash
+code --install-extension extensions/vscode-multi-mcp-manager/vscode-multi-mcp-manager-0.1.0.vsix
+```
 
+發布 VSIX 到 GitHub Releases：
+
+```bash
+git tag vscode-multi-mcp-manager-v0.1.0
+git push origin vscode-multi-mcp-manager-v0.1.0
 ```
-╔══════════════════════════════════════════════════╗
-║     Multi-MCP Gateway 管理主控台                ║
-╠══════════════════════════════════════════════════╣
-║ 📦 MCP 管理                                     ║
-║  [1] 檢視已安裝的 MCP                           ║
-║  [2] 🛒 MCP 市集                                ║
-║  [3] 移除 MCP                                   ║
-║                                                  ║
-║ 🔍 工具與診斷                                    ║
-║  [4] 工具瀏覽器                                  ║
-║  [5] 🏥 健康檢查                                 ║
-║  [6] 🔄 版本檢查                                 ║
-║                                                  ║
-║ 🔧 系統設定                                      ║
-║  [7] 認證管理                                    ║
-║  [8] 分類管理                                    ║
-║                                                  ║
-║ ⚡ 進階                                          ║
-║  [9] 重新掃描工具                                ║
-║  [E] 匯出 / 匯入設定                            ║
-║  [0] 離開                                        ║
-╚══════════════════════════════════════════════════╝
-```
+
+推送 `vscode-multi-mcp-manager-v*` tag 後，GitHub Actions 會重新打包 VSIX、確認 tag 版本與 extension 版本一致，並建立對應 GitHub Release。若同名 Release 已存在，發布流程會停止，不會覆蓋既有附件。
+
+舊的互動式 CLI 選單已停用。`multi-mcp-gateway console` 只保留遷移提示，實際管理入口請使用 VS Code extension；若要程式化整合，請使用 `multi-mcp-gateway/management` subpath API。
 
 ---
 
@@ -512,11 +514,14 @@ npx -y multi-mcp-gateway@latest console
 |------|------|
 | `npm run dev` | 開發模式啟動 Gateway（使用 tsx 即時編譯） |
 | `npm run dev:scan` | 開發模式掃描所有 MCP 並生成集成表 |
-| `npm run console` | 啟動互動式 CLI 管理主控台 |
+| `npm run console` | 顯示互動式 CLI 已停用與 VS Code extension 遷移提示 |
 | `npm run build` | 編譯 TypeScript 至 `dist/` |
 | `npm run typecheck` | 執行 TypeScript 型別檢查，不輸出檔案 |
 | `npm run verify:runtime` | 以 MCP stdio 啟動 `dist/index.js`，驗證 Gateway 工具暴露與 cartridge-system 工具數量 |
 | `npm run preflight:gateway` | 依序執行 typecheck、核心測試、build 與 runtime 驗證 |
+| `npm run build:extension` | 編譯 Gateway 與 Multi-MCP Manager extension |
+| `npm run package:extension` | 打包 VSIX 到 `extensions/vscode-multi-mcp-manager/` |
+| `npm run preflight:extension` | 編譯並執行 VS Code extension smoke test |
 | `npm run start` | 生產模式啟動 Gateway |
 | `npm run scan` | 生產模式掃描工具 |
 | `npm test` | 執行單元測試（Vitest） |
@@ -540,7 +545,7 @@ npx -y multi-mcp-gateway@latest console
 2. 建立 JSON 設定檔（檔名即為伺服器名稱）
 3. 如需認證，將金鑰加入 `gateway.env`，在 JSON 中使用 `${VAR}` 引用
 4. 執行 `npx -y multi-mcp-gateway@latest --scan` 或 `npm run dev:scan` 掃描並註冊
-5. （選用）使用 CLI 主控台確認工具已就緒
+5. （選用）使用 VS Code extension 或 `gateway__rescan` 確認工具已就緒
 
 ### 日誌系統
 
@@ -614,9 +619,10 @@ Multi-MCP/
 │   ├── credential-store.ts     # 認證儲存
 │   ├── logger.ts               # 結構化日誌系統
 │   ├── types.ts                # 全域型別定義
+│   ├── management/             # Headless 管理 API
 │   ├── *.test.ts               # 單元測試
 │   │
-│   └── cli/                    # CLI 管理主控台
+│   └── cli/                    # 舊互動式 CLI 模組（console 入口已停用）
 │       ├── shared.ts           # 共用 UI 元件
 │       ├── dashboard.ts        # 儀表板
 │       ├── mcp-manager.ts      # MCP 管理
@@ -629,6 +635,9 @@ Multi-MCP/
 │       ├── version-check.ts    # 版本檢查
 │       ├── import-export.ts    # 匯出匯入
 │       └── source-detector.ts  # 來源偵測
+│
+├── extensions/
+│   └── vscode-multi-mcp-manager/ # VS Code 左側管理延伸模組與 VSIX 打包設定
 │
 └── dist/                       # 編譯輸出（tsc）
 ```

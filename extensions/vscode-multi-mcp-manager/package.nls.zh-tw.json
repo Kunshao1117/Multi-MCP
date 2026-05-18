@@ -1,0 +1,20 @@
+{
+  "ext.displayName": "Multi-MCP 管理器",
+  "ext.description": "從 VS Code 儀表板管理 Multi-MCP Gateway 的 MCP、認證、掃描與版本檢查。",
+  "viewContainer.title": "Multi-MCP",
+  "view.dashboard": "管理儀表板",
+  "command.refresh": "重新整理",
+  "command.installAdvanced": "安裝 MCP...",
+  "command.installManual": "從來源安裝...",
+  "command.removePick": "移除 MCP...",
+  "command.remove": "移除 MCP",
+  "command.enable": "啟用 MCP",
+  "command.disable": "停用 MCP",
+  "command.addCredentialPick": "新增或更新認證...",
+  "command.addCredential": "新增或更新認證",
+  "command.rescan": "重新掃描工具",
+  "command.checkVersions": "檢查套件版本",
+  "command.openDataDir": "開啟資料夾",
+  "command.openRegistry": "開啟 Registry",
+  "command.openMarketplace": "探索 MCP..."
+}

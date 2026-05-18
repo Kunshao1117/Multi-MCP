@@ -6,6 +6,8 @@ sessions/
 # 建構輸出
 # 狀態：可重新建構，npm 發布內容由 package.json 的 files 白名單控制
 dist/
+extensions/vscode-multi-mcp-manager/out/
+extensions/vscode-multi-mcp-manager/.vscode-test/
 
 # 認證與本機密鑰
 # 狀態：絕不可提交，僅保留在操作者本機

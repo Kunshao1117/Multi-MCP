@@ -1,5 +1,29 @@
 # 更新紀錄
 
+## v1.2.0 — 2026-05-19
+
+### 新增功能
+
+- **Multi-MCP Manager VS Code 延伸模組**：新增 `extensions/vscode-multi-mcp-manager`，提供 Activity Bar 儀表板管理 MCP 安裝、移除、啟用、停用、認證、工具掃描與 npm 版本檢查，並可打包 `vscode-multi-mcp-manager-0.1.0.vsix`。
+- **Webview 管理儀表板**：Multi-MCP Manager 從多段 Tree View 側邊欄改為單一 Webview 儀表板，用狀態摘要、頁首工具列、分類區段與內縮 MCP 列提供更清楚的管理介面。
+- **儀表板體驗優化**：安裝流程可選既有分類或新增分類，已安裝 MCP 可展開查看工具摘要，窄側邊欄會維持分類、MCP、工具三層層級，並新增 PulseMCP、官方 Registry、Glama、Smithery 外部探索入口。
+- **完整安裝與安全移除流程**：安裝支援 npm/remote 來源與 `mcpServers` JSON，並可選擇覆蓋、設定 Token 與安裝後掃描；移除 MCP 前會顯示設定檔與認證影響並要求確認。
+- **雙語介面**：VS Code extension 新增 manifest 與 runtime localization，預設英文，VS Code 語言為 `zh-tw` 時顯示繁體中文。
+- **VSIX Release 自動化**：推送 `vscode-multi-mcp-manager-v*` tag 後，GitHub Actions 會打包 VSIX、檢查版本一致性，並上傳到 GitHub Releases。
+- **Headless 管理 API**：新增 `multi-mcp-gateway/management` subpath，將安裝、移除、啟停、掃描、認證與版本檢查抽成 UI 無關 API，供 VS Code extension 與未來管理介面共用。
+- **版本命令**：`multi-mcp-gateway --version`、`-v` 與 `version` 可輸出目前 Gateway package 版本。
+
+### 架構調整
+
+- **互動式 CLI 選單停用**：`multi-mcp-gateway console` 不再啟動 readline 選單，只輸出遷移提示；實際管理入口改為 VS Code extension。
+- **extension 打包策略**：extension 以 esbuild bundle 管理 API 與 Webview 程式，避免 VSIX 攜帶整個 root `node_modules`，並保留 `gateway.env` / `credentials.json` 相容認證模型。
+- **使用者資料相容**：VS Code extension 不改現有 user-data 格式，仍使用 `mcps/`、`registry.json`、`gateway.env` 與 `credentials.json`。
+
+### 測試
+
+- Root 測試更新為 103 passed，新增 management API 單元測試。
+- Extension 通過 `@vscode/test-electron` smoke test、`npm audit --omit=dev`、完整 `npm audit` 與 VSIX package 驗證。
+
 ## v1.1.1 — 2026-05-18
 
 ### 新增功能

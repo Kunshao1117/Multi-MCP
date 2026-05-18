@@ -14,6 +14,8 @@ if (process.platform === 'win32') {
   delete process.env.SHELL;
 }
 import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { loadConfig } from './config-loader.js';
 import { loadRegistry, scanAndGenerateRegistry } from './registry.js';
 import { GatewayServer } from './gateway-server.js';
@@ -30,9 +32,17 @@ const logger = createLogger('main');
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const command = args[0];
+  if (command === '--version' || command === '-v' || command === 'version') {
+    console.log(readPackageVersion());
+    return;
+  }
+
   if (command === 'console') {
-    ensureUserDataDir();
-    await import('./cli.js');
+    console.log([
+      'Multi-MCP Gateway 的互動式 CLI 選單已停用。',
+      '請改用 Multi-MCP Manager VS Code 延伸模組管理安裝、移除、更新、掃描與認證。',
+      'Gateway server 仍可用 npx -y multi-mcp-gateway@latest 作為 MCP runtime 啟動。',
+    ].join('\n'));
     return;
   }
 
@@ -69,6 +79,11 @@ async function main(): Promise<void> {
     logger.error('致命錯誤', { error: (err as Error).message, stack: (err as Error).stack });
     process.exit(1);
   }
+}
+
+function readPackageVersion(): string {
+  const pkg = JSON.parse(readFileSync(resolve(PROJECT_ROOT, 'package.json'), 'utf-8')) as { version?: string };
+  return pkg.version ?? '0.0.0';
 }
 
 main();

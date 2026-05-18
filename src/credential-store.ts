@@ -109,8 +109,8 @@ export function updateAccountValue(
 export function syncToEnvFile(store: CredentialStore): void {
   ensureUserDataDir();
   const lines = [
-    '# Multi-MCP Gateway — 認證（由主控台自動產生，請勿手動編輯）',
-    '# 使用 npx -y multi-mcp-gateway@latest console 管理帳號與密鑰',
+    '# Multi-MCP Gateway — 認證（由管理介面自動產生，請勿手動編輯）',
+    '# 使用 Multi-MCP Manager VS Code 延伸模組管理帳號與密鑰',
     '',
   ];
 

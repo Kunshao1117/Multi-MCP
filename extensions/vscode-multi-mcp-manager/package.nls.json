@@ -1,0 +1,20 @@
+{
+  "ext.displayName": "Multi-MCP Manager",
+  "ext.description": "Manage Multi-MCP Gateway servers, credentials, scans, and package checks from a VS Code dashboard.",
+  "viewContainer.title": "Multi-MCP",
+  "view.dashboard": "Dashboard",
+  "command.refresh": "Refresh",
+  "command.installAdvanced": "Install MCP...",
+  "command.installManual": "Install from Source...",
+  "command.removePick": "Remove MCP...",
+  "command.remove": "Remove MCP",
+  "command.enable": "Enable MCP",
+  "command.disable": "Disable MCP",
+  "command.addCredentialPick": "Add or Update Credential...",
+  "command.addCredential": "Add or Update Credential",
+  "command.rescan": "Rescan Tools",
+  "command.checkVersions": "Check Package Versions",
+  "command.openDataDir": "Open Data Folder",
+  "command.openRegistry": "Open Registry",
+  "command.openMarketplace": "Explore MCP..."
+}

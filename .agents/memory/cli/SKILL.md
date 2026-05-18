@@ -1,8 +1,8 @@
 ---
 name: cli
 description: >
-  專案記憶：CLI 管理主控台（安裝/移除 MCP、認證管理、分類管理、市集、健康檢查、工具瀏覽器、版本檢查、匯出匯入）。 Use when: 修改 CLI
-  主控台/管理介面/使用者互動流程 的任務。
+  專案記憶：舊 CLI 管理主控台模組與 catalog 行為。互動式 console 入口已停用；新的管理介面請優先使用 management-api 與
+  vscode-extension 記憶卡。 Use when: 修改 src/cli 舊流程或 mcp-catalog.json 的任務。
 metadata:
   author: antigravity
   version: '1.0'
@@ -12,12 +12,12 @@ metadata:
     - 'filesystem:read'
     - 'filesystem:write'
     - 'mcp:cartridge-system'
-last_updated: '2026-05-18T21:37:29+08:00'
+last_updated: '2026-05-19T04:39:49+08:00'
 status: stable
 staleness: 0
 ---
 
-# CLI Console — Module Memory
+# Legacy CLI Console — Module Memory
 
 ## Tracked Files
 - src/cli.ts
@@ -37,7 +37,7 @@ staleness: 0
 - console.ps1
 
 ## Key Decisions
-- D01: CLI 採互動式選單設計，支援安裝/移除/認證/分類/掃描/同步六大功能
+- D01: 互動式 CLI 選單原始碼仍保留於 `src/cli/`，但 npm `console` 入口已停用並輸出 VS Code extension 遷移提示
 - D02: 安裝 MCP 時三層自動辨識：已知提示 → 試啟動偵測 → 手動輸入
 - D03: 同步認證功能可從 gateway.env 反向匯入到 credentials.json
 - D04: 來源偵測支援 GitHub URL、npm 套件名、遠端 MCP URL 三種格式
@@ -59,9 +59,10 @@ staleness: 0
 - D20: CLI 共用路徑改由 `src/paths.ts` 提供；`PROJECT_ROOT` 保留舊名稱相容，但語義已改為使用者資料根目錄
 - D21: `rescan()` 直接呼叫 `loadConfig(CONFIG_PATH)` 與 `scanAndGenerateRegistry(config, REGISTRY_PATH)`，不再 shell out 到 `npx tsx src/index.ts --scan`
 - D22: 推薦清單固定讀取 npm package 內的 `mcp-catalog.json`；使用者的 MCP 設定與 registry 則寫入本機資料夾
-- D23: `mcp-catalog.json` 只作為 console marketplace 推薦清單，不等於預設啟用清單；預設啟用由 `src/paths.ts` 的一次性 seed 控制
-- D24: 需要 Token 的 GitHub、Sentry、Stitch 可保留在 catalog 供 console 安裝與認證引導，但不得進入無金鑰預設 seed
+- D23: `mcp-catalog.json` 現在同時供舊 console marketplace 與 VS Code extension catalog 使用，不等於預設啟用清單；預設啟用由 `src/paths.ts` 的一次性 seed 控制
+- D24: 需要 Token 的 GitHub、Sentry、Stitch 可保留在 catalog 供管理介面安裝與認證引導，但不得進入無金鑰預設 seed
 - D25: CLI 健康檢查與認證需求探測啟動下游 MCP 時使用 `createDownstreamEnv()`，避免 Gateway 由 npm/npx 啟動時外層 npm lifecycle 變數污染內層 npx
+- D26: 新功能不得再擴充互動式 CLI 選單；請改擴充 `src/management/` headless API 與 VS Code extension。
 
 ## Known Issues
 - （已解決）cli.ts 原 888 行超過閾值──已完成拆分重構
@@ -80,7 +81,10 @@ staleness: 0
 - L07: CLI 隨 npm package 執行時不能依賴 repo 內的 `src/` 或目前工作目錄；掃描、認證、匯出匯入與工具瀏覽都必須走共用 user-data paths
 - L08: catalog 內的 `package` 欄位會被 install flow 當作使用者提示來源；若 npm 套件不存在或 deprecated，文件描述必須明確標示風險，避免公開安裝流程導向壞端點
 - L09: 若 CLI/健康檢查是在 tarball npx 情境中執行，下游 package 最好使用 explicit `--package <pkg> -- <bin>` 形態；單純 `npx -y <pkg>@latest` 在 Windows nested npx 下可能被誤解析
+- L10: `mcp-catalog.json` 若更新版本或推薦清單，需同步 `extensions/vscode-multi-mcp-manager/mcp-catalog.json`，否則 VSIX 內 catalog 會落後。
 
 ## Relations
 - _system
 - gateway-core
+- management-api
+- vscode-extension

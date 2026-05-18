@@ -1,0 +1,212 @@
+{
+  "name": "vscode-multi-mcp-manager",
+  "displayName": "%ext.displayName%",
+  "description": "%ext.description%",
+  "version": "0.1.0",
+  "publisher": "kunshao",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./out/src/extension.cjs",
+  "l10n": "./l10n",
+  "activationEvents": [
+    "onView:multiMcp.dashboard",
+    "onCommand:multiMcp.refresh",
+    "onCommand:multiMcp.installAdvanced",
+    "onCommand:multiMcp.installManual",
+    "onCommand:multiMcp.removePick",
+    "onCommand:multiMcp.remove",
+    "onCommand:multiMcp.enable",
+    "onCommand:multiMcp.disable",
+    "onCommand:multiMcp.addCredentialPick",
+    "onCommand:multiMcp.addCredential",
+    "onCommand:multiMcp.rescan",
+    "onCommand:multiMcp.checkVersions",
+    "onCommand:multiMcp.openDataDir",
+    "onCommand:multiMcp.openRegistry",
+    "onCommand:multiMcp.openMarketplace"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "multiMcp",
+          "title": "%viewContainer.title%",
+          "icon": "resources/multi-mcp.svg"
+        }
+      ]
+    },
+    "views": {
+      "multiMcp": [
+        {
+          "id": "multiMcp.dashboard",
+          "name": "%view.dashboard%",
+          "type": "webview"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "multiMcp.refresh",
+        "title": "%command.refresh%",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "multiMcp.installAdvanced",
+        "title": "%command.installAdvanced%",
+        "icon": "$(add)"
+      },
+      {
+        "command": "multiMcp.installManual",
+        "title": "%command.installManual%",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "multiMcp.removePick",
+        "title": "%command.removePick%",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "multiMcp.remove",
+        "title": "%command.remove%",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "multiMcp.enable",
+        "title": "%command.enable%",
+        "icon": "$(play)"
+      },
+      {
+        "command": "multiMcp.disable",
+        "title": "%command.disable%",
+        "icon": "$(debug-pause)"
+      },
+      {
+        "command": "multiMcp.addCredentialPick",
+        "title": "%command.addCredentialPick%",
+        "icon": "$(key)"
+      },
+      {
+        "command": "multiMcp.addCredential",
+        "title": "%command.addCredential%",
+        "icon": "$(key)"
+      },
+      {
+        "command": "multiMcp.rescan",
+        "title": "%command.rescan%",
+        "icon": "$(sync)"
+      },
+      {
+        "command": "multiMcp.checkVersions",
+        "title": "%command.checkVersions%",
+        "icon": "$(versions)"
+      },
+      {
+        "command": "multiMcp.openDataDir",
+        "title": "%command.openDataDir%",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "multiMcp.openRegistry",
+        "title": "%command.openRegistry%",
+        "icon": "$(json)"
+      },
+      {
+        "command": "multiMcp.openMarketplace",
+        "title": "%command.openMarketplace%",
+        "icon": "$(globe)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "multiMcp.installAdvanced",
+          "when": "view == multiMcp.dashboard",
+          "group": "navigation"
+        },
+        {
+          "command": "multiMcp.addCredentialPick",
+          "when": "view == multiMcp.dashboard",
+          "group": "navigation"
+        },
+        {
+          "command": "multiMcp.rescan",
+          "when": "view == multiMcp.dashboard",
+          "group": "navigation"
+        },
+        {
+          "command": "multiMcp.checkVersions",
+          "when": "view == multiMcp.dashboard",
+          "group": "navigation"
+        },
+        {
+          "command": "multiMcp.openDataDir",
+          "when": "view == multiMcp.dashboard",
+          "group": "navigation"
+        },
+        {
+          "command": "multiMcp.openMarketplace",
+          "when": "view == multiMcp.dashboard",
+          "group": "navigation"
+        },
+        {
+          "command": "multiMcp.refresh",
+          "when": "view == multiMcp.dashboard",
+          "group": "navigation@9"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "multiMcp.installAdvanced"
+        },
+        {
+          "command": "multiMcp.installManual"
+        },
+        {
+          "command": "multiMcp.removePick"
+        },
+        {
+          "command": "multiMcp.addCredentialPick"
+        },
+        {
+          "command": "multiMcp.rescan"
+        },
+        {
+          "command": "multiMcp.checkVersions"
+        },
+        {
+          "command": "multiMcp.openDataDir"
+        },
+        {
+          "command": "multiMcp.openRegistry"
+        },
+        {
+          "command": "multiMcp.openMarketplace"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "clean": "node -e \"require('node:fs').rmSync('out',{recursive:true,force:true})\"",
+    "check": "tsc -p ./ --noEmit",
+    "bundle": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --outfile=out/src/extension.cjs --sourcemap --minify --log-override:empty-import-meta=silent",
+    "compile-tests": "tsc -p ./tsconfig.test.json",
+    "compile": "npm run clean && npm run check && npm run bundle && npm run compile-tests",
+    "watch": "tsc -watch -p ./ --noEmit",
+    "test": "npm run compile && node ./out/test/runTest.js",
+    "package": "npm run compile && vsce package --allow-missing-repository"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "@types/vscode": "^1.90.0",
+    "@vscode/test-electron": "^2.4.1",
+    "@vscode/vsce": "^3.2.2",
+    "esbuild": "^0.27.0",
+    "typescript": "^5.7.0"
+  }
+}

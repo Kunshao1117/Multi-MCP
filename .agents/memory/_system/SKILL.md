@@ -10,7 +10,7 @@ metadata:
   memory_awareness: full
   tool_scope:
     - 'filesystem:read'
-last_updated: '2026-05-18T22:25:56+08:00'
+last_updated: '2026-05-19T06:30:33+08:00'
 status: stable
 staleness: 0
 ---
@@ -56,13 +56,15 @@ staleness: 0
 - 預設使用者資料夾：Windows `%APPDATA%\multi-mcp-gateway`、macOS `~/Library/Application Support/multi-mcp-gateway`、Linux `$XDG_CONFIG_HOME/multi-mcp-gateway` 或 `~/.config/multi-mcp-gateway`
 - `MULTI_MCP_HOME` — 覆寫使用者資料夾；開發驗證可指向 repo 根目錄以沿用示範設定
 - `gateway.config.json` — 閘道器設定（超時、重試、日誌等級），相對路徑以此檔案所在資料夾解析
-- `gateway.env` — 認證檔案（由 CLI 主控台自動產生）
+- `gateway.env` — 認證檔案（由管理介面自動產生）
 - `default-mcps.seed.json` — 預設 MCP 一次性初始化紀錄；存在時不再自動補回被刪除的預設 MCP，屬於 user-data 產物且已由 `.gitignore` 排除
 - `.npmrc` — 固定 npm script shell 為 `cmd.exe`，避免 Windows session 缺少 `ComSpec` 時 npm script 無法 spawn
 - `credentials.json` — 多帳號認證儲存（明文，已被 .gitignore 排除）
 - `mcps/` — 分類目錄式 MCP 設定（JSON 檔）
 - `registry.json` — 掃描產出的工具集成表
-- `mcp-catalog.json` — npm package 內建推薦清單；CLI 讀 package 內檔案，不寫入使用者資料夾
+- `mcp-catalog.json` — npm package / 舊相容層內建推薦清單；VS Code extension 不再顯示或打包推薦 Catalog
+- `extensions/vscode-multi-mcp-manager/` — Multi-MCP Manager VS Code extension；使用 esbuild bundle 管理 API，可打包 VSIX
+- `.github/workflows/vscode-extension-release.yml` — VS Code extension 的 GitHub Release 自動化；推送 `vscode-multi-mcp-manager-v*` tag 後打包並上傳 VSIX
 - `dist/` — TypeScript 編譯產物；被 `.gitignore` 排除但 Codex/Gemini MCP runtime 以 `node d:/Multi-MCP/dist/index.js` 啟動，修改 `src/` 後必須先 build 並重啟 MCP 連線
 - `scripts/verify-gateway-runtime.mjs` — 以 MCP stdio 啟動 `dist/index.js`，驗證 Gateway 管理工具描述、搜尋流程與 cartridge-system 12 個工具
 - `.agents/memory/` — 唯一提交到 Git 的 Antigravity agents 目錄；`.agents` 其他框架、技能、工作流檔案為本機 ignored 狀態
@@ -73,7 +75,10 @@ staleness: 0
 ## Key Scripts
 - `npm run dev` — 開發模式啟動閘道器
 - `npm run dev:scan` — 開發模式掃描工具
-- `npm run console` — CLI 管理主控台
+- `npm run console` — 顯示互動式 CLI 已停用與 VS Code extension 遷移提示
+- `npm run build:extension` — 編譯 Gateway 與 VS Code extension
+- `npm run package:extension` — 打包 `extensions/vscode-multi-mcp-manager/vscode-multi-mcp-manager-0.1.0.vsix`
+- `npm run preflight:extension` — 編譯並執行 extension smoke test
 - `npm test` — 單元測試 (vitest)
 - `npx tsc` — 直接編譯到 `dist/`；`.npmrc` 已固定 npm script shell，`npm run build` 與 `npx tsc` 皆可作為建置入口
 - `npm run verify:runtime` — 驗證 `dist/` runtime 實際暴露新版 Gateway 工具與 cartridge-system 12 個工具；開發時以 `MULTI_MCP_HOME` 指向 repo 根目錄
@@ -90,6 +95,7 @@ staleness: 0
 - mcp-catalog.json
 - gateway.config.json
 - .gitignore
+- .github/workflows/vscode-extension-release.yml
 - mcps/程式碼品質/eslint.json.disabled
 - mcps/安全掃描/snyk.json.disabled
 - mcps/資料處理/excel.json
@@ -109,7 +115,7 @@ staleness: 0
 
 ## Key Decisions
 - D01: 使用 `mcps/` 分類目錄結構取代單一設定檔，便於管理大量 MCP
-- D02: `gateway.env` 由 CLI 自動產生，不建議手動編輯
+- D02: `gateway.env` 由管理介面自動產生，不建議手動編輯
 - D03: `credentials.json` 儲存多帳號明文密鑰，依賴 `.gitignore` 保護
 - D04: 審計 MCP 選擇「本地執行」策略，排除雲端掃描（Semgrep）以保護隱私
 - D05: Snyk MCP 使用 `--experimental` 旗標，需留意未來版本相容性
@@ -135,6 +141,11 @@ staleness: 0
 - D25: Cloudflare bindings、containers、observability 設定改以 `.disabled` 檔保留，`_system` 只追蹤實際存在的 disabled 檔，不再追蹤已刪除的 `.json` 路徑。
 - D26: `default-mcps.seed.json` 是使用者資料 marker；開發驗證若以 repo root 作為 `MULTI_MCP_HOME` 會產生此檔，因此必須被 `.gitignore` 排除且不得提交。
 - D27: `.gitignore` 使用繁中區塊與狀態註解維護可讀性；整理註解時不得改變既有 ignore 行為，npm package 邊界仍以 `package.json.files` 為準。
+- D28: 1.2.0 起主要人工管理入口改為 VS Code extension；`console` 子命令停用互動式選單，只保留遷移提示。
+- D29: `package.json.exports` 新增 `./management` subpath，供 extension 與未來 UI 使用 headless 管理 API。
+- D30: `.gitignore` 需忽略 extension `out/` 與 `.vscode-test/`，但保留 VSIX artifact 供本機安裝驗證。
+- D31: VS Code extension 儀表板採頁首工具列、分類區段、內縮 MCP 列、工具摘要與外部 MCP 目錄選單；不恢復內建推薦清單或 Catalog UI。
+- D32: VS Code extension Release 採 GitHub Actions tag 觸發；`vscode-multi-mcp-manager-v*` tag 需與 extension package version 一致，CI 重新打包 VSIX 並建立 GitHub Release，不依賴本機 gh CLI。
 
 ## Known Issues
 - credentials.json 明文儲存密鑰，依賴 .gitignore 保護，缺少加密層
@@ -157,7 +168,7 @@ staleness: 0
 - L09: 停用 MCP 時不要讓記憶卡繼續追蹤不存在的 `.json` 路徑；應改追蹤實際保留的 `.disabled` 檔，避免 ghost file 阻塞提交前檢查
 - L10: 修改 Gateway 工具描述後，必須同時驗證 `src/` 測試與實際 `dist/` runtime；`tool_search` 顯示舊描述通常代表 MCP 連線仍在使用舊編譯品或舊 metadata 快取
 - L11: 已連線的 Codex/Gemini MCP process 不會因 `npm run build` 自動熱更新；新 runtime 行為可由 `verify:runtime` 驗證，但目前 IDE 連線仍需重啟後才會看到新 Gateway 訊息
-- L12: npm package 化後，公開可複製命令也是產品面；README 需同時提供 MCP client JSON、管理台 `console`、`--scan`、`MULTI_MCP_HOME` 與發布 dry-run 驗證方式
+- L12: npm package 化後，公開可複製命令也是產品面；README 需同時提供 MCP client JSON、VS Code extension 安裝、`--scan`、`MULTI_MCP_HOME` 與發布 dry-run 驗證方式
 - L13: Windows 本機 tarball smoke 應使用 `npx -y --package <tgz> -- multi-mcp-gateway ...` 驗證 bin；直接 `npx -y <tgz>` 可能 exit 0 但未穩定啟動 package bin
 - L14: MCP SDK minor 升級不一定會刷新間接依賴；發布前安全修復需在升級後跑 `npm audit fix`，確認 lockfile 實際解析到 patched transitive versions
 - L15: cartridge-system 5.2.0 起可直接作為 npm MCP runtime；在 Multi-MCP Gateway 內應避免下游設定固定 `--workspace`，由每次 `gateway__call_tool.workspace` 決定目標專案
@@ -165,7 +176,10 @@ staleness: 0
 - L17: `gitnexus@latest` 在 Windows npx smoke 中可能觸發 npm exec 錯誤；預設 seed 應使用已驗證的 explicit `--package gitnexus@1.6.5 -- gitnexus mcp` 形式，等 latest 修復後再放寬
 - L18: Gateway 若本身由 `npx --package <tgz>` 啟動，下游 `npx -y <pkg>@latest` 可能被 cmd 拆成錯誤指令；預設 seed 與 smoke 測試需使用 explicit package 形態驗證
 - L19: `.gitignore` 重排時要用 `git check-ignore -v` 驗證關鍵檔案，避免註解整理意外改變 `.agents/memory/` 放行或認證檔忽略行為
+- L20: VS Code extension test 在此 Windows 環境需清掉 `ELECTRON_RUN_AS_NODE`，否則下載的 Code.exe 會以 Node 模式解析 VS Code 啟動參數並失敗。
 
 ## Relations
 - gateway-core
 - cli
+- management-api
+- vscode-extension

@@ -8,7 +8,9 @@ import { homedir } from 'node:os';
 import { dirname, isAbsolute, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const MODULE_DIR = typeof __dirname === 'string'
+  ? __dirname
+  : dirname(fileURLToPath(import.meta.url));
 
 export interface GatewayPaths {
   packageRoot: string;
@@ -30,7 +32,8 @@ export interface GatewayPathEnv {
 }
 
 export function getPackageRoot(): string {
-  return resolve(__dirname, '..');
+  if (process.env.MULTI_MCP_PACKAGE_ROOT) return resolve(process.env.MULTI_MCP_PACKAGE_ROOT);
+  return resolve(MODULE_DIR, '..');
 }
 
 export function getUserDataDir(
@@ -194,8 +197,8 @@ function defaultGatewayConfig(): string {
 
 function defaultGatewayEnv(): string {
   return [
-    '# Multi-MCP Gateway — 認證（由主控台自動產生，請勿手動編輯）',
-    '# 使用 npx -y multi-mcp-gateway@latest console 管理帳號與密鑰',
+    '# Multi-MCP Gateway — 認證（由管理介面自動產生，請勿手動編輯）',
+    '# 使用 Multi-MCP Manager VS Code 延伸模組管理帳號與密鑰',
     '',
   ].join('\n');
 }

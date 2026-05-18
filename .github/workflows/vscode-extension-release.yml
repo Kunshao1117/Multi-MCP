@@ -1,0 +1,85 @@
+name: VS Code Extension Release
+
+on:
+  push:
+    tags:
+      - 'vscode-multi-mcp-manager-v*'
+
+permissions:
+  contents: write
+
+jobs:
+  package-and-release:
+    name: Package and release VSIX
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            extensions/vscode-multi-mcp-manager/package-lock.json
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Validate tag version
+        id: version
+        shell: pwsh
+        run: |
+          $tag = "${env:GITHUB_REF_NAME}"
+          $prefix = "vscode-multi-mcp-manager-v"
+          if (-not $tag.StartsWith($prefix)) {
+            throw "Unexpected tag format: $tag"
+          }
+
+          $tagVersion = $tag.Substring($prefix.Length)
+          $packageJson = Get-Content "extensions/vscode-multi-mcp-manager/package.json" -Raw | ConvertFrom-Json
+          $packageVersion = $packageJson.version
+          if ($tagVersion -ne $packageVersion) {
+            throw "Tag version $tagVersion does not match extension package version $packageVersion"
+          }
+
+          "version=$tagVersion" >> $env:GITHUB_OUTPUT
+          "vsix=extensions/vscode-multi-mcp-manager/vscode-multi-mcp-manager-$tagVersion.vsix" >> $env:GITHUB_OUTPUT
+
+      - name: Package extension
+        run: npm run package:extension
+
+      - name: Verify VSIX
+        shell: pwsh
+        run: |
+          $vsix = "${{ steps.version.outputs.vsix }}"
+          if (-not (Test-Path $vsix)) {
+            throw "VSIX was not created: $vsix"
+          }
+
+      - name: Ensure release does not exist
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "${env:GITHUB_REF_NAME}" --repo "${env:GITHUB_REPOSITORY}" *> $null
+          if ($LASTEXITCODE -eq 0) {
+            throw "Release already exists for ${env:GITHUB_REF_NAME}"
+          }
+          $global:LASTEXITCODE = 0
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: VS Code Multi-MCP Manager v${{ steps.version.outputs.version }}
+          fail_on_unmatched_files: true
+          files: ${{ steps.version.outputs.vsix }}
+          body: |
+            VS Code Multi-MCP Manager v${{ steps.version.outputs.version }}
+
+            - Activity Bar Webview dashboard for local Multi-MCP Gateway management.
+            - Manage MCP install, remove, enable, disable, credentials, scans, and version checks.
+            - Includes Traditional Chinese and English UI strings.

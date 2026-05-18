@@ -1,9 +1,21 @@
 {
   "name": "multi-mcp-gateway",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "統一 MCP 閘道器 — 單一插槽代理多個下游 MCP 伺服器",
   "type": "module",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./management": {
+      "types": "./dist/management/index.d.ts",
+      "import": "./dist/management/index.js"
+    },
+    "./package.json": "./package.json"
+  },
   "bin": {
     "multi-mcp-gateway": "dist/index.js"
   },
@@ -18,12 +30,15 @@
     "typecheck": "tsc --noEmit --pretty false",
     "start": "node dist/index.js",
     "scan": "node dist/index.js --scan",
-    "console": "tsx src/cli.ts",
+    "console": "tsx src/index.ts console",
     "dev": "tsx src/index.ts",
     "dev:scan": "tsx src/index.ts --scan",
     "test": "vitest run src",
     "test:watch": "vitest src",
     "verify:runtime": "node scripts/verify-gateway-runtime.mjs",
+    "build:extension": "npm run build && npm install --prefix extensions/vscode-multi-mcp-manager && npm run compile --prefix extensions/vscode-multi-mcp-manager",
+    "package:extension": "npm run build:extension && npm run package --prefix extensions/vscode-multi-mcp-manager",
+    "preflight:extension": "npm run build:extension && npm run test --prefix extensions/vscode-multi-mcp-manager",
     "preflight:gateway": "npm run typecheck && vitest run src/paths.test.ts src/config-loader.test.ts src/process-pool.test.ts src/registry.test.ts src/tool-router.test.ts src/runtime-guard.test.ts && npm run build && npm run verify:runtime"
   },
   "dependencies": {
