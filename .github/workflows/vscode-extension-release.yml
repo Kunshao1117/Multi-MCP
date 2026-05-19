@@ -74,12 +74,13 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: VS Code Multi-MCP Manager v${{ steps.version.outputs.version }}
+          name: Multi-MCP 管理器 VS Code 延伸模組 v${{ steps.version.outputs.version }}
           fail_on_unmatched_files: true
           files: ${{ steps.version.outputs.vsix }}
           body: |
-            VS Code Multi-MCP Manager v${{ steps.version.outputs.version }}
+            Multi-MCP 管理器 VS Code 延伸模組 v${{ steps.version.outputs.version }}
 
-            - Activity Bar Webview dashboard for local Multi-MCP Gateway management.
-            - Manage MCP install, remove, enable, disable, credentials, scans, and version checks.
-            - Includes Traditional Chinese and English UI strings.
+            - 新增 Activity Bar Webview 儀表板，用於管理本機 Multi-MCP Gateway。
+            - 支援 MCP 安裝、編輯、移除、啟用、停用、金鑰 / Token、重新掃描與版本檢查。
+            - 安裝與編輯共用同一套 MCP 設定表單，並改善金鑰設定的語意與排版。
+            - 介面保留繁體中文優先，並提供英文 fallback。
