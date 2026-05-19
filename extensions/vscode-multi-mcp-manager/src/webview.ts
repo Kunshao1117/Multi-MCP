@@ -1,9 +1,11 @@
 import * as vscode from 'vscode';
 import type { GatewayStatus, McpServerSummary } from '../../../src/management/index.js';
+import type { ExtensionUpdateState } from './extensionUpdate.js';
 
 export interface DashboardState {
   status: GatewayStatus;
   servers: McpServerSummary[];
+  extensionUpdate?: ExtensionUpdateState;
 }
 
 export interface McpFormPayload {
@@ -47,12 +49,13 @@ export type WebviewMessage =
   | { command: 'deleteCredential'; name: string }
   | { command: 'rescan' }
   | { command: 'checkVersions' }
+  | { command: 'checkExtensionUpdate' }
   | { command: 'openDataDir' }
   | { command: 'openRegistry' }
   | { command: 'openMarketplace' };
 
 export function getDashboardStructureMarkers(): string[] {
-  return ['category-section', 'data-category-toggle', 'mcp-row', 'mcp-form-panel', 'credential-panel', 'key-status', 'credential-help', 'check-row', 'form-footer', 'change-preview', 'tool-summary', 'tool-empty-state', '探索 MCP'];
+  return ['category-section', 'data-category-toggle', 'mcp-row', 'mcp-form-panel', 'credential-panel', 'key-status', 'credential-help', 'check-row', 'form-footer', 'change-preview', 'tool-summary', 'tool-empty-state', 'extension-update-card', '插件更新', '探索 MCP'];
 }
 
 export function renderDashboardHtml(
@@ -691,7 +694,8 @@ export function renderDashboardHtml(
         <button class="secondary" data-command="openInstallForm" data-mode="json">匯入 JSON</button>
         <button class="ghost" data-command="openMarketplace">探索 MCP</button>
         <button class="ghost" data-command="rescan">重新掃描</button>
-        <button class="ghost" data-command="checkVersions">檢查版本</button>
+        <button class="ghost" data-command="checkExtensionUpdate">插件更新</button>
+        <button class="ghost" data-command="checkVersions">MCP 版本</button>
         <button class="ghost" data-command="openDataDir">開啟資料夾</button>
         <button class="ghost" data-command="refreshState">重新整理</button>
       </div>
@@ -794,7 +798,7 @@ export function renderDashboardHtml(
       const status = state.status;
       const servers = state.servers ?? [];
       root.innerHTML = [
-        renderOverview(status),
+        renderOverview(status, state.extensionUpdate),
         renderMcpForm(),
         renderServers(servers)
       ].join('');
@@ -1076,14 +1080,23 @@ export function renderDashboardHtml(
       return source.split('/').pop().replace(/@latest$/, '');
     }
 
-    function renderOverview(status) {
+    function renderOverview(status, extensionUpdate) {
       return '<section><h2>狀態總覽</h2><div class="cards">' +
         card('Gateway', status.initialized ? '就緒' : '尚未初始化') +
         card('版本', status.packageVersion) +
+        card('插件更新', extensionUpdateLabel(extensionUpdate), 'extension-update-card') +
         card('已啟用 MCP', status.enabledServers + '/' + status.totalServers) +
         card('已註冊工具', String(status.totalTools)) +
         card('最後掃描', status.registryGeneratedAt ? new Date(status.registryGeneratedAt).toLocaleString() : '尚未掃描') +
         '</div></section>';
+    }
+
+    function extensionUpdateLabel(update) {
+      if (!update || update.status === 'idle') return '尚未檢查';
+      if (update.status === 'current') return '已是最新版';
+      if (update.status === 'updateAvailable') return '可更新 ' + (update.latestVersion ?? '');
+      if (update.status === 'assetMissing') return '新版 ' + (update.latestVersion ?? '');
+      return '檢查失敗';
     }
 
     function renderServers(servers) {
@@ -1186,8 +1199,9 @@ export function renderDashboardHtml(
       return '<div class="detail-item"><div>' + escapeHtml(label) + '</div><div class="detail-value" title="' + escapeAttr(value) + '">' + escapeHtml(value) + '</div></div>';
     }
 
-    function card(label, value) {
-      return '<div class="card"><div class="label">' + escapeHtml(label) + '</div><div class="value" title="' + escapeAttr(value) + '">' + escapeHtml(value) + '</div></div>';
+    function card(label, value, className) {
+      const extraClass = className ? ' ' + className : '';
+      return '<div class="card' + extraClass + '"><div class="label">' + escapeHtml(label) + '</div><div class="value" title="' + escapeAttr(value) + '">' + escapeHtml(value) + '</div></div>';
     }
 
     function escapeHtml(value) {

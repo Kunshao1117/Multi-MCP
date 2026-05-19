@@ -2,7 +2,7 @@
   "name": "vscode-multi-mcp-manager",
   "displayName": "%ext.displayName%",
   "description": "%ext.description%",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "publisher": "kunshao",
   "icon": "resources/icon.png",
   "license": "MIT",
@@ -16,6 +16,7 @@
   "main": "./out/src/extension.cjs",
   "l10n": "./l10n",
   "activationEvents": [
+    "onStartupFinished",
     "onView:multiMcp.dashboard",
     "onCommand:multiMcp.refresh",
     "onCommand:multiMcp.installAdvanced",
@@ -28,6 +29,7 @@
     "onCommand:multiMcp.addCredential",
     "onCommand:multiMcp.rescan",
     "onCommand:multiMcp.checkVersions",
+    "onCommand:multiMcp.checkExtensionUpdate",
     "onCommand:multiMcp.openDataDir",
     "onCommand:multiMcp.openRegistry",
     "onCommand:multiMcp.openMarketplace"
@@ -108,6 +110,11 @@
         "icon": "$(versions)"
       },
       {
+        "command": "multiMcp.checkExtensionUpdate",
+        "title": "%command.checkExtensionUpdate%",
+        "icon": "$(cloud-download)"
+      },
+      {
         "command": "multiMcp.openDataDir",
         "title": "%command.openDataDir%",
         "icon": "$(folder-opened)"
@@ -146,6 +153,11 @@
           "group": "navigation"
         },
         {
+          "command": "multiMcp.checkExtensionUpdate",
+          "when": "view == multiMcp.dashboard",
+          "group": "navigation"
+        },
+        {
           "command": "multiMcp.openDataDir",
           "when": "view == multiMcp.dashboard",
           "group": "navigation"
@@ -179,6 +191,9 @@
         },
         {
           "command": "multiMcp.checkVersions"
+        },
+        {
+          "command": "multiMcp.checkExtensionUpdate"
         },
         {
           "command": "multiMcp.openDataDir"

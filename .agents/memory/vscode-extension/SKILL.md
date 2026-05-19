@@ -12,7 +12,7 @@ metadata:
     - 'filesystem:read'
     - 'filesystem:write'
     - 'mcp:cartridge-system'
-last_updated: '2026-05-19T14:44:08+08:00'
+last_updated: '2026-05-19T20:32:36+08:00'
 status: stable
 staleness: 0
 scopePath: extensions/vscode-multi-mcp-manager
@@ -36,11 +36,12 @@ dependencies:
 - extensions/vscode-multi-mcp-manager/resources/icon.png
 - extensions/vscode-multi-mcp-manager/resources/multi-mcp.svg
 - extensions/vscode-multi-mcp-manager/src/extension.ts
+- extensions/vscode-multi-mcp-manager/src/extensionUpdate.ts
 - extensions/vscode-multi-mcp-manager/src/localization.ts
 - extensions/vscode-multi-mcp-manager/src/webview.ts
 - extensions/vscode-multi-mcp-manager/test/runTest.ts
 - extensions/vscode-multi-mcp-manager/test/suite/index.ts
-- extensions/vscode-multi-mcp-manager/vscode-multi-mcp-manager-0.1.2.vsix
+- extensions/vscode-multi-mcp-manager/vscode-multi-mcp-manager-0.1.3.vsix
 
 ## Key Decisions
 - D01: Extension 使用 VS Code Activity Bar view container `multiMcp`，並以單一 `multiMcp.dashboard` Webview View 作為主要管理儀表板。
@@ -50,7 +51,7 @@ dependencies:
 - D05: 密鑰輸入使用 VS Code password input；UI 只顯示管理 API 回傳的遮罩摘要，不將完整 token 寫入 output channel。
 - D06: Extension 不再露出推薦清單 / Catalog UI；安裝入口只保留來源安裝與 `mcpServers` JSON 匯入。
 - D07: Extension 測試採 `@vscode/test-electron` 最小啟動 smoke，驗證 extension activate、核心 commands 註冊與 dashboard state 可取得。
-- D08: VSIX artifact `vscode-multi-mcp-manager-0.1.2.vsix` 保留在 repo 供本機安裝驗證；`out/` 與 `.vscode-test/` 為可重建產物，應由 `.gitignore` 排除。
+- D08: VSIX artifact `vscode-multi-mcp-manager-0.1.3.vsix` 保留在 repo 供本機安裝驗證；`out/` 與 `.vscode-test/` 為可重建產物，應由 `.gitignore` 排除。
 - D09: 本卡依賴 `management-api`，因 extension 不直接操作 Gateway user-data 檔案格式，所有業務規則都應透過 headless API。
 - D10: Manifest 文字使用 `package.nls*.json`，runtime 文字使用 `vscode.l10n.t()` 與 `l10n/bundle.l10n.zh-tw.json`；Webview 目前以繁中管理頁文案為主。
 - D11: 安裝流程採相容性優先，支援 npm/remote source 與貼上 `mcpServers` JSON，並可選擇覆蓋、設定 Token、安裝後 rescan。
@@ -68,10 +69,14 @@ dependencies:
 - D23: 獨立認證面板採三段式排版：狀態說明、兩欄欄位、底部操作列；避免設定/刪除金鑰按鈕看起來附屬在環境變數欄位下方。
 - D23: Webview checkbox 必須使用整行 `check-row` 呈現，並覆寫 `input[type="checkbox"]` 尺寸，避免全域 input 寬度讓 checkbox 在窄側欄漂浮錯位。
 - D24: 金鑰區採「狀態摘要 + 可選展開欄位」；只有偵測到必要環境變數或使用者勾選需要金鑰時，才顯示環境變數與本機標籤欄位。
+- D25: Extension 本體更新檢查採 GitHub latest release，僅接受 `vscode-multi-mcp-manager-v*` tag 與對應 VSIX asset；啟動後只靜默檢查並更新狀態，不跳通知、不下載。
+- D26: 手動 `multiMcp.checkExtensionUpdate` 才能顯示更新提示；下載與安裝 VSIX 必須由使用者按鈕確認後執行，並透過 VS Code 內建 extension install command 安裝。
+- D27: Dashboard state 只以可選 `extensionUpdate` 欄位擴充，不能破壞既有 `status` 與 `servers` 形狀，因 `createDashboardState` 會影響 webview 初始化與多個操作後 refresh 流程。
 
 ## Known Issues
-- v0.1.2 extension 尚未提供 SecretStorage migration；credential 仍寫入 `gateway.env` / `credentials.json` 以保持 Gateway runtime 相容。
-- `checkVersions` output 只列 npm latest 查詢結果，尚未支援一鍵更新或詳細 diff。
+- v0.1.3 extension 尚未提供 SecretStorage migration；credential 仍寫入 `gateway.env` / `credentials.json` 以保持 Gateway runtime 相容。
+- `checkVersions` output 只列已安裝 MCP 的 npm latest 查詢結果，尚未支援一鍵更新或詳細 diff。
+- Extension 自動更新仍依賴 GitHub Release VSIX asset；尚未採用 Marketplace / Open VSX native auto-update。
 - VSIX publisher 目前為 `kunshao`；正式 Marketplace 發布前需確認 publisher、repository metadata 與授權資訊。
 - Webview 文字目前以繁中為主，英文使用者仍可透過 manifest 與 Quick Pick 看到部分英文 fallback；若正式上 Marketplace 需補完整 Webview runtime i18n。
 
@@ -88,6 +93,9 @@ dependencies:
 - L10: 所有需要輸入的管理流程都應優先在 Webview 呈現上下文、既有值與預覽；只把金鑰值留在 VS Code password input，避免使用者在連續 Quick Pick 中失去操作脈絡。
 - L11: 認證設定畫面要把環境變數名稱與本機標籤視為資料欄位，把設定/刪除金鑰值視為獨立操作列；兩者不能混在同一欄視覺區塊。
 - L11: 「認證」對一般操作者語意過抽象；Webview 操作面應優先使用「金鑰 / Token」，再用環境變數、本機標籤、金鑰值拆清楚每個欄位的目的。
+- L12: VSIX 安裝版不會享有 Marketplace 自動更新；若要提供自管更新，應把 release 查詢、VSIX 下載、digest 驗證與安裝確認拆成獨立 extension-side 模組，避免污染 MCP 管理 API。
+- L13: VSIX artifact 被記憶卡追蹤時，重新打包後即使文件已更新也會重新觸發 staleness；完成 `npm run package:extension` 後要再次執行 `memory_commit` 才能清除封包產物的 pending change。
+- L14: `extensions/vscode-multi-mcp-manager/out/` 是可重建 bundle output；若 memory list 將它標成未歸屬，應刪除該輸出目錄後重新同步本卡，不應加入 `## Tracked Files`。
 
 ## Applicable Skills
 - `ui-ux-standards`：新增 Webview 顯示、命令命名或互動流程時使用。

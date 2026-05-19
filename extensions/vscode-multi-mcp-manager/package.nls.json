@@ -1,6 +1,6 @@
 {
   "ext.displayName": "Multi-MCP Manager",
-  "ext.description": "Manage Multi-MCP Gateway servers, credentials, scans, and package checks from a VS Code dashboard.",
+  "ext.description": "Manage Multi-MCP Gateway servers, credentials, scans, MCP package checks, and extension updates from a VS Code dashboard.",
   "viewContainer.title": "Multi-MCP",
   "view.dashboard": "Dashboard",
   "command.refresh": "Refresh",
@@ -13,7 +13,8 @@
   "command.addCredentialPick": "Add or Update Credential...",
   "command.addCredential": "Add or Update Credential",
   "command.rescan": "Rescan Tools",
-  "command.checkVersions": "Check Package Versions",
+  "command.checkVersions": "Check MCP Package Versions",
+  "command.checkExtensionUpdate": "Check Extension Updates",
   "command.openDataDir": "Open Data Folder",
   "command.openRegistry": "Open Registry",
   "command.openMarketplace": "Explore MCP..."

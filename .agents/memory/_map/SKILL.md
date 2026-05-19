@@ -10,7 +10,7 @@ metadata:
   memory_awareness: full
   tool_scope:
     - 'filesystem:read'
-last_updated: '2026-05-19T04:00:53+08:00'
+last_updated: '2026-05-19T20:36:58+08:00'
 status: stable
 staleness: 0
 ---
@@ -60,6 +60,7 @@ staleness: 0
 - D03: `AGENTS.md` 目前承載 GitNexus 治理橋接；修改程式符號前需先做 impact analysis，提交前需做 detect-changes 範圍檢查。
 - D04: 若 GitNexus 回報索引 stale，需先執行 `npx gitnexus analyze` 更新索引，再繼續架構探索、影響分析或提交前檢查。
 - D05: 2026-05-19 起主要人工管理入口改為 VS Code extension；CLI 選單只保留舊原始碼與遷移提示。
+- D06: `AGENTS.md` 只保存 GitNexus 專案治理入口與目前索引摘要；索引數量更新時只需同步 `_map` 導航卡，不代表業務模組邊界改變。
 
 ## Known Issues
 - 無已知導航卡阻塞問題。

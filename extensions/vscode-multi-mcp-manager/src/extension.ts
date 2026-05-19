@@ -14,6 +14,12 @@ import {
   type McpServerSummary,
 } from '../../../src/management/index.js';
 import type { McpServerConfig } from '../../../src/types.js';
+import {
+  checkExtensionUpdate,
+  createInitialExtensionUpdateState,
+  downloadExtensionVsix,
+  type ExtensionUpdateState,
+} from './extensionUpdate.js';
 import { t } from './localization.js';
 import {
   getDashboardStructureMarkers,
@@ -47,6 +53,7 @@ const MCP_MARKETPLACES = [
     url: 'https://smithery.ai/index',
   },
 ] as const;
+const EXTENSION_UPDATE_STATE_KEY = 'multiMcp.extensionUpdate';
 
 export function activate(context: vscode.ExtensionContext): void {
   process.env.MULTI_MCP_PACKAGE_ROOT = context.extensionPath;
@@ -67,12 +74,14 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('multiMcp.addCredential', (name?: string) => dashboard.addCredentialFromPrompt(name)),
     vscode.commands.registerCommand('multiMcp.rescan', () => dashboard.rescan()),
     vscode.commands.registerCommand('multiMcp.checkVersions', () => dashboard.showVersionReport()),
+    vscode.commands.registerCommand('multiMcp.checkExtensionUpdate', () => dashboard.showExtensionUpdateReport()),
     vscode.commands.registerCommand('multiMcp.openDataDir', () => openDataDir()),
     vscode.commands.registerCommand('multiMcp.openRegistry', () => openRegistry()),
     vscode.commands.registerCommand('multiMcp.openMarketplace', () => openMarketplace()),
-    vscode.commands.registerCommand('multiMcp.internal.getDashboardStateForTest', () => createDashboardState()),
+    vscode.commands.registerCommand('multiMcp.internal.getDashboardStateForTest', () => dashboard.getDashboardStateForTest()),
     vscode.commands.registerCommand('multiMcp.internal.getDashboardStructureMarkersForTest', () => getDashboardStructureMarkers()),
   );
+  void dashboard.checkExtensionUpdateSilently();
 }
 
 export function deactivate(): void {
@@ -81,21 +90,29 @@ export function deactivate(): void {
 
 class DashboardProvider implements vscode.WebviewViewProvider {
   private view?: vscode.WebviewView;
+  private extensionUpdate: ExtensionUpdateState;
 
   constructor(
     private readonly context: vscode.ExtensionContext,
     private readonly output: vscode.OutputChannel,
-  ) {}
+  ) {
+    this.extensionUpdate = context.globalState.get<ExtensionUpdateState>(EXTENSION_UPDATE_STATE_KEY)
+      ?? createInitialExtensionUpdateState(getExtensionVersion(context));
+  }
 
   resolveWebviewView(view: vscode.WebviewView): void {
     this.view = view;
     view.webview.options = { enableScripts: true };
-    view.webview.html = renderDashboardHtml(view.webview, this.context.extensionUri, createDashboardState());
+    view.webview.html = renderDashboardHtml(view.webview, this.context.extensionUri, this.createState());
     view.webview.onDidReceiveMessage((message: WebviewMessage) => this.handleMessage(message));
   }
 
   refresh(): void {
     this.postState();
+  }
+
+  getDashboardStateForTest(): DashboardState {
+    return this.createState();
   }
 
   async installFromPrompt(forcedMode?: InstallMode): Promise<void> {
@@ -197,6 +214,41 @@ class DashboardProvider implements vscode.WebviewViewProvider {
     this.output.show(true);
   }
 
+  async checkExtensionUpdateSilently(): Promise<void> {
+    const result = await checkExtensionUpdate(getExtensionVersion(this.context));
+    await this.storeExtensionUpdate(result);
+    if (result.status === 'error') {
+      this.output.appendLine(t('Extension update check failed: {message}', { message: result.error ?? t('Unknown error') }));
+      return;
+    }
+    const summary = result.latestVersion
+      ? t('Extension update check: {status} ({version})', { status: result.status, version: result.latestVersion })
+      : t('Extension update check: {status}', { status: result.status });
+    this.output.appendLine(summary);
+  }
+
+  async showExtensionUpdateReport(): Promise<void> {
+    const result = await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification, title: t('Checking Multi-MCP Manager updates') },
+      () => checkExtensionUpdate(getExtensionVersion(this.context)),
+    );
+    await this.storeExtensionUpdate(result);
+
+    if (result.status === 'current') {
+      vscode.window.showInformationMessage(t('Multi-MCP Manager is up to date ({version}).', { version: result.currentVersion }));
+      return;
+    }
+    if (result.status === 'assetMissing') {
+      await this.showReleaseOnlyMessage(result);
+      return;
+    }
+    if (result.status === 'updateAvailable') {
+      await this.showInstallableUpdateMessage(result);
+      return;
+    }
+    vscode.window.showWarningMessage(t('Could not check Multi-MCP Manager updates: {message}', { message: result.error ?? t('Unknown error') }));
+  }
+
   private async handleMessage(message: WebviewMessage): Promise<void> {
     switch (message.command) {
       case 'refreshState':
@@ -228,6 +280,9 @@ class DashboardProvider implements vscode.WebviewViewProvider {
         return;
       case 'checkVersions':
         await this.showVersionReport();
+        return;
+      case 'checkExtensionUpdate':
+        await this.showExtensionUpdateReport();
         return;
       case 'openDataDir':
         await openDataDir();
@@ -345,14 +400,72 @@ class DashboardProvider implements vscode.WebviewViewProvider {
   }
 
   private postState(): void {
-    this.view?.webview.postMessage({ command: 'state', state: createDashboardState() });
+    this.view?.webview.postMessage({ command: 'state', state: this.createState() });
+  }
+
+  private createState(): DashboardState {
+    return createDashboardState(this.extensionUpdate);
+  }
+
+  private async storeExtensionUpdate(result: ExtensionUpdateState): Promise<void> {
+    this.extensionUpdate = result;
+    await this.context.globalState.update(EXTENSION_UPDATE_STATE_KEY, result);
+    this.refresh();
+  }
+
+  private async showReleaseOnlyMessage(result: ExtensionUpdateState): Promise<void> {
+    const openRelease = t('Open Release');
+    const picked = await vscode.window.showWarningMessage(
+      t('Multi-MCP Manager {version} is available, but no VSIX asset was found.', { version: result.latestVersion ?? t('new version') }),
+      openRelease,
+      t('Later'),
+    );
+    if (picked === openRelease && result.releaseUrl) {
+      await vscode.env.openExternal(vscode.Uri.parse(result.releaseUrl));
+    }
+  }
+
+  private async showInstallableUpdateMessage(result: ExtensionUpdateState): Promise<void> {
+    const install = t('Download and Install');
+    const openRelease = t('Open Release');
+    const picked = await vscode.window.showInformationMessage(
+      t('Multi-MCP Manager {version} is available.', { version: result.latestVersion ?? t('new version') }),
+      install,
+      openRelease,
+      t('Later'),
+    );
+    if (picked === openRelease && result.releaseUrl) {
+      await vscode.env.openExternal(vscode.Uri.parse(result.releaseUrl));
+      return;
+    }
+    if (picked !== install) return;
+    await this.installExtensionUpdate(result);
+  }
+
+  private async installExtensionUpdate(result: ExtensionUpdateState): Promise<void> {
+    try {
+      const vsix = await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: t('Downloading Multi-MCP Manager update') },
+        () => downloadExtensionVsix(result, this.context.globalStorageUri),
+      );
+      await vscode.commands.executeCommand('workbench.extensions.installExtension', vsix);
+      const reload = t('Reload Window');
+      const picked = await vscode.window.showInformationMessage(
+        t('Multi-MCP Manager update installed. Reload VS Code to finish.'),
+        reload,
+      );
+      if (picked === reload) await vscode.commands.executeCommand('workbench.action.reloadWindow');
+    } catch (error) {
+      vscode.window.showErrorMessage(t('Could not install Multi-MCP Manager update: {message}', { message: (error as Error).message }));
+    }
   }
 }
 
-function createDashboardState(): DashboardState {
+function createDashboardState(extensionUpdate?: ExtensionUpdateState): DashboardState {
   return {
     status: getGatewayStatus(),
     servers: listMcpServers(),
+    extensionUpdate,
   };
 }
 
@@ -672,6 +785,11 @@ function credentialLabel(server: McpServerSummary): string {
   if (!server.credential) return t('Not configured');
   const value = server.credential.maskedValue ? ` · ${server.credential.maskedValue}` : '';
   return `${server.credential.active ?? t('configured')}${value}`;
+}
+
+function getExtensionVersion(context: vscode.ExtensionContext): string {
+  const packageJson = context.extension.packageJSON as { version?: unknown };
+  return typeof packageJson.version === 'string' ? packageJson.version : '0.0.0';
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

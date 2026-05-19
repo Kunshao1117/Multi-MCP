@@ -1,5 +1,16 @@
 # 更新紀錄
 
+## VS Code extension v0.1.3 — 2026-05-19
+
+### 新增功能
+
+- **插件更新檢查**：Multi-MCP Manager 新增 GitHub Release 更新檢查；啟動後靜默確認最新 VSIX，手動命令可在使用者確認後下載並安裝新版。
+- **更新狀態顯示**：VS Code 儀表板新增插件更新狀態卡，並將既有版本檢查文案明確區分為 MCP 套件版本檢查。
+
+### 發布
+
+- Extension 版本升級至 `0.1.3`；GitHub Release workflow 仍使用 `vscode-multi-mcp-manager-v*` tag 打包對應版本 VSIX。
+
 ## v1.2.0 — 2026-05-19
 
 ### 新增功能

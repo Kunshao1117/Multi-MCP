@@ -82,5 +82,6 @@ jobs:
 
             - 新增 Activity Bar Webview 儀表板，用於管理本機 Multi-MCP Gateway。
             - 支援 MCP 安裝、編輯、移除、啟用、停用、金鑰 / Token、重新掃描與版本檢查。
+            - 支援 GitHub Release 更新檢查，手動確認後可下載並安裝新版 VSIX。
             - 安裝與編輯共用同一套 MCP 設定表單，並改善金鑰設定的語意與排版。
             - 介面保留繁體中文優先，並提供英文 fallback。

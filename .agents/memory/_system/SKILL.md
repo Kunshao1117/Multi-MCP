@@ -10,7 +10,7 @@ metadata:
   memory_awareness: full
   tool_scope:
     - 'filesystem:read'
-last_updated: '2026-05-19T14:44:08+08:00'
+last_updated: '2026-05-19T20:31:14+08:00'
 status: stable
 staleness: 0
 ---
@@ -63,8 +63,8 @@ staleness: 0
 - `mcps/` — 分類目錄式 MCP 設定（JSON 檔）
 - `registry.json` — 掃描產出的工具集成表
 - `mcp-catalog.json` — npm package / 舊相容層內建推薦清單；VS Code extension 不再顯示或打包推薦 Catalog
-- `extensions/vscode-multi-mcp-manager/` — Multi-MCP Manager VS Code extension；使用 esbuild bundle 管理 API，可打包 VSIX
-- `.github/workflows/vscode-extension-release.yml` — VS Code extension 的 GitHub Release 自動化；推送 `vscode-multi-mcp-manager-v*` tag 後打包並上傳 VSIX
+- `extensions/vscode-multi-mcp-manager/` — Multi-MCP Manager VS Code extension；使用 esbuild bundle 管理 API，可打包 VSIX，並透過 GitHub Release 檢查插件更新
+- `.github/workflows/vscode-extension-release.yml` — VS Code extension 的 GitHub Release 自動化；推送 `vscode-multi-mcp-manager-v*` tag 後打包並上傳 VSIX，Release 同時是 extension 自管更新來源
 - `dist/` — TypeScript 編譯產物；被 `.gitignore` 排除但 Codex/Gemini MCP runtime 以 `node d:/Multi-MCP/dist/index.js` 啟動，修改 `src/` 後必須先 build 並重啟 MCP 連線
 - `scripts/verify-gateway-runtime.mjs` — 以 MCP stdio 啟動 `dist/index.js`，驗證 Gateway 管理工具描述、搜尋流程與 cartridge-system 12 個工具
 - `.agents/memory/` — 唯一提交到 Git 的 Antigravity agents 目錄；`.agents` 其他框架、技能、工作流檔案為本機 ignored 狀態
@@ -77,7 +77,7 @@ staleness: 0
 - `npm run dev:scan` — 開發模式掃描工具
 - `npm run console` — 顯示互動式 CLI 已停用與 VS Code extension 遷移提示
 - `npm run build:extension` — 編譯 Gateway 與 VS Code extension
-- `npm run package:extension` — 打包 `extensions/vscode-multi-mcp-manager/vscode-multi-mcp-manager-0.1.2.vsix`
+- `npm run package:extension` — 打包 `extensions/vscode-multi-mcp-manager/vscode-multi-mcp-manager-0.1.3.vsix`
 - `npm run preflight:extension` — 編譯並執行 extension smoke test
 - `npm test` — 單元測試 (vitest)
 - `npx tsc` — 直接編譯到 `dist/`；`.npmrc` 已固定 npm script shell，`npm run build` 與 `npx tsc` 皆可作為建置入口
@@ -147,6 +147,7 @@ staleness: 0
 - D30: `.gitignore` 需忽略 extension `out/` 與 `.vscode-test/`，但保留 VSIX artifact 供本機安裝驗證。
 - D31: VS Code extension 儀表板採頁首工具列、分類區段、內縮 MCP 列、工具摘要與外部 MCP 目錄選單；不恢復內建推薦清單或 Catalog UI。
 - D32: VS Code extension Release 採 GitHub Actions tag 觸發；`vscode-multi-mcp-manager-v*` tag 需與 extension package version 一致，CI 重新打包 VSIX 並建立 GitHub Release，不依賴本機 gh CLI。
+- D33: VS Code extension 自管更新檢查使用 GitHub latest release 作為唯一來源；啟動後只靜默記錄狀態，手動命令才允許使用者確認後下載並安裝 VSIX。
 
 ## Known Issues
 - credentials.json 明文儲存密鑰，依賴 .gitignore 保護，缺少加密層
