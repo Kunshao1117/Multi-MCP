@@ -12,7 +12,7 @@ metadata:
     - 'filesystem:read'
     - 'filesystem:write'
     - 'mcp:cartridge-system'
-last_updated: '2026-05-19T06:07:38+08:00'
+last_updated: '2026-05-19T07:22:43+08:00'
 status: stable
 staleness: 0
 scopePath: src/management
@@ -45,6 +45,8 @@ dependencies:
 - D09: 本卡依賴 `gateway-core`，因管理 API 直接消費 `paths`、`config-loader`、`registry`、`auth-guides` 與共用型別；也依賴 `cli` 的 catalog 決策，因 `mcp-catalog.json` 同時服務舊 CLI 與 extension。
 - D10: `listCatalogEntries()` 會優先讀取 package root 的 `mcp-catalog.json`，若使用者層 `MULTI_MCP_PACKAGE_ROOT` 指向已安裝 extension 而該處沒有 catalog，會回退讀取目前工作目錄的 `mcp-catalog.json`，確保 repo 開發測試不受外部 extension 環境污染。
 - D11: `listMcpServers()` 會從 registry snapshot 提供每個 MCP 最多 5 筆工具摘要（名稱、原始名稱、描述），讓 UI 顯示工具內容但不直接讀 user-data 檔案。
+- D12: `updateMcp()` 是編輯既有 MCP 的唯一 headless API；它負責更新設定檔、重新命名、搬移分類、保留啟用/停用副檔名，並可選擇重新掃描 Registry。
+- D13: MCP 重新命名時，管理 API 會用 `renameCredentialInStore()` 同步搬移 `credentials.json` key 並重寫 `gateway.env`，避免 UI 需要直接理解 credential 儲存格式。
 
 ## Known Issues
 - `credentials.json` 仍為明文相容儲存；v1 extension 不導入 VS Code SecretStorage，以免破壞現有 Gateway runtime。
@@ -59,6 +61,7 @@ dependencies:
 - L04: secret 顯示必須在 API 層先遮罩，避免各 UI 各自處理而漏出完整 token。
 - L05: 使用者層環境變數可能會從已安裝 VSIX 污染 repo 測試；管理 API 對 package-root-only 資源應提供保守 fallback，避免開發命令誤讀 extension 安裝目錄。
 - L06: 工具摘要應在 management API 層整理，避免 extension Webview 碰 `registry.json` 或完整 input schema，降低密度與耦合。
+- L07: 編輯 MCP 比安裝更需要避免靜默覆蓋；目標設定檔已存在時應回傳錯誤，讓 UI 顯示衝突而不是自動取代。
 
 ## Applicable Skills
 - `security-sre`：修改 credential 寫入、遮罩或 log 行為時使用。

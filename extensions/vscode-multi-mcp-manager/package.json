@@ -2,7 +2,7 @@
   "name": "vscode-multi-mcp-manager",
   "displayName": "%ext.displayName%",
   "description": "%ext.description%",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "publisher": "kunshao",
   "icon": "resources/icon.png",
   "license": "MIT",

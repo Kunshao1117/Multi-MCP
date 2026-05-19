@@ -10,7 +10,7 @@ metadata:
   memory_awareness: full
   tool_scope:
     - 'filesystem:read'
-last_updated: '2026-05-19T06:47:32+08:00'
+last_updated: '2026-05-19T14:44:08+08:00'
 status: stable
 staleness: 0
 ---
@@ -77,7 +77,7 @@ staleness: 0
 - `npm run dev:scan` — 開發模式掃描工具
 - `npm run console` — 顯示互動式 CLI 已停用與 VS Code extension 遷移提示
 - `npm run build:extension` — 編譯 Gateway 與 VS Code extension
-- `npm run package:extension` — 打包 `extensions/vscode-multi-mcp-manager/vscode-multi-mcp-manager-0.1.1.vsix`
+- `npm run package:extension` — 打包 `extensions/vscode-multi-mcp-manager/vscode-multi-mcp-manager-0.1.2.vsix`
 - `npm run preflight:extension` — 編譯並執行 extension smoke test
 - `npm test` — 單元測試 (vitest)
 - `npx tsc` — 直接編譯到 `dist/`；`.npmrc` 已固定 npm script shell，`npm run build` 與 `npx tsc` 皆可作為建置入口
@@ -129,6 +129,7 @@ staleness: 0
 - D13: `dist/index.js` server mode 會在啟動前檢查非測試 `src/**/*.ts` 是否比 `dist/**/*.js` 新；若 stale 則拒絕啟動，防止其他 AI 或人類忘記 build 後連到舊 Gateway
 - D14: `verify:runtime` 需覆蓋 Gateway 實際 MCP 呼叫的關鍵 AI 行為提示，包含工具發現、cartridge-system 工具數量與錯參數診斷
 - D15: A 方案採本機 stdio + npm 一行啟動，不建置雲端 SaaS 或 HTTP transport；MCP Client 設定使用 `npx -y multi-mcp-gateway@latest`
+- D16: VS Code extension 儀表板是主要人類管理入口；安裝與編輯 MCP 走共用 Webview 表單，管理 API 負責設定檔搬移與 credential key 同步。
 - D16: 發布內容採 `package.json.files` 白名單，避免把 `.agents/`、`mcps/`、`gateway.env`、`credentials.json`、測試輸出或治理資料打進 npm package
 - D17: `MULTI_MCP_HOME` 是唯一正式的使用者資料夾覆寫入口；測試與 runtime verify 可用它將資料位置指回 repo
 - D18: `1.0.0` 作為 npm 公開發布候選版；正式 `npm publish` 前必須完成完整健檢、tarball smoke 與 npm 套件名稱/登入狀態檢查

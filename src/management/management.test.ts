@@ -12,6 +12,7 @@ import {
   removeMcp,
   setMcpEnabled,
   switchCredential,
+  updateMcp,
   upsertCredential,
 } from './index.js';
 
@@ -82,6 +83,86 @@ describe('management API', () => {
 
       expect(deleteCredential('secure-mcp', undefined, options).ok).toBe(true);
       expect(readFileSync(paths.envPath, 'utf-8')).not.toContain('SECURE_TOKEN=');
+    });
+  });
+
+  it('編輯 MCP 會搬移設定檔並同步認證 key', async () => {
+    await withTempDir(async (dir) => {
+      const options = { dataDir: dir };
+      await installMcp({ name: 'old-name', category: '舊分類', source: 'old-mcp' }, options);
+      upsertCredential({
+        mcpName: 'old-name',
+        label: 'default',
+        value: '1234567890abcdef',
+        envVar: 'OLD_TOKEN',
+      }, options);
+
+      const result = await updateMcp({
+        currentName: 'old-name',
+        nextName: 'new-name',
+        category: '新分類',
+        config: { command: 'npx', args: ['-y', 'new-mcp@latest'] },
+      }, options);
+
+      expect(result).toMatchObject({ ok: true, changed: true });
+      const paths = getGatewayPaths(dir);
+      expect(existsSync(resolve(paths.mcpsDir, '舊分類', 'old-name.json'))).toBe(false);
+      expect(existsSync(resolve(paths.mcpsDir, '新分類', 'new-name.json'))).toBe(true);
+      const servers = listMcpServers(options);
+      expect(servers.some((server) => server.name === 'old-name')).toBe(false);
+      expect(servers.find((server) => server.name === 'new-name')).toMatchObject({
+        category: '新分類',
+        packageName: 'new-mcp',
+      });
+
+      const creds = JSON.parse(readFileSync(paths.credentialsPath, 'utf-8')) as Record<string, unknown>;
+      expect(creds).not.toHaveProperty('old-name');
+      expect(creds).toHaveProperty('new-name');
+      expect(readFileSync(paths.envPath, 'utf-8')).toContain('# --- new-name (default) ---');
+    });
+  });
+
+  it('編輯 MCP 遇到目標名稱衝突時會拒絕', async () => {
+    await withTempDir(async (dir) => {
+      const options = { dataDir: dir };
+      await installMcp({ name: 'first', category: '工具', source: 'first-mcp' }, options);
+      await installMcp({ name: 'second', category: '工具', source: 'second-mcp' }, options);
+
+      const result = await updateMcp({
+        currentName: 'first',
+        nextName: 'second',
+        category: '工具',
+        config: { command: 'npx', args: ['-y', 'first-mcp@latest'] },
+      }, options);
+
+      expect(result.ok).toBe(false);
+      expect(result.message).toContain('已存在');
+    });
+  });
+
+  it('編輯 MCP 遇到孤兒認證 key 衝突時不會先搬移設定檔', async () => {
+    await withTempDir(async (dir) => {
+      const options = { dataDir: dir };
+      await installMcp({ name: 'first', category: '工具', source: 'first-mcp' }, options);
+      upsertCredential({
+        mcpName: 'orphan',
+        label: 'default',
+        value: '1234567890abcdef',
+        envVar: 'ORPHAN_TOKEN',
+      }, options);
+
+      const result = await updateMcp({
+        currentName: 'first',
+        nextName: 'orphan',
+        category: '新分類',
+        config: { command: 'npx', args: ['-y', 'first-mcp@latest'] },
+      }, options);
+
+      expect(result.ok).toBe(false);
+      expect(result.message).toContain('認證已存在');
+      const paths = getGatewayPaths(dir);
+      expect(existsSync(resolve(paths.mcpsDir, '工具', 'first.json'))).toBe(true);
+      expect(existsSync(resolve(paths.mcpsDir, '新分類', 'orphan.json'))).toBe(false);
     });
   });
 

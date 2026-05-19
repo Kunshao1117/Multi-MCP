@@ -4,7 +4,7 @@ import {
 import { dirname, resolve } from 'node:path';
 import { ensureUserDataDir, getGatewayPaths, type GatewayPaths } from '../paths.js';
 import type { McpServerConfig, ToolRegistry } from '../types.js';
-import type { ManagementOptions } from './types.js';
+import type { ManagementOptions, McpUpdateInput } from './types.js';
 
 export interface McpConfigFile {
   name: string;
@@ -83,6 +83,35 @@ export function setMcpConfigEnabled(paths: GatewayPaths, name: string, enabled: 
   return true;
 }
 
+export function updateMcpConfigFile(
+  paths: GatewayPaths,
+  input: Pick<McpUpdateInput, 'currentName' | 'nextName' | 'category' | 'config'>,
+): { oldPath: string; newPath: string; renamed: boolean; moved: boolean } {
+  const entry = findMcpConfigFile(paths, input.currentName);
+  if (!entry) throw new Error(`找不到 "${input.currentName}"`);
+  const nextName = input.nextName.trim();
+  const nextCategory = input.category.trim();
+  if (!nextName || !nextCategory) throw new Error('MCP 名稱與分類不可為空');
+
+  const suffix = configFileSuffix(entry.path);
+  const target = resolve(paths.mcpsDir, nextCategory, `${nextName}${suffix}`);
+  const samePath = target === entry.path;
+  if (!samePath && existsSync(target)) throw new Error(`目標設定檔已存在: ${target}`);
+
+  writeJsonFile(target, input.config);
+  if (!samePath) {
+    unlinkSync(entry.path);
+    removeEmptyCategory(dirname(entry.path));
+  }
+
+  return {
+    oldPath: entry.path,
+    newPath: target,
+    renamed: entry.name !== nextName,
+    moved: entry.category !== nextCategory,
+  };
+}
+
 export function loadRegistrySnapshot(paths: GatewayPaths): ToolRegistry {
   return readJsonFile<ToolRegistry>(paths.registryPath, {
     version: '1.0.0',
@@ -90,6 +119,12 @@ export function loadRegistrySnapshot(paths: GatewayPaths): ToolRegistry {
     servers: {},
     all_tools: {},
   });
+}
+
+function configFileSuffix(filePath: string): '.json' | '.json.disabled' | '.disabled' {
+  if (filePath.endsWith('.json.disabled')) return '.json.disabled';
+  if (filePath.endsWith('.disabled')) return '.disabled';
+  return '.json';
 }
 
 function parseMcpFileName(file: string): { name: string; enabled: boolean } | null {

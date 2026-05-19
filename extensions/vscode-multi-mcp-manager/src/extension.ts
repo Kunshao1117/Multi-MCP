@@ -1,12 +1,14 @@
 import * as vscode from 'vscode';
 import {
   checkVersions,
+  deleteCredential,
   getGatewayStatus,
   installMcp,
   listMcpServers,
   removeMcp,
   rescanRegistry,
   setMcpEnabled,
+  updateMcp,
   upsertCredential,
   type CredentialInput,
   type McpServerSummary,
@@ -17,6 +19,8 @@ import {
   getDashboardStructureMarkers,
   renderDashboardHtml,
   type DashboardState,
+  type CredentialFormPayload,
+  type McpFormPayload,
   type WebviewMessage,
 } from './webview.js';
 
@@ -198,11 +202,14 @@ class DashboardProvider implements vscode.WebviewViewProvider {
       case 'refreshState':
         this.refresh();
         return;
-      case 'installSource':
-        await this.installFromPrompt('source');
+      case 'openInstallForm':
+      case 'openEditForm':
+      case 'cancelMcpForm':
+      case 'openCredentialPanel':
+        this.refresh();
         return;
-      case 'installJson':
-        await this.installFromPrompt('json');
+      case 'saveMcpForm':
+        await this.saveMcpForm(message.payload);
         return;
       case 'removeServer':
         await this.removeFromPrompt(message.name);
@@ -210,8 +217,11 @@ class DashboardProvider implements vscode.WebviewViewProvider {
       case 'setEnabled':
         await this.setEnabledFromPrompt(message.enabled, message.name);
         return;
-      case 'upsertCredential':
-        await this.addCredentialFromPrompt(message.name);
+      case 'saveCredential':
+        await this.saveCredentialFromDashboard(message.payload);
+        return;
+      case 'deleteCredential':
+        await this.deleteCredentialFromDashboard(message.name);
         return;
       case 'rescan':
         await this.rescan();
@@ -229,6 +239,94 @@ class DashboardProvider implements vscode.WebviewViewProvider {
         await openMarketplace();
         return;
     }
+  }
+
+  private async saveMcpForm(payload: McpFormPayload): Promise<void> {
+    const nextName = payload.nextName.trim();
+    const category = payload.category.trim();
+    if (!nextName || !category) {
+      vscode.window.showErrorMessage(t('MCP name and category are required.'));
+      return;
+    }
+
+    const config = parseFormConfig(payload);
+    if (!config) return;
+    const credential = payload.credential
+      ? await collectCredentialSecret(nextName, payload.credential.envVar, payload.credential.label)
+      : undefined;
+
+    if (payload.credential && !credential) return;
+
+    if (payload.mode === 'install') {
+      const existing = listMcpServers().find((server) => server.name === nextName);
+      const overwrite = existing ? await confirmOverwrite(nextName) : false;
+      if (overwrite === undefined) return;
+
+      await this.runOperation(
+        t('Installing MCP'),
+        () => installMcp({
+          name: nextName,
+          category,
+          source: payload.sourceMode === 'json' ? undefined : payload.source,
+          config,
+          credential,
+          overwrite,
+          rescan: payload.rescan,
+        }),
+        t('{name} installed.', { name: nextName }),
+      );
+      return;
+    }
+
+    if (!payload.currentName) {
+      vscode.window.showErrorMessage(t('Current MCP name is missing.'));
+      return;
+    }
+
+    const confirm = await confirmMcpEdit(payload.currentName, nextName, category, config, payload.rescan);
+    if (!confirm) return;
+
+    await this.runOperation(
+      t('Updating MCP'),
+      async () => {
+        const result = await updateMcp({
+          currentName: payload.currentName!,
+          nextName,
+          category,
+          config,
+          rescan: payload.rescan,
+        });
+        if (result.ok && credential) {
+          const credentialResult = upsertCredential({ ...credential, mcpName: nextName });
+          if (!credentialResult.ok) return credentialResult;
+        }
+        return result;
+      },
+      t('{name} updated.', { name: nextName }),
+    );
+  }
+
+  private async saveCredentialFromDashboard(payload: CredentialFormPayload): Promise<void> {
+    const credential = await collectCredentialSecret(payload.name, payload.envVar, payload.label);
+    if (!credential) return;
+    const result = upsertCredential({ ...credential, mcpName: payload.name });
+    if (result.ok) vscode.window.showInformationMessage(t('{name} credential updated.', { name: payload.name }));
+    else vscode.window.showErrorMessage(result.message);
+    this.refresh();
+  }
+
+  private async deleteCredentialFromDashboard(name: string): Promise<void> {
+    const remove = t('Remove credential');
+    const picked = await vscode.window.showWarningMessage(
+      t('Remove credential for {name}?', { name }),
+      { modal: true, detail: t('This removes the stored credential from credentials.json and gateway.env.') },
+      remove,
+    );
+    if (picked !== remove) return;
+    const result = deleteCredential(name);
+    if (result.ok) vscode.window.showInformationMessage(t('{name} credential removed.', { name }));
+    else vscode.window.showErrorMessage(result.message);
+    this.refresh();
   }
 
   private async runOperation(
@@ -317,6 +415,77 @@ async function buildInstallDraft(mode: InstallMode): Promise<{
   const category = await pickCategory();
   if (!category) return undefined;
   return { name, category, source, requiredEnvVars: [], authRecommended: false };
+}
+
+function parseFormConfig(payload: McpFormPayload): McpServerConfig | undefined {
+  if (payload.sourceMode === 'json') {
+    const configs = parseMcpConfigJson(payload.source);
+    const picked = payload.currentName
+      ? configs.find((entry) => entry.name === payload.currentName || entry.name === payload.nextName) ?? configs[0]
+      : configs[0];
+    if (!picked) {
+      vscode.window.showErrorMessage(t('No valid MCP config was found in the pasted JSON.'));
+      return undefined;
+    }
+    return picked.config;
+  }
+
+  if (!payload.command.trim()) {
+    vscode.window.showErrorMessage(t('Command is required.'));
+    return undefined;
+  }
+  return {
+    command: payload.command.trim(),
+    args: payload.args.map((arg) => arg.trim()).filter(Boolean),
+  };
+}
+
+async function collectCredentialSecret(
+  mcpName: string,
+  envVar: string,
+  label: string,
+): Promise<Omit<CredentialInput, 'mcpName'> | undefined> {
+  const trimmedEnvVar = envVar.trim();
+  if (!trimmedEnvVar) {
+    vscode.window.showErrorMessage(t('請填入 MCP 要讀取的環境變數名稱。'));
+    return undefined;
+  }
+  const value = await vscode.window.showInputBox({
+    title: t('{name} 金鑰值', { name: mcpName }),
+    prompt: t('金鑰值會寫入 gateway.env 與 credentials.json 以維持 Gateway 相容；完整值不會顯示在管理頁或輸出紀錄。'),
+    password: true,
+    ignoreFocusOut: true,
+  });
+  if (!value) return undefined;
+  return {
+    label: label.trim() || 'default',
+    value,
+    envVar: trimmedEnvVar,
+  };
+}
+
+async function confirmMcpEdit(
+  currentName: string,
+  nextName: string,
+  category: string,
+  config: McpServerConfig,
+  rescan: boolean,
+): Promise<boolean> {
+  const apply = t('Apply changes');
+  const detail = [
+    t('Current name: {value}', { value: currentName }),
+    t('Next name: {value}', { value: nextName }),
+    t('Category: {value}', { value: category }),
+    t('Command: {value}', { value: config.command }),
+    t('Args: {value}', { value: config.args.join(' ') || t('(none)') }),
+    rescan ? t('Registry will be rescanned after saving.') : t('Registry will not be rescanned automatically.'),
+  ].join('\n');
+  const picked = await vscode.window.showWarningMessage(
+    t('Apply MCP changes?'),
+    { modal: true, detail },
+    apply,
+  );
+  return picked === apply;
 }
 
 async function openDataDir(): Promise<void> {
@@ -430,8 +599,8 @@ async function collectCredential(
   const label = await input(t('Account label'), activeLabel ?? 'default');
   if (!label) return undefined;
   const value = await vscode.window.showInputBox({
-    title: t('Secret for {name}', { name: mcpName }),
-    prompt: t('The value is written to gateway.env for runtime compatibility and is never shown in the UI.'),
+    title: t('{name} 金鑰值', { name: mcpName }),
+    prompt: t('金鑰值會寫入 gateway.env 與 credentials.json 以維持 Gateway 相容；完整值不會顯示在管理頁或輸出紀錄。'),
     password: true,
     ignoreFocusOut: true,
   });

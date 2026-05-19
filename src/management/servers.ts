@@ -7,12 +7,13 @@ import { getAuthGuide } from '../auth-guides.js';
 import {
   deleteCredentialFromStore as removeCredential,
   loadCredentialStore,
+  renameCredentialInStore,
   summarizeCredential,
   writeCredential,
 } from './credentials.js';
 import {
   ensureGatewayPaths, findMcpConfigFile, listMcpConfigFiles, loadRegistrySnapshot,
-  removeMcpConfigFile, resolveGatewayPaths, saveMcpConfigFile, setMcpConfigEnabled,
+  removeMcpConfigFile, resolveGatewayPaths, saveMcpConfigFile, setMcpConfigEnabled, updateMcpConfigFile,
 } from './files.js';
 import type {
   GatewayStatus,
@@ -20,6 +21,7 @@ import type {
   McpInstallInput,
   McpServerSummary,
   McpToolSummary,
+  McpUpdateInput,
   OperationResult,
 } from './types.js';
 
@@ -100,6 +102,30 @@ export function setMcpEnabled(name: string, enabled: boolean, options: Managemen
     changed,
     message: changed ? `"${name}" 已${enabled ? '啟用' : '停用'}` : `"${name}" 狀態未變更`,
   };
+}
+
+export async function updateMcp(input: McpUpdateInput, options: ManagementOptions = {}): Promise<OperationResult> {
+  const paths = ensureGatewayPaths(options);
+  const currentName = input.currentName.trim();
+  const nextName = input.nextName.trim();
+  const category = input.category.trim();
+  if (!currentName || !nextName || !category) return { ok: false, message: 'MCP 名稱與分類不可為空' };
+  const existing = findMcpConfigFile(paths, currentName);
+  if (!existing) return { ok: false, message: `找不到 "${currentName}"` };
+  const conflict = currentName !== nextName ? findMcpConfigFile(paths, nextName) : undefined;
+  if (conflict) return { ok: false, message: `"${nextName}" 已存在` };
+  const credentialConflict = currentName !== nextName && loadCredentialStore(paths)[nextName];
+  if (credentialConflict) return { ok: false, message: `"${nextName}" 認證已存在` };
+
+  const updated = updateMcpConfigFile(paths, {
+    currentName,
+    nextName,
+    category,
+    config: input.config,
+  });
+  if (updated.renamed) renameCredentialInStore(paths, currentName, nextName);
+  if (input.rescan) await rescanRegistry(options);
+  return { ok: true, changed: true, message: `"${nextName}" 已更新` };
 }
 
 export async function rescanRegistry(options: ManagementOptions = {}) {

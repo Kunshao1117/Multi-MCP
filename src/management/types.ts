@@ -60,6 +60,14 @@ export interface McpInstallInput {
   rescan?: boolean;
 }
 
+export interface McpUpdateInput {
+  currentName: string;
+  nextName: string;
+  category: string;
+  config: McpServerConfig;
+  rescan?: boolean;
+}
+
 export interface CredentialInput {
   mcpName: string;
   label: string;

@@ -4,10 +4,12 @@
 
 ### 新增功能
 
-- **Multi-MCP Manager VS Code 延伸模組**：新增 `extensions/vscode-multi-mcp-manager`，提供 Activity Bar 儀表板管理 MCP 安裝、移除、啟用、停用、認證、工具掃描與 npm 版本檢查，並可打包 `vscode-multi-mcp-manager-0.1.1.vsix`。
+- **Multi-MCP Manager VS Code 延伸模組**：新增 `extensions/vscode-multi-mcp-manager`，提供 Activity Bar 儀表板管理 MCP 安裝、移除、啟用、停用、認證、工具掃描與 npm 版本檢查，並可打包 `vscode-multi-mcp-manager-0.1.2.vsix`。
 - **VS Code extension 圖示**：新增 Marketplace / extension 詳細頁使用的 Gateway 網路節點 PNG 圖示，並同步 Activity Bar 單色圖示。
 - **Webview 管理儀表板**：Multi-MCP Manager 從多段 Tree View 側邊欄改為單一 Webview 儀表板，用狀態摘要、頁首工具列、分類區段與內縮 MCP 列提供更清楚的管理介面。
 - **儀表板體驗優化**：安裝流程可選既有分類或新增分類，已安裝 MCP 可展開查看工具摘要，窄側邊欄會維持分類、MCP、工具三層層級，並新增 PulseMCP、官方 Registry、Glama、Smithery 外部探索入口。
+- **安裝/編輯共用表單**：VS Code 儀表板新增 MCP 設定表單，安裝與編輯都可在 Webview 中調整名稱、分類、來源、command、args、認證建議與重新掃描選項；重新命名 MCP 時會同步搬移 credential key。
+- **金鑰 / Token 體驗優化**：Webview 表單將認證區改成清楚的金鑰摘要與整行選項，環境變數、本機標籤與金鑰值用途更明確，窄側欄 checkbox 不再漂浮錯位。
 - **完整安裝與安全移除流程**：安裝支援 npm/remote 來源與 `mcpServers` JSON，並可選擇覆蓋、設定 Token 與安裝後掃描；移除 MCP 前會顯示設定檔與認證影響並要求確認。
 - **雙語介面**：VS Code extension 新增 manifest 與 runtime localization，預設英文，VS Code 語言為 `zh-tw` 時顯示繁體中文。
 - **VSIX Release 自動化**：推送 `vscode-multi-mcp-manager-v*` tag 後，GitHub Actions 會打包 VSIX、檢查版本一致性，並上傳到 GitHub Releases。
@@ -22,7 +24,7 @@
 
 ### 測試
 
-- Root 測試更新為 103 passed，新增 management API 單元測試。
+- Root 測試更新為 106 passed，新增 management API 編輯、credential key 搬移與孤兒認證衝突單元測試。
 - Extension 通過 `@vscode/test-electron` smoke test、`npm audit --omit=dev`、完整 `npm audit` 與 VSIX package 驗證。
 
 ## v1.1.1 — 2026-05-18

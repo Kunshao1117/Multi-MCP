@@ -40,6 +40,13 @@ export async function run(): Promise<void> {
   assert.ok(markers.includes('category-section'), 'dashboard should render category sections');
   assert.ok(markers.includes('data-category-toggle'), 'dashboard should include category collapse controls');
   assert.ok(markers.includes('mcp-row'), 'dashboard should render MCP rows');
+  assert.ok(markers.includes('mcp-form-panel'), 'dashboard should render the shared MCP form shell');
+  assert.ok(markers.includes('credential-panel'), 'dashboard should render credential settings');
+  assert.ok(markers.includes('key-status'), 'dashboard should explain key status');
+  assert.ok(markers.includes('credential-help'), 'dashboard should explain key handling');
+  assert.ok(markers.includes('check-row'), 'dashboard should render readable checkbox rows');
+  assert.ok(markers.includes('form-footer'), 'dashboard should keep form actions aligned');
+  assert.ok(markers.includes('change-preview'), 'dashboard should render change previews');
   assert.ok(markers.includes('tool-summary'), 'dashboard should render tool summaries');
   assert.ok(markers.includes('tool-empty-state'), 'dashboard should render tool empty states');
   assert.ok(markers.includes('探索 MCP'), 'dashboard should label marketplace as exploration');

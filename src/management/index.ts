@@ -6,6 +6,7 @@ export type {
   ManagementOptions,
   McpInstallInput,
   McpServerSummary,
+  McpUpdateInput,
   OperationResult,
   VersionCheckResult,
 } from './types.js';
@@ -25,5 +26,6 @@ export {
   removeMcp,
   rescanRegistry,
   setMcpEnabled,
+  updateMcp,
 } from './servers.js';
 export { checkVersions } from './versions.js';

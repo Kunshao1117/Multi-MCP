@@ -70,7 +70,7 @@ MCP 設定檔按功能分類存放在 `mcps/` 資料夾中（如 `mcps/開發工
 內建認證狀態監控、伺服器健康檢查、授權引導指南，確保所有工具在任何時刻都處於可用狀態。
 
 ### 🧩 VS Code 儀表板管理
-Multi-MCP Manager 延伸模組提供 Activity Bar 儀表板，可安裝、移除、啟用、停用、掃描 MCP，並管理相容的 `gateway.env` / `credentials.json` 認證檔。
+Multi-MCP Manager 延伸模組提供 Activity Bar 儀表板，可安裝、編輯、移除、啟用、停用、掃描 MCP，並用共用表單管理相容的 `gateway.env` / `credentials.json` 認證檔。
 
 ---
 
@@ -178,7 +178,7 @@ Multi-MCP Manager 延伸模組提供 Activity Bar 儀表板，可安裝、移除
 安裝本 repo 打包出的 VSIX 後，從 VS Code 左側 **Multi-MCP** 圖示開啟管理儀表板：
 
 ```bash
-code --install-extension extensions/vscode-multi-mcp-manager/vscode-multi-mcp-manager-0.1.1.vsix
+code --install-extension extensions/vscode-multi-mcp-manager/vscode-multi-mcp-manager-0.1.2.vsix
 ```
 
 `npx -y multi-mcp-gateway@latest console` 目前只會顯示遷移提示，不再啟動互動式選單。
@@ -478,8 +478,9 @@ Multi-MCP Manager 是本 repo 內的 VS Code extension，提供 Activity Bar 儀
 - **狀態總覽**：以摘要卡查看 Gateway 狀態、版本、已啟用 MCP、工具數與最後掃描時間。
 - **頁首工具列**：直接執行來源安裝、匯入 `mcpServers` JSON、探索 MCP 目錄、重新掃描、檢查版本、開啟資料夾與重新整理。
 - **已安裝 MCP**：依分類區段顯示內縮 MCP 列，每個分類與 MCP 都可收合；展開 MCP 後可查看設定、認證與工具摘要，窄側欄會維持清楚的三層層級。
+- **MCP 設定表單**：安裝與編輯共用同一套 Webview 表單，可修改名稱、分類、來源、command、args、重新掃描選項與金鑰 / Token 建議。
 
-安裝流程支援 npm package / remote URL，以及貼上 `mcpServers` JSON；安裝時可從既有分類中選擇或新增分類，也可選擇覆蓋既有設定、立即設定 Token、安裝後立即掃描。移除 MCP 會先顯示名稱、分類、設定檔與認證影響，確認後才刪除設定與對應 credential。探索 MCP 會提供 PulseMCP、官方 MCP Registry、Glama 與 Smithery 等外部目錄，不在 extension 內維護推薦清單。
+安裝流程支援 npm package / remote URL、自訂 command，以及貼上 `mcpServers` JSON；分類欄位會提供既有分類提示，也可直接輸入新分類。編輯既有 MCP 時可重新命名、搬移分類、調整來源或啟動參數，套用前會顯示變更預覽；重新命名會同步搬移對應 credential key。金鑰 / Token 區會先顯示是否需要金鑰，只有勾選設定時才展開環境變數與本機標籤欄位；完整金鑰值仍透過 VS Code password input 收集，不會放進 Webview state。移除 MCP 會先顯示名稱、分類、設定檔與認證影響，確認後才刪除設定與對應 credential。探索 MCP 會提供 PulseMCP、官方 MCP Registry、Glama 與 Smithery 等外部目錄，不在 extension 內維護推薦清單。
 
 本機打包：
 
@@ -490,14 +491,14 @@ npm run package:extension
 安裝 VSIX：
 
 ```bash
-code --install-extension extensions/vscode-multi-mcp-manager/vscode-multi-mcp-manager-0.1.1.vsix
+code --install-extension extensions/vscode-multi-mcp-manager/vscode-multi-mcp-manager-0.1.2.vsix
 ```
 
 發布 VSIX 到 GitHub Releases：
 
 ```bash
-git tag vscode-multi-mcp-manager-v0.1.1
-git push origin vscode-multi-mcp-manager-v0.1.1
+git tag vscode-multi-mcp-manager-v0.1.2
+git push origin vscode-multi-mcp-manager-v0.1.2
 ```
 
 推送 `vscode-multi-mcp-manager-v*` tag 後，GitHub Actions 會重新打包 VSIX、確認 tag 版本與 extension 版本一致，並建立對應 GitHub Release。若同名 Release 已存在，發布流程會停止，不會覆蓋既有附件。
