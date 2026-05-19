@@ -10,7 +10,7 @@ metadata:
   memory_awareness: full
   tool_scope:
     - 'filesystem:read'
-last_updated: '2026-05-19T20:31:14+08:00'
+last_updated: '2026-05-19T20:53:55+08:00'
 status: stable
 staleness: 0
 ---
@@ -148,6 +148,7 @@ staleness: 0
 - D31: VS Code extension 儀表板採頁首工具列、分類區段、內縮 MCP 列、工具摘要與外部 MCP 目錄選單；不恢復內建推薦清單或 Catalog UI。
 - D32: VS Code extension Release 採 GitHub Actions tag 觸發；`vscode-multi-mcp-manager-v*` tag 需與 extension package version 一致，CI 重新打包 VSIX 並建立 GitHub Release，不依賴本機 gh CLI。
 - D33: VS Code extension 自管更新檢查使用 GitHub latest release 作為唯一來源；啟動後只靜默記錄狀態，手動命令才允許使用者確認後下載並安裝 VSIX。
+- D34: VS Code extension Release workflow 使用 Node 24-compatible GitHub Actions major versions（checkout v6、setup-node v6、action-gh-release v3）；保留 `node-version: 22` 與 `windows-latest` runner label。
 
 ## Known Issues
 - credentials.json 明文儲存密鑰，依賴 .gitignore 保護，缺少加密層
