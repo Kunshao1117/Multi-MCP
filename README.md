@@ -188,7 +188,7 @@ Multi-MCP Manager 延伸模組提供 Activity Bar 儀表板，可安裝、編輯
 安裝本 repo 打包出的 VSIX 後，從 VS Code 左側 **Multi-MCP** 圖示開啟管理儀表板：
 
 ```bash
-code --install-extension extensions/vscode-multi-mcp-manager/vscode-multi-mcp-manager-0.1.4.vsix
+code --install-extension extensions/vscode-multi-mcp-manager/vscode-multi-mcp-manager-0.1.5.vsix
 ```
 
 `npx -y multi-mcp-gateway@latest console` 目前只會顯示遷移提示，不再啟動互動式選單。
@@ -515,14 +515,14 @@ npm run package:extension
 安裝 VSIX：
 
 ```bash
-code --install-extension extensions/vscode-multi-mcp-manager/vscode-multi-mcp-manager-0.1.4.vsix
+code --install-extension extensions/vscode-multi-mcp-manager/vscode-multi-mcp-manager-0.1.5.vsix
 ```
 
 發布 VSIX 到 GitHub Releases：
 
 ```bash
-git tag vscode-multi-mcp-manager-v0.1.4
-git push origin vscode-multi-mcp-manager-v0.1.4
+git tag vscode-multi-mcp-manager-v0.1.5
+git push origin vscode-multi-mcp-manager-v0.1.5
 ```
 
 推送 `vscode-multi-mcp-manager-v*` tag 後，GitHub Actions 會重新驗證與打包 VSIX、確認 tag 版本與 extension 版本一致，並建立對應 GitHub Release。也可在 main 的 `VS Code Extension Release` workflow 手動執行，輸入對應 tag 與已驗證的完整 commit SHA；流程會拒絕 main 已漂移、tag 不符或既有 tag 指向其他提交。若同名 Release 已存在，發布流程會停止，不會覆蓋既有附件。

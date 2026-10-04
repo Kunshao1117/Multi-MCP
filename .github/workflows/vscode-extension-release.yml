@@ -145,10 +145,9 @@ jobs:
           body: |
             Multi-MCP 管理器 VS Code 延伸模組 v${{ steps.version.outputs.version }}
 
-            - 修正設定覆寫／搬移／刪除、認證更新及失敗還原，限制不安全的管理路徑。
-            - 表單保留 env、preload、完整 args 與 npm 固定版本；重複提交、改名及側欄重建不會重送已完成操作。
-            - 修正跨 Extension／Gateway／CLI 程序的舊掃描覆寫，並保留最新 registry 與衝突提示。
-            - 內含 Gateway 管理核心 1.2.1；獨立執行的 Gateway 仍須另行更新並重新連線。
-            - 安全取捨：可能含密鑰的草稿來源／JSON／command／args／env 不持久保存，重新開啟後需重填或重新檢查。
-            - 更新前先關閉舊 Gateway 與管理視窗，再安裝 VSIX、重新載入 VS Code；既有 user-data 格式保留。
-            - 完整修正、相容依賴修補及剩餘開發工具風險見 CHANGELOG.md。此 VSIX Release 不代表 npm registry 已更新。
+            - 修正切換活動頁或重新載入視窗後，側欄重用舊快照而顯示 0/0 與 0 工具的問題；既有磁碟資料不受影響。
+            - 每次側欄重建先唯讀取得最新狀態，再恢復草稿與待處理結果，不會重送保存或掃描操作。
+            - 初次狀態讀取需要重試時仍可使用「重新整理」；可能含密鑰的草稿欄位仍不持久保存。
+            - 內含 Gateway 管理核心維持 1.2.1；本次僅更新 VS Code extension，不重新發布 npm Gateway。
+            - 安裝新版 VSIX 後重新載入 VS Code；既有 user-data、認證模型及執行中 Gateway 的重新連線要求不變。
+            - 完整修正與既有開發工具風險見 CHANGELOG.md。
