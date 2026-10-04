@@ -85,7 +85,9 @@ export function ensureUserDataDir(paths = getGatewayPaths()): GatewayPaths {
     writeFileSync(paths.envPath, defaultGatewayEnv(), 'utf-8');
   }
   if (!existsSync(paths.registryPath)) {
-    writeFileSync(paths.registryPath, defaultRegistry(), 'utf-8');
+    // A concurrent scanner may publish after existsSync; never overwrite its cache.
+    try { writeFileSync(paths.registryPath, defaultRegistry(), { encoding: 'utf8', flag: 'wx' }); }
+    catch (error) { if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error; }
   }
   seedDefaultMcps(paths);
 

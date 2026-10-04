@@ -114,11 +114,12 @@ it('serializes rescan and reload so removed membership stays removed on disk and
   let release!: (value: unknown) => void;
   mock.list.mockImplementationOnce(() => new Promise((resolve) => { release = resolve; }));
   const scan = router.route('gateway__rescan', {});
+  const scanRejected = expect(scan).rejects.toThrow(/已變更/);
   await vi.waitFor(() => expect(release).toBeDefined());
   writeFileSync(configPath, JSON.stringify({ ...config(), mcpServers: {} }));
   const reload = expect(router.route('gateway__reload_server', { server_name: 'demo' })).rejects.toThrow(/已移除/);
   release({ tools: [tool('known')] });
-  await Promise.all([scan, reload]);
+  await Promise.all([scanRejected, reload]);
   expect(Object.keys(router.getRegistry().servers)).toEqual([]);
   expect(Object.keys(pool.getConfig().mcpServers)).toEqual([]);
   expect(Object.keys(JSON.parse(readFileSync(registryPath, 'utf8')).servers)).toEqual([]);

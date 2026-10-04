@@ -7,7 +7,7 @@ import type { ToolRegistry, ParsedToolName, SearchToolsResult } from './types.js
 import { NAMESPACE_SEPARATOR, GATEWAY_TOOL_PREFIX } from './types.js';
 import type { ProcessPool } from './process-pool.js';
 import { getAuthGuide, isAuthError } from './auth-guides.js';
-import { searchTools, saveRegistry } from './registry.js';
+import { searchTools, pruneRegistry } from './registry.js';
 import { getConfigContext } from './config-loader.js';
 import type { GatewayConfig } from './types.js';
 import { callToolSearchResult, searchGatewayTools } from './gateway-tools.js';
@@ -219,13 +219,9 @@ export class ToolRouter {
           this.requireEnabled(serverName);
           await this.processPool.reloadServer(serverName);
           this.config = this.processPool.getConfig();
-          const prior = this.registry;
-          this.registry = this.enabledRegistry(prior);
-          if (Object.keys(prior.servers).length !== Object.keys(this.registry.servers).length) {
-            const configPath = getConfigContext(this.config)?.configPath;
-            const registryPath = this.context.registryPath ?? (configPath ? path.join(path.dirname(configPath), 'registry.json') : undefined);
-            if (registryPath) saveRegistry(this.registry, registryPath);
-          }
+          const configPath = getConfigContext(this.config)?.configPath;
+          const registryPath = this.context.registryPath ?? (configPath ? path.join(path.dirname(configPath), 'registry.json') : undefined);
+          this.registry = registryPath ? pruneRegistry(this.config, registryPath) : this.enabledRegistry(this.registry);
           this.requireEnabled(serverName);
           return { content: [{ type: 'text' as const, text: `✅ 已重新載入 ${serverName}，下次呼叫時使用新的環境變數` }] };
         });

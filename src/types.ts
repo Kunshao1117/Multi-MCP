@@ -55,6 +55,8 @@ export interface RegistryToolEntry {
 /** 集成表結構 */
 export interface ToolRegistry {
   version: string;
+  /** Optional opaque publication revision; older registries without it remain readable. */
+  revision?: string;
   generated_at: string;
   servers: Record<string, {
     stale?: boolean;
