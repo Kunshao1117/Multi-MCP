@@ -8,6 +8,8 @@ sessions/
 dist/
 extensions/vscode-multi-mcp-manager/out/
 extensions/vscode-multi-mcp-manager/.vscode-test/
+# VSIX 安裝包由 Release 提供，不再追蹤本機打包產物
+extensions/vscode-multi-mcp-manager/*.vsix
 
 # 認證與本機密鑰
 # 狀態：絕不可提交，僅保留在操作者本機

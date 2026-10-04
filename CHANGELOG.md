@@ -1,5 +1,11 @@
 # 更新紀錄
 
+## 尚未發布 — 退役檔案清理
+
+- 移除 11 個已停用互動式 CLI 模組及 legacy `src/credential-store.ts` wrapper；下一次乾淨建置不再產生其 48 個 JS、型別與 map 檔案。3 個安全停用入口、management 公開 API 與 catalog 保留。直接使用內部 `dist/cli/*` 或 `dist/credential-store.*` 的非公開整合需改用 `multi-mcp-gateway/management`。
+- 不再追蹤 repo 內的 0.1.3 VSIX，新增 extension VSIX ignore，安裝來源維持 GitHub Releases。舊檔可由清理前 commit `dd52db56a11c40d5a9d77d863baa7361d5318e19` 的 Git blob `a0471af14cc42676502435f5f5bbe8a549a52b5c` 精確還原（136,445 bytes）；0.1.3 Release asset 是不同的 136,511 bytes 檔案，不宣稱可互換或逐位元重建。
+- 只清理退役來源、打包產物與直接相關文件；Gateway 1.2.1、extension 0.1.5 與依賴版本不變。此紀錄不代表已發布新版本，也不刪除 Git 歷史、Release 或使用者本機資料。
+
 ## VS Code extension v0.1.5 — 2026-10-04
 
 ### 側欄狀態恢復修正

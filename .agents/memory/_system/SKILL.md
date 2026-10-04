@@ -77,7 +77,7 @@ staleness: 0
 - `npm run dev:scan` — 開發模式掃描工具
 - `npm run console` — 顯示互動式 CLI 已停用與 VS Code extension 遷移提示
 - `npm run build:extension` — 編譯 Gateway 與 VS Code extension
-- `npm run package:extension` — 打包 `extensions/vscode-multi-mcp-manager/vscode-multi-mcp-manager-0.1.3.vsix`
+- `npm run package:extension` — 依 extension package version 打包 VSIX（目前 0.1.5）；產物不提交 Git，安裝檔由 GitHub Releases 提供
 - `npm run preflight:extension` — 編譯並執行 extension smoke test
 - `npm test` — 單元測試 (vitest)
 - `npx tsc` — 直接編譯到 `dist/`；`.npmrc` 已固定 npm script shell，`npm run build` 與 `npx tsc` 皆可作為建置入口
@@ -144,7 +144,7 @@ staleness: 0
 - D27: `.gitignore` 使用繁中區塊與狀態註解維護可讀性；整理註解時不得改變既有 ignore 行為，npm package 邊界仍以 `package.json.files` 為準。
 - D28: 1.2.0 起主要人工管理入口改為 VS Code extension；`console` 子命令停用互動式選單，只保留遷移提示。
 - D29: `package.json.exports` 新增 `./management` subpath，供 extension 與未來 UI 使用 headless 管理 API。
-- D30: `.gitignore` 需忽略 extension `out/` 與 `.vscode-test/`，但保留 VSIX artifact 供本機安裝驗證。
+- D30: `.gitignore` 忽略 extension `out/`、`.vscode-test/` 與 `*.vsix`；2026-10-04 清理後不再追蹤舊 VSIX。精確回復舊檔請見 README 的 Git blob，不以同名 Release 當成相同位元內容。
 - D31: VS Code extension 儀表板採頁首工具列、分類區段、內縮 MCP 列、工具摘要與外部 MCP 目錄選單；不恢復內建推薦清單或 Catalog UI。
 - D32: VS Code extension Release 採 GitHub Actions tag 觸發；`vscode-multi-mcp-manager-v*` tag 需與 extension package version 一致，CI 重新打包 VSIX 並建立 GitHub Release，不依賴本機 gh CLI。
 - D33: VS Code extension 自管更新檢查使用 GitHub latest release 作為唯一來源；啟動後只靜默記錄狀態，手動命令才允許使用者確認後下載並安裝 VSIX。

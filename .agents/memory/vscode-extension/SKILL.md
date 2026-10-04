@@ -41,7 +41,6 @@ dependencies:
 - extensions/vscode-multi-mcp-manager/src/webview.ts
 - extensions/vscode-multi-mcp-manager/test/runTest.ts
 - extensions/vscode-multi-mcp-manager/test/suite/index.ts
-- extensions/vscode-multi-mcp-manager/vscode-multi-mcp-manager-0.1.3.vsix
 
 ## Key Decisions
 - D01: Extension 使用 VS Code Activity Bar view container `multiMcp`，並以單一 `multiMcp.dashboard` Webview View 作為主要管理儀表板。
@@ -51,7 +50,7 @@ dependencies:
 - D05: 密鑰輸入使用 VS Code password input；UI 只顯示管理 API 回傳的遮罩摘要，不將完整 token 寫入 output channel。
 - D06: Extension 不再露出推薦清單 / Catalog UI；安裝入口只保留來源安裝與 `mcpServers` JSON 匯入。
 - D07: Extension 測試採 `@vscode/test-electron` 最小啟動 smoke，驗證 extension activate、核心 commands 註冊與 dashboard state 可取得。
-- D08: VSIX artifact `vscode-multi-mcp-manager-0.1.3.vsix` 保留在 repo 供本機安裝驗證；`out/` 與 `.vscode-test/` 為可重建產物，應由 `.gitignore` 排除。
+- D08: 先前保留在 repo 供本機驗證的 0.1.3 VSIX，於 2026-10-04 清理後停止追蹤。VSIX、`out/` 與 `.vscode-test/` 均由 `.gitignore` 排除，安裝使用 GitHub Releases 或當前來源打包。舊 repo VSIX 可由 commit `dd52db56a11c40d5a9d77d863baa7361d5318e19`、blob `a0471af14cc42676502435f5f5bbe8a549a52b5c` 精確取回（136,445 bytes）；它與 136,511 bytes 的 0.1.3 Release asset 不同，不保證逐位元重建。
 - D09: 本卡依賴 `management-api`，因 extension 不直接操作 Gateway user-data 檔案格式，所有業務規則都應透過 headless API。
 - D10: Manifest 文字使用 `package.nls*.json`，runtime 文字使用 `vscode.l10n.t()` 與 `l10n/bundle.l10n.zh-tw.json`；Webview 目前以繁中管理頁文案為主。
 - D11: 安裝流程採相容性優先，支援 npm/remote source 與貼上 `mcpServers` JSON，並可選擇覆蓋、設定 Token、安裝後 rescan。
@@ -94,7 +93,7 @@ dependencies:
 - L11: 認證設定畫面要把環境變數名稱與本機標籤視為資料欄位，把設定/刪除金鑰值視為獨立操作列；兩者不能混在同一欄視覺區塊。
 - L11: 「認證」對一般操作者語意過抽象；Webview 操作面應優先使用「金鑰 / Token」，再用環境變數、本機標籤、金鑰值拆清楚每個欄位的目的。
 - L12: VSIX 安裝版不會享有 Marketplace 自動更新；若要提供自管更新，應把 release 查詢、VSIX 下載、digest 驗證與安裝確認拆成獨立 extension-side 模組，避免污染 MCP 管理 API。
-- L13: VSIX artifact 被記憶卡追蹤時，重新打包後即使文件已更新也會重新觸發 staleness；完成 `npm run package:extension` 後要再次執行 `memory_commit` 才能清除封包產物的 pending change。
+- L13: 歷史上追蹤 VSIX 曾使每次打包重新觸發 staleness；2026-10-04 起不再追蹤 VSIX，請勿為消除產物差異而重新將安裝包加入 Tracked Files。
 - L14: `extensions/vscode-multi-mcp-manager/out/` 是可重建 bundle output；若 memory list 將它標成未歸屬，應刪除該輸出目錄後重新同步本卡，不應加入 `## Tracked Files`。
 
 ## Applicable Skills
