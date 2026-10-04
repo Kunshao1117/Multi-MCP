@@ -1,8 +1,8 @@
 ---
 name: cli
 description: >
-  專案記憶：舊 CLI 管理主控台模組與 catalog 行為。互動式 console 入口已停用；新的管理介面請優先使用 management-api 與
-  vscode-extension 記憶卡。 Use when: 修改 src/cli 舊流程或 mcp-catalog.json 的任務。
+  專案記憶：退役 CLI 的安全相容入口與歷史決策。互動式模組已移出來源樹；新的管理介面請優先使用 management-api 與
+  vscode-extension 記憶卡。 Use when: 維護 CLI 安全停用入口或查閱退役歷史。
 metadata:
   author: antigravity
   version: '1.0'
@@ -21,22 +21,16 @@ staleness: 0
 
 ## Tracked Files
 - src/cli.ts
-- src/cli/shared.ts
-- src/cli/source-detector.ts
-- src/cli/install-flow.ts
-- src/cli/auth-manager.ts
-- src/cli/category-manager.ts
-- src/cli/mcp-manager.ts
-- src/cli/dashboard.ts
-- src/cli/marketplace.ts
-- src/cli/health-check.ts
-- src/cli/tool-browser.ts
 - src/cli/import-export.ts
-- src/cli/version-check.ts
-- mcp-catalog.json
 - console.ps1
 
-## Key Decisions
+## Current State — 2026-10-04
+- 僅追蹤上述 3 個安全停用入口；`src/management/safety.test.ts` 的 F20 要求它們不得初始化、安裝依賴或匯出原始設定。
+- 11 個互動式模組及 `src/credential-store.ts` legacy wrapper 已退役；完整來源保留於清理前 commit `dd52db56a11c40d5a9d77d863baa7361d5318e19` 的 Git 歷史。
+- catalog 仍由 `multi-mcp-gateway/management` 的 `listCatalogEntries()` 公開提供，資料檔由 `_system` 追蹤；extension 不顯示或打包內建 Catalog。不要恢復舊互動式 UI 或建立不存在的 extension catalog 副本。
+- 以下決策、問題與教訓保留作退役歷史，並非現行實作或待修需求；其中 D01/D07/D19/D23/L10 已被本節現況取代。
+
+## Historical Key Decisions
 - D01: 互動式 CLI 選單原始碼仍保留於 `src/cli/`，但 npm `console` 入口已停用並輸出 VS Code extension 遷移提示
 - D02: 安裝 MCP 時三層自動辨識：已知提示 → 試啟動偵測 → 手動輸入
 - D03: 同步認證功能可從 gateway.env 反向匯入到 credentials.json
@@ -64,14 +58,14 @@ staleness: 0
 - D25: CLI 健康檢查與認證需求探測啟動下游 MCP 時使用 `createDownstreamEnv()`，避免 Gateway 由 npm/npx 啟動時外層 npm lifecycle 變數污染內層 npx
 - D26: 新功能不得再擴充互動式 CLI 選單；請改擴充 `src/management/` headless API 與 VS Code extension。
 
-## Known Issues
+## Historical Known Issues
 - （已解決）cli.ts 原 888 行超過閾值──已完成拆分重構
 - （已解決）主控台新增與更新權限時，空白字串造成無聲音中斷操作（已加入 trim 防錯邏輯與明確錯誤提示）
 - （已解決）安裝流程輸入 mcpServers JSON 時，殘餘 JSON 行污染後續 prompt 導致檔名錯誤（已在 install-flow.ts 加入預處理快速路徑）
 - 健康檢查逐一串列測試（非並行），MCP 數量多時較慢
 - 推薦清單 mcp-catalog.json 需手動維護，無自動更新機制
 
-## Module Lessons
+## Historical Module Lessons
 - L01: 拆分互動式 CLI 時，readline 實例不可分散建立，必須集中持有避免 stdin 搶佔
 - L02: 子模組間如需交叉呼叫（如安裝後觸發掃描），應以回呼注入而非直接 import 對方模組
 - L03: config-loader.ts 的 resolveEnvVars 為私有函式，新模組需自行實作環境變數解析

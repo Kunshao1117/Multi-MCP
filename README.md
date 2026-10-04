@@ -123,7 +123,7 @@ Multi-MCP Manager 延伸模組提供 Activity Bar 儀表板，可安裝、編輯
 | **設定載入器** | `src/config-loader.ts` | 設定檔讀取、`gateway.env` 注入、`mcps/` 目錄掃描、環境變數模板解析 |
 | **集成表引擎** | `src/registry.ts` | 下游 MCP 掃描、工具目錄生成、模糊搜尋、分類總表產生 |
 | **認證引導** | `src/auth-guides.ts` | 各 MCP 的授權步驟指南生成（環境變數 / OAuth / API Key） |
-| **認證儲存** | `src/credential-store.ts` | 多帳號認證資料的讀寫管理 |
+| **認證儲存** | `src/management/credentials.ts` | 多帳號認證資料的讀寫管理 |
 | **Headless 管理 API** | `src/management/` | 提供 extension 與未來 UI 共用的安裝、移除、啟停、掃描、認證與版本檢查能力 |
 | **日誌系統** | `src/logger.ts` | 結構化 JSON 日誌，輸出至 stderr（避免干擾 stdio 通訊） |
 | **型別定義** | `src/types.ts` | 全域共用型別（GatewayConfig、ToolRegistry、ProcessState 等） |
@@ -138,24 +138,17 @@ Multi-MCP Manager 延伸模組提供 Activity Bar 儀表板，可安裝、編輯
 - 認證資料損壞會拒絕寫入並保留原檔。保存採每檔原子替換及失敗還原；不宣稱多檔交易能抵抗斷電。若有中斷後的 lock 或備份，確認沒有管理程序後先復原再繼續
 - 為防止越界，管理檔案拒絕含路徑分隔符／保留檔名的名稱與符號連結路徑；遇既有不合法名稱或重複設定，先整理資料再管理，不會自動刪除
 
-## VS Code 延伸模組與舊 CLI 模組
+## VS Code 延伸模組與退役 CLI 入口
 
 | 模組 | 檔案 | 職責 |
 |------|------|------|
 | **VS Code extension** | `extensions/vscode-multi-mcp-manager/` | Activity Bar Webview 儀表板管理 MCP、認證、掃描、MCP 版本與插件更新，並可打包 VSIX |
-| **舊主控台入口** | `src/cli.ts` | 舊互動式選單程式碼保留於原始碼，但 npm `console` 入口已停用並導向 VS Code extension |
-| **儀表板** | `src/cli/dashboard.ts` | MCP 總覽儀表板渲染 |
-| **MCP 管理** | `src/cli/mcp-manager.ts` | 檢視、移除、重新掃描 MCP |
-| **市集** | `src/cli/marketplace.ts` | npm 搜尋整合與一鍵安裝 |
-| **安裝流程** | `src/cli/install-flow.ts` | 互動式 MCP 安裝精靈（自動偵測設定格式） |
-| **認證管理** | `src/cli/auth-manager.ts` | 認證狀態查看、密鑰設定、同步 |
-| **分類管理** | `src/cli/category-manager.ts` | MCP 分類的增刪改 |
-| **健康檢查** | `src/cli/health-check.ts` | 批量認證狀態驗證 |
-| **工具瀏覽器** | `src/cli/tool-browser.ts` | 互動式工具清單瀏覽 |
-| **版本檢查** | `src/cli/version-check.ts` | 下游 MCP 版本更新偵測 |
-| **匯出匯入** | `src/cli/import-export.ts` | 設定檔的匯出與匯入 |
-| **來源偵測** | `src/cli/source-detector.ts` | 自動偵測 MCP 安裝來源（npm / GitHub 等） |
-| **共用工具** | `src/cli/shared.ts` | 終端機 UI 元件、色彩碼、共用函式 |
+| **舊主控台入口** | `src/cli.ts`、`console.ps1` | 僅顯示已停用與 VS Code extension 遷移提示，不初始化使用者資料 |
+| **舊匯出匯入入口** | `src/cli/import-export.ts` | 安全停用提示；不讀取、寫入或匯出可能含密鑰的設定 |
+
+已退役的互動式 CLI 模組與 legacy credential wrapper 已移出來源及編譯範圍。管理能力請使用 `multi-mcp-gateway/management`；`listCatalogEntries()` 與套件內的 `mcp-catalog.json` 仍保留，extension 不提供內建 Catalog UI。公開 package exports 不變；直接讀取套件內部 `dist/cli/*` 或 `dist/credential-store.*` 的非公開整合需要改用管理 API。
+
+VSIX 請從 [GitHub Releases](https://github.com/Kunshao1117/Multi-MCP/releases) 下載，或由目前來源重新打包。來源樹不再追蹤舊版安裝包。若需精確還原先前追蹤的 0.1.3 檔案，請使用 [清理前的 Git 版本](https://github.com/Kunshao1117/Multi-MCP/blob/dd52db56a11c40d5a9d77d863baa7361d5318e19/extensions/vscode-multi-mcp-manager/vscode-multi-mcp-manager-0.1.3.vsix)：Git blob `a0471af14cc42676502435f5f5bbe8a549a52b5c`，136,445 bytes。0.1.3 Release asset 為 136,511 bytes，兩者不同；不保證同名 Release 或重建結果與舊 repo 檔案逐位元相同。
 
 ---
 
@@ -643,25 +636,14 @@ Multi-MCP/
 │   ├── config-loader.ts        # 設定檔載入器
 │   ├── registry.ts             # 集成表引擎
 │   ├── auth-guides.ts          # 認證引導指南
-│   ├── credential-store.ts     # 認證儲存
 │   ├── logger.ts               # 結構化日誌系統
 │   ├── types.ts                # 全域型別定義
-│   ├── management/             # Headless 管理 API
+│   ├── management/             # Headless 管理 API（含認證儲存）
+│   ├── cli.ts                  # 舊主控台安全停用提示
 │   ├── *.test.ts               # 單元測試
 │   │
-│   └── cli/                    # 舊互動式 CLI 模組（console 入口已停用）
-│       ├── shared.ts           # 共用 UI 元件
-│       ├── dashboard.ts        # 儀表板
-│       ├── mcp-manager.ts      # MCP 管理
-│       ├── marketplace.ts      # MCP 市集
-│       ├── install-flow.ts     # 安裝精靈
-│       ├── auth-manager.ts     # 認證管理
-│       ├── category-manager.ts # 分類管理
-│       ├── health-check.ts     # 健康檢查
-│       ├── tool-browser.ts     # 工具瀏覽器
-│       ├── version-check.ts    # 版本檢查
-│       ├── import-export.ts    # 匯出匯入
-│       └── source-detector.ts  # 來源偵測
+│   └── cli/                    # 退役功能安全相容入口
+│       └── import-export.ts    # 匯出匯入已停用，不讀寫設定
 │
 ├── extensions/
 │   └── vscode-multi-mcp-manager/ # VS Code 左側管理延伸模組與 VSIX 打包設定

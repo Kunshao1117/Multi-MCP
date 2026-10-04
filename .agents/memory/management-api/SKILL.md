@@ -18,7 +18,6 @@ staleness: 0
 scopePath: src/management
 dependencies:
   - gateway-core
-  - cli
 ---
 
 # Headless Management API — Module Memory
@@ -42,7 +41,7 @@ dependencies:
 - D06: 啟用/停用 MCP 以重新命名 `.json`、`.json.disabled` 或 `.disabled` 設定檔完成，不改動設定內容。
 - D07: `rescanRegistry()` 重用 `loadConfig()` 與 `scanAndGenerateRegistry()`，掃描結果寫回 user-data 的 `registry.json`。
 - D08: `checkVersions()` 只處理可辨識 npm package 的啟用 MCP；停用或 custom/remote MCP 回傳 `skip`，避免誤報更新。
-- D09: 本卡依賴 `gateway-core`，因管理 API 直接消費 `paths`、`config-loader`、`registry`、`auth-guides` 與共用型別；也依賴 `cli` 的 catalog 決策，因 `mcp-catalog.json` 同時服務舊 CLI 與 extension。
+- D09: 本卡依賴 `gateway-core`，因管理 API 直接消費 `paths`、`config-loader`、`registry`、`auth-guides` 與共用型別。退役互動式 CLI 已移除，catalog 仍由本 API 公開提供；`mcp-catalog.json` 由 `_system` 追蹤，extension 不顯示或打包內建 Catalog。
 - D10: `listCatalogEntries()` 會優先讀取 package root 的 `mcp-catalog.json`，若使用者層 `MULTI_MCP_PACKAGE_ROOT` 指向已安裝 extension 而該處沒有 catalog，會回退讀取目前工作目錄的 `mcp-catalog.json`，確保 repo 開發測試不受外部 extension 環境污染。
 - D11: `listMcpServers()` 會從 registry snapshot 提供每個 MCP 最多 5 筆工具摘要（名稱、原始名稱、描述），讓 UI 顯示工具內容但不直接讀 user-data 檔案。
 - D12: `updateMcp()` 是編輯既有 MCP 的唯一 headless API；它負責更新設定檔、重新命名、搬移分類、保留啟用/停用副檔名，並可選擇重新掃描 Registry。

@@ -28,7 +28,6 @@ staleness: 0
 - src/types.ts
 - src/logger.ts
 - src/config-loader.ts
-- src/credential-store.ts
 - src/gateway-tools.ts
 - src/gateway-server.ts
 - src/process-pool.ts
@@ -42,6 +41,9 @@ staleness: 0
 - src/tool-router.test.ts
 - src/process-pool.test.ts
 - scripts/verify-gateway-runtime.mjs
+
+## Cleanup Note — 2026-10-04
+- Legacy `src/credential-store.ts` wrapper 已隨退役互動 CLI 移除；現行認證儲存保留於 `src/management/credentials.ts`，公開 management API 不變。
 
 ## Key Decisions
 - D01: 閘道器只暴露管理工具（10 個），下游工具透過 search_tools + call_tool 動態發現

@@ -36,7 +36,7 @@ staleness: 0
 - **記憶路徑**：`.agents/memory/gateway-core/SKILL.md`
 
 ### 3. 命令列主控台 (`cli`)
-- **負責範圍**：舊 CLI 管理介面原始碼與 catalog 行為；npm `console` 入口已停用並導向 VS Code extension。
+- **負責範圍**：CLI 安全停用入口與退役歷史；互動式模組已移除，npm `console` 入口僅提示改用 VS Code extension，catalog 由 management API 提供。
 - **對應程式碼**：`src/cli/`
 - **記憶路徑**：`.agents/memory/cli/SKILL.md`
 
@@ -59,7 +59,7 @@ staleness: 0
 - D02: 具體檔案異動應歸屬於 `_system`、`gateway-core`、`cli`、`management-api` 或 `vscode-extension` 子模組；跨模組修改前先讀取本卡確認邊界。
 - D03: `AGENTS.md` 目前承載 GitNexus 治理橋接；修改程式符號前需先做 impact analysis，提交前需做 detect-changes 範圍檢查。
 - D04: 若 GitNexus 回報索引 stale，需先執行 `npx gitnexus analyze` 更新索引，再繼續架構探索、影響分析或提交前檢查。
-- D05: 2026-05-19 起主要人工管理入口改為 VS Code extension；CLI 選單只保留舊原始碼與遷移提示。
+- D05: 2026-05-19 起主要人工管理入口改為 VS Code extension；2026-10-04 清理退役互動式原始碼後，CLI 僅保留安全停用與遷移提示。
 - D06: `AGENTS.md` 只保存 GitNexus 專案治理入口與目前索引摘要；索引數量更新時只需同步 `_map` 導航卡，不代表業務模組邊界改變。
 
 ## Known Issues
