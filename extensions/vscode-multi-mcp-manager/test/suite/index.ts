@@ -1,8 +1,13 @@
 import * as assert from 'node:assert';
 import * as vscode from 'vscode';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 export async function run(): Promise<void> {
-  await vscode.extensions.getExtension('kunshao.vscode-multi-mcp-manager')?.activate();
+  const extension = vscode.extensions.getExtension('kunshao.vscode-multi-mcp-manager');
+  assert.ok(extension, 'extension should be installed in the test host');
+  await extension.activate();
+  const corePackage = JSON.parse(readFileSync(resolve(extension.extensionPath, '..', '..', 'package.json'), 'utf8')) as { version: string };
   const commands = await vscode.commands.getCommands(true);
   for (const command of [
     'multiMcp.refresh',
@@ -30,9 +35,11 @@ export async function run(): Promise<void> {
   const state = await vscode.commands.executeCommand<{
     status: { packageVersion: string; totalServers: number };
     servers: Array<{ tools?: unknown[] }>;
+    extensionVersion?: string;
     extensionUpdate?: { status: string; currentVersion: string };
   }>('multiMcp.internal.getDashboardStateForTest');
-  assert.ok(state.status.packageVersion, 'dashboard state should include package version');
+  assert.strictEqual(state.status.packageVersion, corePackage.version, 'bundled dashboard must report the core version, not the extension version');
+  assert.strictEqual(state.extensionVersion, extension.packageJSON.version, 'dashboard must report the extension version separately');
   assert.ok(Array.isArray(state.servers), 'dashboard state should include servers');
   assert.ok(state.extensionUpdate?.currentVersion, 'dashboard state should include extension update status');
   if (state.servers.length > 0) {

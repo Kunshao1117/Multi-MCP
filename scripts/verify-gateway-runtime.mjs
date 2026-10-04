@@ -31,6 +31,8 @@ const text = (result) => result.content?.filter((item) => item.type === 'text').
 const invoke = (name, args = {}) => client.callTool({ name: `gateway__${name}`, arguments: args });
 try {
   await client.connect(transport);
+  const corePackage = JSON.parse(readFileSync(path.join(packageRoot, 'package.json'), 'utf8'));
+  assert.equal(client.getServerVersion()?.version, corePackage.version, 'Gateway serverInfo must report the core package version');
   const gatewayTools = await client.listTools();
   assert.equal(gatewayTools.tools.length, 10);
   assert.match(gatewayTools.tools.find((tool) => tool.name === 'gateway__call_tool').description, /每次呼叫都要明確傳入/);
