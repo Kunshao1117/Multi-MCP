@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GatewayConfig } from './types.js';
+import { tmpdir } from 'node:os';
+import { resolve } from 'node:path';
+
+const workspaceA = resolve(tmpdir(), 'multi-mcp-project-a');
+const workspaceB = resolve(tmpdir(), 'multi-mcp-project-b');
 
 const mocks = vi.hoisted(() => ({ clients: [] as any[], transports: [] as any[], connect: vi.fn(), call: vi.fn(), close: vi.fn(), transportClose: vi.fn() }));
 vi.mock('@modelcontextprotocol/sdk/client/index.js', () => ({
@@ -149,7 +154,7 @@ describe('tool leases, cancellation and workspace isolation', () => {
   it('a 100ms active request survives a 20ms idle limit and gets a full idle window after completion', async () => {
     const result = deferred<any>(); mocks.call.mockReturnValue(result.promise);
     const pool = poolFor({ idle_timeout_ms: 20 });
-    const call = pool.callTool('a', { name: 'write', arguments: {} }, { workspace: '/project-a' });
+    const call = pool.callTool('a', { name: 'write', arguments: {} }, { workspace: workspaceA });
     await flush();
     await vi.advanceTimersByTimeAsync(100);
     expect(mocks.close).not.toHaveBeenCalled();
@@ -161,7 +166,7 @@ describe('tool leases, cancellation and workspace isolation', () => {
   it('upstream abort reaches the SDK request and never retries a possibly applied write', async () => {
     mocks.call.mockReturnValue(new Promise(() => {}));
     const pool = poolFor(); const controller = new AbortController();
-    const call = pool.callTool('a', { name: 'write' }, { signal: controller.signal, workspace: '/project-a' }).catch((error) => error);
+    const call = pool.callTool('a', { name: 'write' }, { signal: controller.signal, workspace: workspaceA }).catch((error) => error);
     await flush();
     const signal = mocks.call.mock.calls[0][2].signal;
     controller.abort(new Error('user cancelled'));
@@ -185,7 +190,7 @@ describe('tool leases, cancellation and workspace isolation', () => {
   it('aborting the only tool waiter closes its orphan initializing generation', async () => {
     mocks.connect.mockReturnValue(new Promise(() => {}));
     const pool = poolFor(); const controller = new AbortController();
-    const call = pool.callTool('a', { name: 'write' }, { workspace: '/project-a', signal: controller.signal }).catch((error) => error);
+    const call = pool.callTool('a', { name: 'write' }, { workspace: workspaceA, signal: controller.signal }).catch((error) => error);
     await flush(); controller.abort(); await call; await flush();
     expect(mocks.close).toHaveBeenCalledTimes(1);
     expect(mocks.transportClose).toHaveBeenCalledTimes(1);
@@ -195,10 +200,10 @@ describe('tool leases, cancellation and workspace isolation', () => {
 
   it('different workspaces use distinct child cwd while repeated calls reuse their own client', async () => {
     const pool = poolFor();
-    await pool.callTool('a', { name: 'cwd' }, { workspace: '/project-a' });
-    await pool.callTool('a', { name: 'cwd' }, { workspace: '/project-b' });
-    await pool.callTool('a', { name: 'cwd' }, { workspace: '/project-a' });
-    expect(mocks.transports.map((transport) => transport.options.cwd)).toEqual(['/project-a', '/project-b']);
+    await pool.callTool('a', { name: 'cwd' }, { workspace: workspaceA });
+    await pool.callTool('a', { name: 'cwd' }, { workspace: workspaceB });
+    await pool.callTool('a', { name: 'cwd' }, { workspace: workspaceA });
+    expect(mocks.transports.map((transport) => transport.options.cwd)).toEqual([workspaceA, workspaceB]);
     expect(mocks.call).toHaveBeenCalledTimes(3);
     expect(mocks.connect).toHaveBeenCalledTimes(2);
   });
@@ -206,7 +211,7 @@ describe('tool leases, cancellation and workspace isolation', () => {
   it('a failed dispatched write is not reconnected or repeated', async () => {
     mocks.call.mockRejectedValue(new Error('Disconnected after dispatch'));
     const pool = poolFor({ max_retries: 3 });
-    await expect(pool.callTool('a', { name: 'write' }, { workspace: '/project-a' })).rejects.toThrow('Disconnected');
+    await expect(pool.callTool('a', { name: 'write' }, { workspace: workspaceA })).rejects.toThrow('Disconnected');
     expect(mocks.call).toHaveBeenCalledTimes(1);
     expect(mocks.connect).toHaveBeenCalledTimes(1);
   });

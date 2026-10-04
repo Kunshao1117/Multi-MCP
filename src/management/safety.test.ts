@@ -17,6 +17,7 @@ vi.mock('node:fs', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:fs')>();
   return { ...actual, renameSync: vi.fn(actual.renameSync), unlinkSync: vi.fn(actual.unlinkSync) };
 });
+let realFs: typeof import('node:fs');
 const roots: string[] = [];
 const config = { command: 'node', args: ['fixture.js'] };
 const emptyRegistry = { version: '1.0.0', generated_at: '', servers: {}, all_tools: {} };
@@ -50,7 +51,11 @@ function tree(path: string): Record<string, string> {
   return result;
 }
 
-beforeEach(() => {
+beforeEach(async () => {
+  // mockRestore() may clear a vi.fn implementation; rebind genuine filesystem calls for every case.
+  realFs = await vi.importActual<typeof import('node:fs')>('node:fs');
+  vi.mocked(fs.renameSync).mockReset().mockImplementation(realFs.renameSync);
+  vi.mocked(fs.unlinkSync).mockReset().mockImplementation(realFs.unlinkSync);
   vi.mocked(scanAndGenerateRegistry).mockReset();
   vi.mocked(scanAndGenerateRegistry).mockResolvedValue(emptyRegistry);
 });
@@ -141,7 +146,7 @@ describe('management data-loss regressions', () => {
   it('F14 a source deletion failure rolls back the new target', async () => {
     const paths = fixture(); const original = addConfig(paths);
     const before = tree(paths.mcpsDir);
-    const actualUnlink = vi.mocked(fs.unlinkSync).getMockImplementation()!;
+    const actualUnlink = realFs.unlinkSync;
     let failed = false;
     vi.mocked(fs.unlinkSync).mockImplementation((path) => {
       if (!failed && path === original) { failed = true; throw new Error('fixture delete failure'); }
@@ -168,7 +173,7 @@ describe('management data-loss regressions', () => {
   });
   it('F16 credentials and env roll back if the second rename fails; temp files do not remain', () => {
     const paths = fixture(); credential(paths); const before = tree(paths.dataDir);
-    const actualRename = vi.mocked(fs.renameSync).getMockImplementation()!;
+    const actualRename = realFs.renameSync;
     let calls = 0;
     vi.mocked(fs.renameSync).mockImplementation((from, to) => {
       if (++calls === 2) throw new Error('fixture second-file failure');
