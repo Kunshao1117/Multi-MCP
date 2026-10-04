@@ -1,6 +1,6 @@
 {
   "name": "multi-mcp-gateway",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "統一 MCP 閘道器 — 單一插槽代理多個下游 MCP 伺服器",
   "type": "module",
   "main": "dist/index.js",
@@ -49,5 +49,9 @@
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kunshao1117/Multi-MCP.git"
   }
 }

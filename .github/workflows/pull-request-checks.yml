@@ -36,6 +36,14 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Verify gateway types, all tests, build and hermetic stdio runtime
         run: npm run preflight:gateway
+      - name: Check production dependency security
+        if: runner.os == 'Linux'
+        run: npm audit --omit=dev --audit-level=low
+      - name: Verify installable Gateway tarball
+        if: runner.os == 'Linux'
+        run: |
+          npm pack --json > pack.json
+          node scripts/verify-release-tarball.mjs pack.json
       - name: Install locked extension dependencies without lifecycle scripts
         run: npm ci --ignore-scripts --no-audit --no-fund --prefix extensions/vscode-multi-mcp-manager
       - name: Verify extension form and host unit tests

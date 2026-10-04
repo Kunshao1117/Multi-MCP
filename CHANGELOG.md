@@ -1,5 +1,41 @@
 # 更新紀錄
 
+## Gateway v1.2.1 / VS Code extension v0.1.4 — 2026-10-04
+
+### 安全與可靠性修復
+
+- 管理操作限制在預期資料路徑，拒絕路徑越界、符號連結與不合法名稱；設定覆寫、搬移、刪除及認證更新避免誤刪其他資料，失敗時保留或還原原檔。
+- 安裝／編輯表單保留既有 env、preload、完整 args 與固定 npm 版本；設定和可選認證一次提交，重複點擊、重新命名及側欄重建不會重送已完成的操作。
+- Gateway 重新載入使用隔離的最新設定／認證快照，不污染 process.env；補強啟動、取消、關閉及不同 workspace 的程序隔離。
+- 工具探索支援分頁、容量與 cursor 防護；暫時失敗保留明示 stale 的快取，停用或移除 MCP 後同步裁剪工具入口。
+- 不同 Extension／Gateway／CLI 程序的掃描發布採短管理鎖與 revision／設定檢查；舊掃描不再覆蓋較新的快取或設定，衝突會保留最新資料並提示重新掃描。
+- 修正逐模組舊 build 防護及跨平台 npm script shell，並以隔離 fixture 驗證真實 MCP SDK stdio runtime。
+
+### 依賴安全修補與剩餘風險
+
+- 在現有宣告範圍內更新 Gateway 間接依賴、Vitest 3.2.7、tsx 4.23.15 及 extension 打包工具的相容間接依賴；沒有使用 audit fix --force 或提升直接依賴的主要版。
+- 本次發布準備的 production audit 已降為 0；修補前的鎖檔有 6 項 production advisory（3 high、2 moderate、1 low）。
+- 開發工具仍有已知風險：Vitest／@vitest/mocker 的 redirect-mock 路徑讀取問題（GHSA-82fw-gwwq-j7x9，需升至 4.1.11+）；extension esbuild 的 Windows dev-server 問題（GHSA-g7r4-m6w7-qqqr，需 0.28.1+）；vsce→secretlint→globby→fast-glob→micromatch→braces 的深層樣式堆疊耗盡問題（GHSA-vfj7-8cjw-p6xm）。本次未擴大為跨不相容版本的工具遷移。
+- CI 使用批次測試與 bundle，不將上述開發伺服器暴露到網路；這不是宣稱開發工具完全不受影響，full audit 仍不為零。
+
+### 草稿安全取捨
+
+- 非敏感表單 metadata 可恢復；來源 URL、完整 JSON、command、args、env 等可能含密鑰的草稿內容不持久保存。重新開啟側欄後，未保存的敏感欄位必須重新輸入或重新檢查。這是保留的安全行為，並非完整草稿恢復功能。
+
+### 升級與相容性
+
+- Gateway package／lockfile 同步為 1.2.1，extension package／lockfile 同步為 0.1.4；依賴宣告範圍不變，更新相容修補版鎖檔。
+- npm 正式版本先前停在 1.1.1，1.2.0 未曾發布至 npm。因此從 1.1.1 升級時也包含下方 1.2.0 的變更：管理入口改為 VS Code extension、console 僅顯示遷移提示、新增 management API 與版本命令。
+- 更新前先關閉舊 Gateway 與相關管理視窗，再更新 Gateway／VSIX，重新載入 VS Code 並重新連線 Gateway。既有 user-data 格式與資料路徑保留；勿讓舊版程序同時寫入同一資料夾。
+- extension 更新不會替換另一個已安裝或仍在執行的 Gateway。修改設定後仍須重新連線或由 Gateway 自身 rescan／reload 套用，沒有新增跨程序 IPC。
+- 相對 workspace、衝突 projectRoot、越界名稱、符號連結管理路徑及靜默更換 credential env key 會被明確拒絕；協定握手成功不代表已驗證下游權限。
+- 每個 MCP 的認證面板仍管理單一環境變數、多個帳號標籤；新增標籤不自動切換使用帳號。每檔原子替換與同步失敗 rollback 不等同跨檔斷電一致性。
+
+### 驗證與交付
+
+- 修復基準已通過 Linux／Windows 各 249 項核心測試、57 項 extension 測試、typecheck、build、真實 SDK stdio runtime、VSIX 打包與 VS Code Electron smoke。發布前須以最終版本提交通過相同 CI。
+- VSIX 沿用 GitHub Release 的 vscode-multi-mcp-manager-v* tag 流程；Gateway 的 npm registry 發布需另外完成並核對，GitHub 原始碼／VSIX Release 不代表 npm 已更新。
+
 ## VS Code extension v0.1.3 — 2026-05-19
 
 ### 新增功能
