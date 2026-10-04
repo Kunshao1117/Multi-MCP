@@ -692,10 +692,12 @@ export function renderDashboardHtml(
     const expandedServers = new Set();
     let state = ${initialState};
     const savedState = vscode.getState();
-    const restored = formModel.restore(savedState?.draft, state.servers ?? [], savedState?.pending);
-    let activeForm = restored.form;
-    let formNotice = restored.notice;
-    let pending = restored.pending;
+    // VS Code may revive this exact HTML after hiding the view, without resolving it
+    // again. Its embedded snapshot can predate installs, scans and saved drafts.
+    let stateReady = false;
+    let activeForm = null;
+    let formNotice = '';
+    let pending = null;
 
     window.addEventListener('message', (event) => {
       if (event.data?.command === 'formPending') {
@@ -716,11 +718,29 @@ export function renderDashboardHtml(
       }
       if (event.data?.command === 'state') {
         state = event.data.state;
+        if (!stateReady) {
+          const restored = formModel.restore(savedState?.draft, state.servers ?? [], savedState?.pending);
+          activeForm = restored.form;
+          formNotice = restored.notice;
+          pending = restored.pending;
+          stateReady = true;
+          render();
+          // Reconcile an acknowledgement missed while hidden, without replaying a mutation.
+          if (pending) vscode.postMessage({ command: 'getFormResult', operationId: pending.operationId });
+          return;
+        }
         render();
       }
     });
 
     document.body.addEventListener('click', (event) => {
+      if (!stateReady) {
+        // Keep a read-only retry available if the host could not read the snapshot.
+        if (event.target.closest('button[data-command]')?.dataset.command === 'refreshState') {
+          vscode.postMessage({ command: 'refreshState' });
+        }
+        return;
+      }
       const categoryToggle = event.target.closest('button[data-category-toggle]');
       if (categoryToggle) {
         const category = categoryToggle.dataset.category;
@@ -827,6 +847,13 @@ export function renderDashboardHtml(
 
     function render() {
       const root = document.getElementById('root');
+      if (!stateReady) {
+        root.innerHTML = '<p role="status">正在載入 MCP 狀態…</p>';
+        for (const element of document.querySelectorAll('header button[data-command]')) element.disabled = element.dataset.command !== 'refreshState';
+        // Do not overwrite persisted drafts before checking the current host snapshot.
+        return;
+      }
+      for (const element of document.querySelectorAll('header button[data-command]')) element.disabled = false;
       const status = state.status;
       const servers = state.servers ?? [];
       root.innerHTML = [
@@ -1174,9 +1201,9 @@ export function renderDashboardHtml(
     }
 
     render();
-    // Reconcile an operation whose acknowledgement arrived while this view was absent.
-    // This is read-only: never replay a saved mutation or re-prompt for its secret.
-    if (pending) vscode.postMessage({ command: 'getFormResult', operationId: pending.operationId });
+    // Request only after the message listener is ready. Reopening never initializes,
+    // scans, saves credentials, or persists a potentially secret-bearing snapshot.
+    vscode.postMessage({ command: 'refreshState' });
   </script>
 </body>
 </html>`;

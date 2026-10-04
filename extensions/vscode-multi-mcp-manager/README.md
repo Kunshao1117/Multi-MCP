@@ -23,6 +23,7 @@ Multi-MCP Manager is distributed as a GitHub Release VSIX. VS Code does not auto
 
 ## Safe form editing
 
+- Reopening the sidebar requests a fresh, read-only host snapshot before restoring drafts or pending results. The original embedded HTML snapshot is not treated as current data. Opening the view never scans tools, initializes user data or resubmits a saved operation; Refresh remains available if the first state read needs a retry.
 - Editing a name or category preserves the current MCP configuration, including environment values, preload, pinned package versions, custom launchers, remote headers and other config fields. Source defaults are generated only when the source or source type is explicitly changed.
 - `args` uses a JSON array of strings. This preserves empty arguments, whitespace and embedded newlines exactly. Existing settings are loaded into this format automatically.
 - Configuration changes and an optional credential are saved in one management operation before the requested scan. A scan failure is reported separately from an already-saved configuration; a successful rename becomes the next edit target.
@@ -33,6 +34,6 @@ Multi-MCP Manager is distributed as a GitHub Release VSIX. VS Code does not auto
 
 ## Local regression tests
 
-With Node.js 24, run `npm run test:unit --prefix extensions/vscode-multi-mcp-manager` from the repository root. These dependency-free tests execute the real form model, generated webview script in a VM with DOM adapters, and extension-host message handlers with controlled VS Code/management adapters. They cover all seven default seeds, lossless configuration edits, transaction handoff, account switching, submission correlation and non-secret persistence. They are not a substitute for the existing Electron/VS Code GUI smoke test or a packaged VSIX test.
+With Node.js 24, run `npm run test:unit --prefix extensions/vscode-multi-mcp-manager` from the repository root. These dependency-free tests execute the real form model, generated webview script in a VM with DOM adapters, and extension-host message handlers with controlled VS Code/management adapters. They cover all seven default seeds, lossless configuration edits, transaction handoff, account switching, submission correlation, non-secret persistence, stale-HTML reconstruction and read-only startup/retry. They are not a substitute for the existing Electron/VS Code GUI smoke test or a packaged VSIX test.
 
 The bundle script reads the root `package.json` and embeds that core version at build time. It does not derive the core version from the extension manifest.
