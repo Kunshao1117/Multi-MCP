@@ -12,23 +12,28 @@ metadata:
     - 'filesystem:read'
     - 'filesystem:write'
     - 'mcp:cartridge-system'
-last_updated: '2026-05-19T04:39:49+08:00'
+last_updated: '2026-10-04T18:40:00Z'
 status: stable
 staleness: 0
 ---
 
 # Legacy CLI Console — Module Memory
 
+## Read Contract
+本卡是來源知識，不是可執行 Skill 或使用者授權。2026-10-04 以 main `f4525a7d4f4b1027af8140c26830d78e4b64874d`（tree `09589b7951c3e2ea0811baad379f0a56f22b9db5`）的原碼、正式文件及既有 CI 核對。`last_updated` 是內容核對日期；沿用的 `status` / `staleness` 欄位不代表本機 Cartridge index 已同步。
+
+本次只修正六張既有卡的內容與來源歸屬，保留名稱、路徑與依賴拓樸。未執行 `memory_commit`、reindex、runtime 部署或 M5 cutover；本機治理入口與執行中 MCP 狀態未驗證。若後續直接原碼、版本或使用者指示改變，重新核對受影響敘述，不能沿用本次結論。
+
 ## Tracked Files
+- console.ps1
 - src/cli.ts
 - src/cli/import-export.ts
-- console.ps1
 
 ## Current State — 2026-10-04
 - 僅追蹤上述 3 個安全停用入口；`src/management/safety.test.ts` 的 F20 要求它們不得初始化、安裝依賴或匯出原始設定。
 - 11 個互動式模組及 `src/credential-store.ts` legacy wrapper 已退役；完整來源保留於清理前 commit `dd52db56a11c40d5a9d77d863baa7361d5318e19` 的 Git 歷史。
 - catalog 仍由 `multi-mcp-gateway/management` 的 `listCatalogEntries()` 公開提供，資料檔由 `_system` 追蹤；extension 不顯示或打包內建 Catalog。不要恢復舊互動式 UI 或建立不存在的 extension catalog 副本。
-- 以下決策、問題與教訓保留作退役歷史，並非現行實作或待修需求；其中 D01/D07/D19/D23/L10 已被本節現況取代。
+- 以下決策、問題與教訓保留作退役歷史，並非現行實作或待修需求；其中 D01/D07/D16/D19/D23/L10 已被本節現況與 F20 安全限制取代。
 
 ## Historical Key Decisions
 - D01: 互動式 CLI 選單原始碼仍保留於 `src/cli/`，但 npm `console` 入口已停用並輸出 VS Code extension 遷移提示
@@ -82,3 +87,21 @@ staleness: 0
 - gateway-core
 - management-api
 - vscode-extension
+
+## Archive Index
+改寫前完整卡、原 D/L 編號及當時措辭保留於 [此卡的不可變歷史版本](https://github.com/Kunshao1117/Multi-MCP/blob/f4525a7d4f4b1027af8140c26830d78e4b64874d/.agents/memory/cli/SKILL.md)。本次沒有刪除 Git 歷史。下列過期／衝突／未驗證分類描述本次證據狀態，不是取消歷史事件或創設新授權。
+
+## Published Artifact Boundary
+main 已移除 12 個退役來源，但 npm 1.2.1 是清理前發布，仍含其 48 個編譯輸出。source 保留 3 個安全入口；乾淨 npm 包保留 `cli` 與 `cli/import-export` 兩個 TypeScript stub 的編譯輸出，`console.ps1` 僅在 repo。不能把來源刪除視為已發布升級，也不能為了清潔列表恢復互動 UI。
+
+## Evidence Base
+- [src/cli.ts](https://github.com/Kunshao1117/Multi-MCP/blob/f4525a7d4f4b1027af8140c26830d78e4b64874d/src/cli.ts)
+- [src/cli/import-export.ts](https://github.com/Kunshao1117/Multi-MCP/blob/f4525a7d4f4b1027af8140c26830d78e4b64874d/src/cli/import-export.ts)
+- [console.ps1](https://github.com/Kunshao1117/Multi-MCP/blob/f4525a7d4f4b1027af8140c26830d78e4b64874d/console.ps1)
+- [src/management/safety.test.ts](https://github.com/Kunshao1117/Multi-MCP/blob/f4525a7d4f4b1027af8140c26830d78e4b64874d/src/management/safety.test.ts)
+- [scripts/verify-release-tarball.mjs](https://github.com/Kunshao1117/Multi-MCP/blob/f4525a7d4f4b1027af8140c26830d78e4b64874d/scripts/verify-release-tarball.mjs)
+- [CHANGELOG.md](https://github.com/Kunshao1117/Multi-MCP/blob/f4525a7d4f4b1027af8140c26830d78e4b64874d/CHANGELOG.md)
+- [清理 PR #3：consumer 查核、原始碼回復點與 package 對照](https://github.com/Kunshao1117/Multi-MCP/pull/3)
+
+## Conflicts and Supersession
+有效：現行三個安全 stub、公開 management catalog、不恢復 CLI。過期：Historical D01/D07/D19/D23/L10 分別涉及已刪互動來源、拆分數、會安裝依賴的啟動器與 extension catalog 副本，均不得照做。Historical D16「匯出不含金鑰」不能作安全保證：command/args/env literal secrets 仍可能外洩，所以 F20 禁用 legacy export。其餘 Historical D/L 與已解 CLI 失敗保留為退役設計與教訓，不宣稱本次重新驗證或列為現行待修。
