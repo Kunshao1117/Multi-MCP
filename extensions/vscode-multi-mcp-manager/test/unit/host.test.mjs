@@ -128,3 +128,39 @@ test('F27/F28 real host unknown correlation is read-only and explicitly uncertai
   const reply = f.sent.find((item) => item.command === 'formResult');
   assert.equal(reply.ok, false); assert.equal(reply.outcomeUnknown, true); assert.equal(f.calls.length, 0);
 });
+
+test('sidebar startup and manual refresh read current disk state without mutating or rescanning', async () => {
+  const f = fixture();
+  // Drain the unrelated, mocked startup update check before observing the replies.
+  await Promise.resolve(); await Promise.resolve();
+  const reads = [];
+  f.management.getGatewayStatus = () => { reads.push('status'); return { initialized: true, packageVersion: '1.2.1', enabledServers: 1, totalServers: 8, totalTools: 1 }; };
+  f.management.listMcpServers = () => { reads.push('servers'); return [f.server]; };
+  f.management.rescanRegistry = async () => { throw Error('opening the sidebar must never scan'); };
+  f.sent.length = 0;
+  for (const name of ['after-save', 'after-hidden-scan', 'after-manual-refresh']) {
+    f.server = { ...f.server, name, toolCount: 1 };
+    await f.receive({ command: 'refreshState' });
+    const reply = f.sent.at(-1);
+    assert.equal(reply.command, 'state');
+    assert.equal(reply.state.status.totalTools, 1);
+    assert.equal(reply.state.servers[0].name, name);
+  }
+  assert.deepEqual(reads, ['status', 'servers', 'status', 'servers', 'status', 'servers']);
+  assert.equal(f.calls.length, 0);
+});
+
+test('sidebar refresh can retry a failed read after config repair without triggering a mutation', async () => {
+  const f = fixture();
+  await Promise.resolve(); await Promise.resolve();
+  const healthyStatus = f.management.getGatewayStatus;
+  f.management.getGatewayStatus = () => { throw Error('invalid fixture config'); };
+  f.sent.length = 0;
+  await assert.rejects(() => f.receive({ command: 'refreshState' }), /invalid fixture config/);
+  assert.equal(f.sent.length, 0);
+  f.management.getGatewayStatus = healthyStatus;
+  await f.receive({ command: 'refreshState' });
+  assert.equal(f.sent.at(-1).command, 'state');
+  assert.equal(f.sent.at(-1).state.servers[0].name, f.server.name);
+  assert.equal(f.calls.length, 0);
+});

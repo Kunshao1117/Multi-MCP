@@ -165,20 +165,28 @@ test('F17/F29 account labels and active account remain distinct, multi-env input
   assert.throws(() => model.buildPayload(edit), /單一/);
 });
 
-function runtime(initialServer, saved) {
+function runtime(initialServer, saved, options = {}) {
   const status = { initialized: true, packageVersion: '1.2.0', enabledServers: 1, totalServers: 1, totalTools: 0 };
-  const html = renderDashboardHtml({ cspSource: 'fixture:', asWebviewUri: String }, 'fixture:', { status, servers: [initialServer], extensionVersion: '0.1.3' });
+  const initialState = options.initialState ?? { status, servers: [initialServer], extensionVersion: '0.1.3' };
+  const html = options.html ?? renderDashboardHtml({ cspSource: 'fixture:', asWebviewUri: String }, 'fixture:', initialState);
   const script = html.slice(html.lastIndexOf('<script nonce='));
   const source = script.slice(script.indexOf('>') + 1, script.indexOf('</script>'));
   const bodyListeners = new Map(); const windowListeners = new Map(); const fields = new Map();
   const root = { innerHTML: '' }; const messages = []; let persisted = saved;
+  const headerButtons = [...html.slice(0, html.indexOf('</header>')).matchAll(/data-command="([^"]+)"/g)]
+    .map((match) => ({ dataset: { command: match[1] }, disabled: false }));
   const context = vm.createContext({ URL, console,
     acquireVsCodeApi: () => ({ getState: () => saved, setState: (state) => { persisted = clone(state); }, postMessage: (message) => messages.push(clone(message)) }),
-    document: { body: { addEventListener: (name, listener) => bodyListeners.set(name, listener) }, getElementById: (name) => name === 'root' ? root : fields.get(name), querySelectorAll: () => [], querySelector: () => null },
+    document: { body: { addEventListener: (name, listener) => bodyListeners.set(name, listener) }, getElementById: (name) => name === 'root' ? root : fields.get(name), querySelectorAll: (selector) => selector === 'header button[data-command]' ? headerButtons : [], querySelector: () => null },
     window: { addEventListener: (name, listener) => windowListeners.set(name, listener) },
   });
   vm.runInContext(source, context);
-  return { context, fields, root, messages, persisted: () => persisted,
+  // Interaction tests start after the read-only startup handshake; lifecycle tests opt out.
+  if (options.autoHydrate !== false && messages[0]?.command === 'refreshState') {
+    messages.shift();
+    windowListeners.get('message')({ data: { command: 'state', state: initialState } });
+  }
+  return { context, fields, root, html, headerButtons, messages, persisted: () => persisted,
     click(command, extra = {}) { const button = { dataset: { command, ...extra }, disabled: false }; bodyListeners.get('click')({ target: { closest: (selector) => selector === 'button[data-command]' ? button : null } }); },
     input(id, value) { fields.set(id, { value }); bodyListeners.get('input')({ target: { id, closest: () => true } }); },
     reply(data) { windowListeners.get('message')({ data }); },
@@ -313,4 +321,102 @@ test('F28 pending persistence drops extra fields and mismatched draft IDs', () =
   assert.deepEqual(Object.keys(model.persistPending(pending, draft)).sort(), ['draftId', 'operationId']);
   assert.equal(model.persistPending({ ...pending, draftId: 'different' }, draft), null);
   assert.equal(model.restore(model.persist(draft), [original], { ...pending, draftId: 'different' }).pending, null);
+});
+
+const emptyDashboard = () => ({ status: { initialized: false, packageVersion: '1.2.1', enabledServers: 0, totalServers: 0, totalTools: 0 }, servers: [], extensionVersion: '0.1.4' });
+const scannedDashboard = (entry) => ({ status: { initialized: true, packageVersion: '1.2.1', enabledServers: 1, totalServers: 8, totalTools: 1, registryGeneratedAt: '2026-10-04T00:00:00.000Z' }, servers: [entry], extensionVersion: '0.1.4' });
+
+test('sidebar revival requests fresh host state when VS Code reuses the original uninitialized HTML', () => {
+  const original = server({ command: 'node', args: ['dummy.cjs'] }, { toolCount: 1 });
+  const first = runtime(original, undefined, { initialState: emptyDashboard(), autoHydrate: false });
+  assert.deepEqual(first.messages, [{ command: 'refreshState' }]);
+  first.reply({ command: 'state', state: scannedDashboard(original) });
+  for (let reopen = 0; reopen < 3; reopen++) {
+    const revived = runtime(original, first.persisted(), { html: first.html, autoHydrate: false });
+    assert.deepEqual(revived.messages, [{ command: 'refreshState' }]);
+    assert.match(revived.root.innerHTML, /正在載入/);
+    assert.doesNotMatch(revived.root.innerHTML, /尚未初始化/);
+    revived.reply({ command: 'state', state: scannedDashboard(original) });
+    assert.equal(vm.runInContext('state.status.totalTools', revived.context), 1);
+    assert.match(revived.root.innerHTML, /1\/8/);
+    assert.match(revived.root.innerHTML, /original/);
+    assert.deepEqual(Object.keys(revived.persisted()).sort(), ['draft', 'pending']);
+  }
+});
+
+test('sidebar revival waits for fresh state before restoring a draft absent from old HTML', () => {
+  const original = server({ command: 'node', args: ['--header', 'fixture-secret'], env: { SECRET: 'fixture-secret' } });
+  const stale = runtime(original, undefined, { initialState: emptyDashboard() });
+  const first = runtime(original); first.click('openEditForm', { name: original.name }); first.input('mcp-name', 'metadata-draft');
+  const saved = first.persisted();
+  const revived = runtime(original, saved, { html: stale.html, autoHydrate: false });
+  assert.deepEqual(revived.persisted(), saved, 'loading must not erase the saved draft');
+  revived.click('saveMcpForm'); revived.click('openInstallForm');
+  assert.deepEqual(revived.messages, [{ command: 'refreshState' }], 'loading cannot submit or replace a draft');
+  revived.reply({ command: 'state', state: scannedDashboard(original) });
+  assert.equal(vm.runInContext('activeForm.nextName', revived.context), 'metadata-draft');
+  assert.equal(vm.runInContext('activeForm.argsText', revived.context), JSON.stringify(original.config.args, null, 2));
+  assert.equal(JSON.stringify(revived.persisted()).includes('fixture-secret'), false);
+});
+
+test('sidebar revival during a mutation refreshes then reconciles without replaying, for success and failure', () => {
+  for (const outcome of ['pending', 'success', 'failure', 'host-reloaded']) {
+    const original = server({ command: 'node', args: ['dummy.cjs'], env: { SECRET: 'fixture-secret' } });
+    const stale = runtime(original, undefined, { initialState: emptyDashboard() });
+    const first = runtime(original); first.click('openEditForm', { name: original.name }); first.input('mcp-name', 'renamed'); first.click('saveMcpForm');
+    const request = first.messages[0];
+    const revived = runtime(original, first.persisted(), { html: stale.html, autoHydrate: false });
+    assert.deepEqual(revived.messages, [{ command: 'refreshState' }]);
+    const current = outcome === 'success' ? { ...original, name: 'renamed' } : original;
+    const state = scannedDashboard(current);
+    revived.reply({ command: 'state', state });
+    assert.deepEqual(revived.messages, [{ command: 'refreshState' }, { command: 'getFormResult', operationId: request.operationId }]);
+    revived.click('saveMcpForm'); revived.click('cancelMcpForm');
+    assert.equal(revived.messages.length, 2);
+    if (outcome === 'pending') {
+      revived.reply({ command: 'formPending', operationId: request.operationId, state });
+      assert.equal(vm.runInContext('pending.operationId', revived.context), request.operationId);
+      revived.reply({ command: 'formResult', operationId: request.operationId, ok: true, savedName: 'renamed', state: scannedDashboard({ ...original, name: 'renamed' }) });
+    } else {
+      revived.reply({ command: 'formResult', operationId: request.operationId, ok: outcome === 'success', outcomeUnknown: outcome === 'host-reloaded', savedName: current.name, state });
+    }
+    assert.equal(vm.runInContext('pending', revived.context), null);
+    if (outcome === 'host-reloaded') assert.equal(vm.runInContext('activeForm', revived.context), null);
+    else {
+      assert.equal(vm.runInContext('activeForm.currentName', revived.context), outcome === 'failure' ? 'original' : 'renamed');
+      assert.equal(vm.runInContext('activeForm.nextName', revived.context), 'renamed');
+      assert.equal(vm.runInContext('activeForm.argsText', revived.context), JSON.stringify(original.config.args, null, 2));
+    }
+    assert.equal(JSON.stringify(revived.persisted()).includes('fixture-secret'), false);
+  }
+});
+
+test('empty data startup and reload remain read-only; manual refresh still reads newer state', () => {
+  const original = server({ command: 'node', args: [] });
+  const first = runtime(original, undefined, { initialState: emptyDashboard(), autoHydrate: false });
+  assert.deepEqual(first.messages, [{ command: 'refreshState' }]);
+  first.reply({ command: 'state', state: emptyDashboard() });
+  assert.match(first.root.innerHTML, /尚未初始化/);
+  assert.deepEqual(first.persisted(), { draft: null, pending: null });
+  first.click('refreshState');
+  assert.equal(first.messages.at(-1).command, 'refreshState');
+  first.reply({ command: 'state', state: scannedDashboard(original) });
+  assert.match(first.root.innerHTML, /1\/8/);
+  assert.equal(first.messages.length, 2, 'refresh never triggers scan or initialization');
+});
+
+
+test('sidebar startup leaves read-only refresh available if the first snapshot response is unavailable', () => {
+  const original = server({ command: 'node', args: [] });
+  const first = runtime(original); first.click('openEditForm', { name: original.name }); first.input('mcp-name', 'retained');
+  const saved = first.persisted();
+  const revived = runtime(original, saved, { initialState: emptyDashboard(), autoHydrate: false });
+  assert.equal(revived.headerButtons.find((button) => button.dataset.command === 'refreshState').disabled, false);
+  assert.ok(revived.headerButtons.filter((button) => button.dataset.command !== 'refreshState').every((button) => button.disabled));
+  revived.click('refreshState'); revived.click('saveMcpForm'); revived.click('rescan');
+  assert.deepEqual(revived.messages, [{ command: 'refreshState' }, { command: 'refreshState' }]);
+  assert.deepEqual(revived.persisted(), saved);
+  revived.reply({ command: 'state', state: scannedDashboard(original) });
+  assert.equal(vm.runInContext('activeForm.nextName', revived.context), 'retained');
+  assert.ok(revived.headerButtons.every((button) => !button.disabled));
 });
