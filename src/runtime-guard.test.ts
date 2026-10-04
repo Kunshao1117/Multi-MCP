@@ -72,3 +72,24 @@ describe('assertDistFresh', () => {
     })).not.toThrow();
   });
 });
+
+describe('per-module freshness regression', () => {
+  it('does not allow a newer unrelated output to hide a stale entry', () => {
+    const root = createProject();
+    writeWithMtime(path.join(root, 'src/index.ts'), 2000);
+    writeWithMtime(path.join(root, 'dist/index.js'), 1000);
+    writeWithMtime(path.join(root, 'dist/unrelated.js'), 9000);
+    expect(() => assertDistFresh({ entryFile: path.join(root, 'dist/index.js'), projectRoot: root })).toThrow(/dist is stale/);
+  });
+  it('rejects an outdated or missing imported module despite a fresh entry', () => {
+    const root = createProject();
+    writeWithMtime(path.join(root, 'src/index.ts'), 1000);
+    writeWithMtime(path.join(root, 'dist/index.js'), 9000);
+    writeWithMtime(path.join(root, 'src/dependency.ts'), 2000);
+    expect(() => assertDistFresh({ entryFile: path.join(root, 'dist/index.js'), projectRoot: root })).toThrow(/dependency/);
+    writeWithMtime(path.join(root, 'dist/dependency.js'), 1000);
+    expect(() => assertDistFresh({ entryFile: path.join(root, 'dist/index.js'), projectRoot: root })).toThrow(/dependency/);
+    writeWithMtime(path.join(root, 'dist/dependency.js'), 3000);
+    expect(() => assertDistFresh({ entryFile: path.join(root, 'dist/index.js'), projectRoot: root })).not.toThrow();
+  });
+});

@@ -16,12 +16,13 @@ if (process.platform === 'win32') {
 import { fileURLToPath } from 'node:url';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { resolveSessionPaths } from './session-paths.js';
 import { loadConfig } from './config-loader.js';
 import { loadRegistry, scanAndGenerateRegistry } from './registry.js';
 import { GatewayServer } from './gateway-server.js';
 import { setLogLevel, createLogger } from './logger.js';
 import { assertDistFresh } from './runtime-guard.js';
-import { ensureUserDataDir, getGatewayPaths, getPackageRoot } from './paths.js';
+import { ensureUserDataDir, getPackageRoot } from './paths.js';
 
 // 自動定位專案根目錄（腳本在 dist/ 或 src/ 下，往上一層即為專案根）
 const __filename = fileURLToPath(import.meta.url);
@@ -47,14 +48,15 @@ async function main(): Promise<void> {
   }
 
   const isScanMode = args.includes('--scan');
-  const configPath = args.find((a) => a.startsWith('--config='))?.split('=')[1];
+  const explicitConfigArg = args.find((a) => a.startsWith('--config='));
+  const paths = resolveSessionPaths(args, process.cwd());
   const disabledWorkspaceArg = args.find((a) => a.startsWith('--workspace='));
-  const paths = ensureUserDataDir(getGatewayPaths());
+  if (!explicitConfigArg) ensureUserDataDir(paths);
   process.chdir(paths.dataDir);
 
   try {
     // 載入設定（含 gateway.env 認證檔案）
-    const config = loadConfig(configPath ?? paths.configPath);
+    const config = loadConfig(paths.configPath);
     setLogLevel(config.gateway.log_level);
     if (disabledWorkspaceArg) {
       logger.warn('--workspace 啟動參數已停用；請在每次 gateway__call_tool 呼叫中傳入 workspace，避免跨專案共用 Gateway 時誤用固定工作目錄。');
@@ -65,14 +67,20 @@ async function main(): Promise<void> {
       logger.info('=== Multi-MCP Gateway: 掃描模式 ===');
       const registry = await scanAndGenerateRegistry(config, paths.registryPath);
       const totalTools = Object.keys(registry.all_tools).length;
-      logger.info(`掃描完成: ${totalTools} 個工具已註冊到集成表`);
-      process.exit(0);
+      const failed = Object.entries(registry.servers).filter(([, server]) => server.stale).map(([name]) => name);
+      if (failed.length) {
+        logger.error('部分掃描失敗，保留可用舊快取', { servers: failed, totalTools });
+        process.exitCode = 1;
+      } else {
+        logger.info(`掃描完成: ${totalTools} 個工具已註冊到集成表`);
+      }
+      return;
     } else {
       // === 伺服器模式 ===
       assertDistFresh({ entryFile: __filename, projectRoot: PROJECT_ROOT });
       logger.info('=== Multi-MCP Gateway: 伺服器模式 ===');
       const registry = loadRegistry(paths.registryPath);
-      const server = new GatewayServer(config, registry);
+      const server = new GatewayServer(config, registry, { configPath: paths.configPath, registryPath: paths.registryPath });
       await server.start();
     }
   } catch (err) {

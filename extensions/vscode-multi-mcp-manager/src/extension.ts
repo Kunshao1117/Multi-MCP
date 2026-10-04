@@ -8,10 +8,12 @@ import {
   removeMcp,
   rescanRegistry,
   setMcpEnabled,
+  switchCredential,
   updateMcp,
   upsertCredential,
   type CredentialInput,
   type McpServerSummary,
+  type OperationResult,
 } from '../../../src/management/index.js';
 import type { McpServerConfig } from '../../../src/types.js';
 import {
@@ -21,6 +23,8 @@ import {
   type ExtensionUpdateState,
 } from './extensionUpdate.js';
 import { t } from './localization.js';
+import { createFormModel } from './formModel.js';
+import { FormRequestGate, submitMcpForm } from './formOperations.js';
 import {
   getDashboardStructureMarkers,
   renderDashboardHtml,
@@ -91,6 +95,7 @@ export function deactivate(): void {
 class DashboardProvider implements vscode.WebviewViewProvider {
   private view?: vscode.WebviewView;
   private extensionUpdate: ExtensionUpdateState;
+  private readonly formRequests = new FormRequestGate();
 
   constructor(
     private readonly context: vscode.ExtensionContext,
@@ -103,8 +108,8 @@ class DashboardProvider implements vscode.WebviewViewProvider {
   resolveWebviewView(view: vscode.WebviewView): void {
     this.view = view;
     view.webview.options = { enableScripts: true };
-    view.webview.html = renderDashboardHtml(view.webview, this.context.extensionUri, this.createState());
     view.webview.onDidReceiveMessage((message: WebviewMessage) => this.handleMessage(message));
+    view.webview.html = renderDashboardHtml(view.webview, this.context.extensionUri, this.createState());
   }
 
   refresh(): void {
@@ -172,9 +177,7 @@ class DashboardProvider implements vscode.WebviewViewProvider {
     if (!server) return;
     const result = setMcpEnabled(server.name, enabled);
     if (result.ok) {
-      vscode.window.showInformationMessage(enabled
-        ? t('{name} enabled.', { name: server.name })
-        : t('{name} disabled.', { name: server.name }));
+      vscode.window.showInformationMessage(withRuntimeNotice(result.message));
     } else {
       vscode.window.showErrorMessage(result.message);
     }
@@ -184,10 +187,13 @@ class DashboardProvider implements vscode.WebviewViewProvider {
   async addCredentialFromPrompt(name?: string): Promise<void> {
     const server = await pickServer(name);
     if (!server) return;
-    const credential = await collectCredential(server.name, server.requiredEnvVars, server.credential?.active);
+    const credential = await collectCredential(server.name, server.credential ? [server.credential.envVar] : server.requiredEnvVars, server.credential?.active);
     if (!credential) return;
     const result = upsertCredential(credential);
-    if (result.ok) vscode.window.showInformationMessage(t('{name} credential updated.', { name: server.name }));
+    if (result.ok) {
+      const active = listMcpServers().find((entry) => entry.name === server.name)?.credential?.active;
+      vscode.window.showInformationMessage(withRuntimeNotice(`${result.message}。目前使用：${active ?? '尚未設定'}；新增標籤不會自動切換帳號。`));
+    }
     else vscode.window.showErrorMessage(result.message);
     this.refresh();
   }
@@ -195,7 +201,9 @@ class DashboardProvider implements vscode.WebviewViewProvider {
   async rescan(): Promise<void> {
     await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: t('Rescanning MCP tools') }, async () => {
       const registry = await rescanRegistry();
-      vscode.window.showInformationMessage(t('Registry updated: {count} tools.', { count: Object.keys(registry.all_tools).length }));
+      const failed = Object.entries(registry.servers).filter(([, entry]) => entry.stale || entry.scan_error).map(([name]) => name);
+      if (failed.length) vscode.window.showWarningMessage(withRuntimeNotice(`掃描部分失敗：${failed.join('、')}。失敗服務保留上次有效工具清單（若有）。`));
+      else vscode.window.showInformationMessage(withRuntimeNotice(t('Registry updated: {count} tools.', { count: Object.keys(registry.all_tools).length })));
     });
     this.refresh();
   }
@@ -260,8 +268,11 @@ class DashboardProvider implements vscode.WebviewViewProvider {
       case 'openCredentialPanel':
         this.refresh();
         return;
+      case 'getFormResult':
+        this.reconcileFormRequest(message.operationId);
+        return;
       case 'saveMcpForm':
-        await this.saveMcpForm(message.payload);
+        await this.runFormRequest(message.operationId, () => this.saveMcpForm(message.payload));
         return;
       case 'removeServer':
         await this.removeFromPrompt(message.name);
@@ -270,10 +281,16 @@ class DashboardProvider implements vscode.WebviewViewProvider {
         await this.setEnabledFromPrompt(message.enabled, message.name);
         return;
       case 'saveCredential':
-        await this.saveCredentialFromDashboard(message.payload);
+        await this.runFormRequest(message.operationId, () => this.saveCredentialFromDashboard(message.payload));
+        return;
+      case 'switchCredential':
+        await this.runFormRequest(message.operationId, async () => {
+          const result = switchCredential(message.name, message.label);
+          return { ...result, savedName: message.name, message: result.ok ? withRuntimeNotice(result.message) : result.message };
+        });
         return;
       case 'deleteCredential':
-        await this.deleteCredentialFromDashboard(message.name);
+        await this.runFormRequest(message.operationId, () => this.deleteCredentialFromDashboard(message.name));
         return;
       case 'rescan':
         await this.rescan();
@@ -296,102 +313,78 @@ class DashboardProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  private async saveMcpForm(payload: McpFormPayload): Promise<void> {
-    const nextName = payload.nextName.trim();
-    const category = payload.category.trim();
-    if (!nextName || !category) {
-      vscode.window.showErrorMessage(t('MCP name and category are required.'));
-      return;
+  private reconcileFormRequest(operationId: string): void {
+    if (typeof operationId !== 'string' || !operationId || operationId.length > 200) return;
+    const outcome = this.formRequests.inspect(operationId);
+    const state = this.createState();
+    if (outcome.status === 'pending') {
+      this.view?.webview.postMessage({ command: 'formPending', operationId, state });
+    } else if (outcome.status === 'completed') {
+      const result = outcome.result;
+      const message = result.ok || result.committed ? withRuntimeNotice(result.message) : result.message;
+      this.view?.webview.postMessage({ command: 'formResult', operationId, ...result, message, state });
+    } else {
+      // The host may have restarted or evicted an old result. Never guess whether it committed
+      // and never replay a mutation. Show the current disk state and require a fresh edit.
+      this.view?.webview.postMessage({ command: 'formResult', operationId, ok: false, outcomeUnknown: true,
+        message: '無法確認上次提交的結果；沒有自動重試。已重新讀取目前設定，請檢查後重新開啟表單。', state });
     }
+  }
 
-    const config = parseFormConfig(payload);
-    if (!config) return;
-    const credential = payload.credential
-      ? await collectCredentialSecret(nextName, payload.credential.envVar, payload.credential.label)
-      : undefined;
+  private async runFormRequest(operationId: string, task: () => Promise<OperationResult>): Promise<void> {
+    if (typeof operationId !== 'string' || !operationId || operationId.length > 200) return;
+    const result = await this.formRequests.run(operationId, task);
+    if (!result) return;
+    // A refresh is not an acknowledgement. Include the operation id and a fresh snapshot together.
+    const message = result.ok || result.committed ? withRuntimeNotice(result.message) : result.message;
+    this.view?.webview.postMessage({ command: 'formResult', operationId, ...result, message, state: this.createState() });
+    if (result.ok) vscode.window.showInformationMessage(message);
+    else if (result.committed) vscode.window.showWarningMessage(message);
+  }
 
-    if (payload.credential && !credential) return;
-
-    if (payload.mode === 'install') {
-      const existing = listMcpServers().find((server) => server.name === nextName);
-      const overwrite = existing ? await confirmOverwrite(nextName) : false;
-      if (overwrite === undefined) return;
-
-      await this.runOperation(
-        t('Installing MCP'),
-        () => installMcp({
-          name: nextName,
-          category,
-          source: payload.sourceMode === 'json' ? undefined : payload.source,
-          config,
-          credential,
-          overwrite,
-          rescan: payload.rescan,
-        }),
-        t('{name} installed.', { name: nextName }),
-      );
-      return;
-    }
-
-    if (!payload.currentName) {
-      vscode.window.showErrorMessage(t('Current MCP name is missing.'));
-      return;
-    }
-
-    const confirm = await confirmMcpEdit(payload.currentName, nextName, category, config, payload.rescan);
-    if (!confirm) return;
-
-    await this.runOperation(
-      t('Updating MCP'),
-      async () => {
-        const result = await updateMcp({
-          currentName: payload.currentName!,
-          nextName,
-          category,
-          config,
-          rescan: payload.rescan,
-        });
-        if (result.ok && credential) {
-          const credentialResult = upsertCredential({ ...credential, mcpName: nextName });
-          if (!credentialResult.ok) return credentialResult;
-        }
-        return result;
-      },
-      t('{name} updated.', { name: nextName }),
+  private async saveMcpForm(payload: McpFormPayload): Promise<OperationResult> {
+    return vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification, title: payload.mode === 'install' ? t('Installing MCP') : t('Updating MCP') },
+      () => submitMcpForm(payload, {
+        listServers: listMcpServers,
+        collectCredential: collectCredentialSecret,
+        confirmOverwrite,
+        confirmEdit: confirmMcpEdit,
+        install: installMcp,
+        update: updateMcp,
+      }),
     );
   }
 
-  private async saveCredentialFromDashboard(payload: CredentialFormPayload): Promise<void> {
+  private async saveCredentialFromDashboard(payload: CredentialFormPayload): Promise<OperationResult> {
     const credential = await collectCredentialSecret(payload.name, payload.envVar, payload.label);
-    if (!credential) return;
+    if (!credential) return { ok: false, message: '已取消，草稿仍保留。' };
     const result = upsertCredential({ ...credential, mcpName: payload.name });
-    if (result.ok) vscode.window.showInformationMessage(t('{name} credential updated.', { name: payload.name }));
-    else vscode.window.showErrorMessage(result.message);
-    this.refresh();
+    const active = listMcpServers().find((server) => server.name === payload.name)?.credential?.active;
+    return { ...result, savedName: payload.name,
+      message: result.ok ? `金鑰標籤已儲存。目前使用：${active ?? '尚未設定'}；可在下方切換帳號。執行中的 Gateway 需重新載入／重連。` : result.message };
   }
 
-  private async deleteCredentialFromDashboard(name: string): Promise<void> {
+  private async deleteCredentialFromDashboard(name: string): Promise<OperationResult> {
     const remove = t('Remove credential');
     const picked = await vscode.window.showWarningMessage(
       t('Remove credential for {name}?', { name }),
-      { modal: true, detail: t('This removes the stored credential from credentials.json and gateway.env.') },
+      { modal: true, detail: t('This removes all stored account labels from credentials.json and gateway.env. The running Gateway must reload or reconnect.') },
       remove,
     );
-    if (picked !== remove) return;
-    const result = deleteCredential(name);
-    if (result.ok) vscode.window.showInformationMessage(t('{name} credential removed.', { name }));
-    else vscode.window.showErrorMessage(result.message);
-    this.refresh();
+    if (picked !== remove) return { ok: false, message: '已取消，草稿仍保留。' };
+    return { ...deleteCredential(name), savedName: name };
   }
 
   private async runOperation(
     title: string,
-    task: () => Promise<{ ok: boolean; message: string }>,
-    successMessage: string,
+    task: () => Promise<OperationResult>,
+    _successMessage: string,
   ): Promise<void> {
     try {
       const result = await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title }, task);
-      if (result.ok) vscode.window.showInformationMessage(successMessage);
+      if (result.ok) vscode.window.showInformationMessage(withRuntimeNotice(result.message));
+      else if (result.committed) vscode.window.showWarningMessage(withRuntimeNotice(result.message));
       else vscode.window.showErrorMessage(result.message);
       this.refresh();
     } catch (error) {
@@ -404,7 +397,7 @@ class DashboardProvider implements vscode.WebviewViewProvider {
   }
 
   private createState(): DashboardState {
-    return createDashboardState(this.extensionUpdate);
+    return { ...createDashboardState(this.extensionUpdate), extensionVersion: getExtensionVersion(this.context) };
   }
 
   private async storeExtensionUpdate(result: ExtensionUpdateState): Promise<void> {
@@ -530,36 +523,13 @@ async function buildInstallDraft(mode: InstallMode): Promise<{
   return { name, category, source, requiredEnvVars: [], authRecommended: false };
 }
 
-function parseFormConfig(payload: McpFormPayload): McpServerConfig | undefined {
-  if (payload.sourceMode === 'json') {
-    const configs = parseMcpConfigJson(payload.source);
-    const picked = payload.currentName
-      ? configs.find((entry) => entry.name === payload.currentName || entry.name === payload.nextName) ?? configs[0]
-      : configs[0];
-    if (!picked) {
-      vscode.window.showErrorMessage(t('No valid MCP config was found in the pasted JSON.'));
-      return undefined;
-    }
-    return picked.config;
-  }
-
-  if (!payload.command.trim()) {
-    vscode.window.showErrorMessage(t('Command is required.'));
-    return undefined;
-  }
-  return {
-    command: payload.command.trim(),
-    args: payload.args.map((arg) => arg.trim()).filter(Boolean),
-  };
-}
-
 async function collectCredentialSecret(
   mcpName: string,
   envVar: string,
   label: string,
 ): Promise<Omit<CredentialInput, 'mcpName'> | undefined> {
   const trimmedEnvVar = envVar.trim();
-  if (!trimmedEnvVar) {
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(trimmedEnvVar)) {
     vscode.window.showErrorMessage(t('請填入 MCP 要讀取的環境變數名稱。'));
     return undefined;
   }
@@ -755,17 +725,8 @@ function parseMcpConfigJson(raw: string): Array<{ name?: string; config: McpServ
 }
 
 function normalizeConfig(value: unknown): McpServerConfig | undefined {
-  if (!isRecord(value) || typeof value.command !== 'string') return undefined;
-  const args = Array.isArray(value.args) ? value.args.map(String) : [];
-  const env = isRecord(value.env)
-    ? Object.fromEntries(Object.entries(value.env).map(([key, envValue]) => [key, String(envValue)]))
-    : undefined;
-  return {
-    command: value.command,
-    args,
-    ...(env ? { env } : {}),
-    ...(typeof value.preload === 'boolean' ? { preload: value.preload } : {}),
-  };
+  try { return createFormModel().validateConfig(value); }
+  catch { return undefined; }
 }
 
 function collectRequiredEnvVars(config: McpServerConfig): string[] {
@@ -794,4 +755,9 @@ function getExtensionVersion(context: vscode.ExtensionContext): string {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function withRuntimeNotice(message: string): string {
+  const notice = '正在執行的 Gateway 請重新連線，或呼叫 Gateway 自己的 rescan/reload 才生效。';
+  return message.includes('Gateway 自己的 rescan/reload') ? message : `${message} ${notice}`;
 }

@@ -4,9 +4,23 @@ on:
   push:
     tags:
       - 'vscode-multi-mcp-manager-v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (must match the extension version)'
+        required: true
+        type: string
+      expected_commit:
+        description: 'Full main commit SHA that passed release checks'
+        required: true
+        type: string
 
 permissions:
   contents: write
+
+concurrency:
+  group: vscode-release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
   package-and-release:
@@ -14,8 +28,25 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout
+      - name: Validate release revision
+        shell: pwsh
+        env:
+          RELEASE_EVENT: ${{ github.event_name }}
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+        run: |
+          if ($env:RELEASE_EVENT -eq 'workflow_dispatch') {
+            if ($env:GITHUB_REF -ne 'refs/heads/main') {
+              throw 'Manual releases must run from main'
+            }
+            if ($env:EXPECTED_COMMIT -notmatch '^[0-9a-f]{40}$' -or $env:EXPECTED_COMMIT -cne $env:GITHUB_SHA) {
+              throw 'Expected commit must exactly match the main revision selected for this run'
+            }
+          }
+
+      - name: Checkout verified revision
         uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -26,62 +57,98 @@ jobs:
             package-lock.json
             extensions/vscode-multi-mcp-manager/package-lock.json
 
-      - name: Install root dependencies
-        run: npm ci
+      - name: Install locked root dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
-      - name: Validate tag version
+      - name: Validate tag version and target
         id: version
         shell: pwsh
+        env:
+          RELEASE_EVENT: ${{ github.event_name }}
+          INPUT_TAG: ${{ inputs.tag }}
         run: |
-          $tag = "${env:GITHUB_REF_NAME}"
-          $prefix = "vscode-multi-mcp-manager-v"
-          if (-not $tag.StartsWith($prefix)) {
-            throw "Unexpected tag format: $tag"
+          $tag = if ($env:RELEASE_EVENT -eq 'workflow_dispatch') { $env:INPUT_TAG } else { $env:GITHUB_REF_NAME }
+          $prefix = 'vscode-multi-mcp-manager-v'
+          if ($tag -notmatch '^vscode-multi-mcp-manager-v[0-9]+\.[0-9]+\.[0-9]+$') {
+            throw 'Unexpected release tag format'
           }
-
           $tagVersion = $tag.Substring($prefix.Length)
-          $packageJson = Get-Content "extensions/vscode-multi-mcp-manager/package.json" -Raw | ConvertFrom-Json
-          $packageVersion = $packageJson.version
-          if ($tagVersion -ne $packageVersion) {
-            throw "Tag version $tagVersion does not match extension package version $packageVersion"
+          $packageJson = Get-Content 'extensions/vscode-multi-mcp-manager/package.json' -Raw | ConvertFrom-Json
+          if ($tagVersion -cne $packageJson.version) {
+            throw "Tag version $tagVersion does not match extension package version $($packageJson.version)"
           }
-
+          $refs = @(git ls-remote --tags origin "refs/tags/$tag" "refs/tags/$tag^{}")
+          if ($LASTEXITCODE -ne 0) { throw 'Could not verify remote tag target' }
+          if ($refs.Count -gt 0) {
+            $peeled = @($refs | Where-Object { $_ -match '\^\{\}$' })
+            $target = (($peeled + $refs)[0] -split '\s+')[0]
+            if ($target -cne $env:GITHUB_SHA) { throw 'Existing tag does not point to the verified revision' }
+          } elseif ($env:RELEASE_EVENT -ne 'workflow_dispatch') {
+            throw 'Pushed release tag is missing from the remote'
+          }
+          "tag=$tag" >> $env:GITHUB_OUTPUT
           "version=$tagVersion" >> $env:GITHUB_OUTPUT
           "vsix=extensions/vscode-multi-mcp-manager/vscode-multi-mcp-manager-$tagVersion.vsix" >> $env:GITHUB_OUTPUT
 
+      - name: Verify Gateway types, tests, build and stdio runtime
+        run: npm run preflight:gateway
+
+      - name: Install locked extension dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund --prefix extensions/vscode-multi-mcp-manager
+
+      - name: Verify extension forms and host
+        run: npm run test:unit --prefix extensions/vscode-multi-mcp-manager
+
       - name: Package extension
-        run: npm run package:extension
+        run: npm run package --prefix extensions/vscode-multi-mcp-manager
+
+      - name: Run VS Code smoke test
+        run: npm run test --prefix extensions/vscode-multi-mcp-manager
 
       - name: Verify VSIX
         shell: pwsh
+        env:
+          VSIX_PATH: ${{ steps.version.outputs.vsix }}
+          EXPECTED_VERSION: ${{ steps.version.outputs.version }}
         run: |
-          $vsix = "${{ steps.version.outputs.vsix }}"
-          if (-not (Test-Path $vsix)) {
-            throw "VSIX was not created: $vsix"
-          }
+          if (-not (Test-Path $env:VSIX_PATH)) { throw 'VSIX was not created' }
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $zip = [System.IO.Compression.ZipFile]::OpenRead((Resolve-Path $env:VSIX_PATH))
+          try {
+            $entry = $zip.GetEntry('extension/package.json')
+            if ($null -eq $entry) { throw 'VSIX manifest is missing' }
+            $reader = [System.IO.StreamReader]::new($entry.Open())
+            try { $manifest = $reader.ReadToEnd() | ConvertFrom-Json } finally { $reader.Dispose() }
+            if ($manifest.version -cne $env:EXPECTED_VERSION) { throw 'VSIX version does not match tag' }
+            if ($null -eq $zip.GetEntry('extension/out/src/extension.cjs')) { throw 'VSIX bundle is missing' }
+          } finally { $zip.Dispose() }
+          Get-FileHash $env:VSIX_PATH -Algorithm SHA256
 
       - name: Ensure release does not exist
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
         run: |
-          gh release view "${env:GITHUB_REF_NAME}" --repo "${env:GITHUB_REPOSITORY}" *> $null
-          if ($LASTEXITCODE -eq 0) {
-            throw "Release already exists for ${env:GITHUB_REF_NAME}"
-          }
+          gh release view "$env:RELEASE_TAG" --repo "$env:GITHUB_REPOSITORY" *> $null
+          if ($LASTEXITCODE -eq 0) { throw "Release already exists for $env:RELEASE_TAG" }
           $global:LASTEXITCODE = 0
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          target_commitish: ${{ github.sha }}
           name: Multi-MCP 管理器 VS Code 延伸模組 v${{ steps.version.outputs.version }}
           fail_on_unmatched_files: true
           files: ${{ steps.version.outputs.vsix }}
           body: |
             Multi-MCP 管理器 VS Code 延伸模組 v${{ steps.version.outputs.version }}
 
-            - 新增 Activity Bar Webview 儀表板，用於管理本機 Multi-MCP Gateway。
-            - 支援 MCP 安裝、編輯、移除、啟用、停用、金鑰 / Token、重新掃描與版本檢查。
-            - 支援 GitHub Release 更新檢查，手動確認後可下載並安裝新版 VSIX。
-            - 安裝與編輯共用同一套 MCP 設定表單，並改善金鑰設定的語意與排版。
-            - 介面保留繁體中文優先，並提供英文 fallback。
+            - 修正設定覆寫／搬移／刪除、認證更新及失敗還原，限制不安全的管理路徑。
+            - 表單保留 env、preload、完整 args 與 npm 固定版本；重複提交、改名及側欄重建不會重送已完成操作。
+            - 修正跨 Extension／Gateway／CLI 程序的舊掃描覆寫，並保留最新 registry 與衝突提示。
+            - 內含 Gateway 管理核心 1.2.1；獨立執行的 Gateway 仍須另行更新並重新連線。
+            - 安全取捨：可能含密鑰的草稿來源／JSON／command／args／env 不持久保存，重新開啟後需重填或重新檢查。
+            - 更新前先關閉舊 Gateway 與管理視窗，再安裝 VSIX、重新載入 VS Code；既有 user-data 格式保留。
+            - 完整修正、相容依賴修補及剩餘開發工具風險見 CHANGELOG.md。此 VSIX Release 不代表 npm registry 已更新。

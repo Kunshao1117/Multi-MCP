@@ -1,20 +1,19 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { loadConfig } from '../config-loader.js';
+import { existsSync } from 'node:fs';
+import { dirname } from 'node:path';
+import { getCoreVersion } from '../version.js';
+import { loadConfig, validateMcpServerConfig } from '../config-loader.js';
 import { scanAndGenerateRegistry } from '../registry.js';
 import type { McpServerConfig, RegistryToolEntry } from '../types.js';
 import { getAuthGuide } from '../auth-guides.js';
 import {
-  deleteCredentialFromStore as removeCredential,
-  loadCredentialStore,
-  renameCredentialInStore,
-  summarizeCredential,
-  writeCredential,
+  applyCredentialInput, credentialFileChanges, loadCredentialStore, summarizeCredential,
+  type CredentialStore,
 } from './credentials.js';
 import {
-  ensureGatewayPaths, findMcpConfigFile, listMcpConfigFiles, loadRegistrySnapshot,
-  removeMcpConfigFile, resolveGatewayPaths, saveMcpConfigFile, setMcpConfigEnabled, updateMcpConfigFile,
+  assertGatewayPathsSafe, ensureGatewayPaths, findMcpConfigFile, listMcpConfigFiles, loadRegistrySnapshot,
+  planSaveMcpConfig, planUpdateMcpConfig, resolveGatewayPaths, setMcpConfigEnabled,
 } from './files.js';
+import { commitFileChanges, removeEmptyDirectory, validatePathSegment, withDataLock } from './storage.js';
 import type {
   GatewayStatus,
   ManagementOptions,
@@ -25,12 +24,14 @@ import type {
   OperationResult,
 } from './types.js';
 
+const RUNTIME_NOTICE = ' 執行中的 Gateway 請重新連線，或呼叫 Gateway 自己的 rescan/reload。';
+
 export function getGatewayStatus(options: ManagementOptions = {}): GatewayStatus {
   const paths = resolveGatewayPaths(options);
   const registry = loadRegistrySnapshot(paths);
   const servers = listMcpConfigFiles(paths);
   return {
-    packageVersion: readPackageVersion(paths.packageRoot),
+    packageVersion: getCoreVersion(),
     dataDir: paths.dataDir,
     configPath: paths.configPath,
     envPath: paths.envPath,
@@ -73,59 +74,129 @@ export function listMcpServers(options: ManagementOptions = {}): McpServerSummar
   });
 }
 
+function preflightPaths(options: ManagementOptions) {
+  const paths = resolveGatewayPaths(options);
+  assertGatewayPathsSafe(paths);
+  listMcpConfigFiles(paths);
+  loadCredentialStore(paths);
+  return paths;
+}
+
+function applyEditedCredential(store: CredentialStore, currentName: string, nextName: string, credential?: McpUpdateInput['credential']) {
+  if (currentName !== nextName) {
+    if (store[nextName]) throw new Error(`"${nextName}" 認證已存在`);
+    if (store[currentName]) { store[nextName] = store[currentName]; delete store[currentName]; }
+  }
+  if (credential) applyCredentialInput(store, { ...credential, mcpName: nextName });
+}
+
+async function afterSave(name: string, action: string, rescan: boolean | undefined, options: ManagementOptions): Promise<OperationResult> {
+  if (rescan) {
+    try {
+      const registry = await rescanRegistry(options);
+      const failedServers = Object.entries(registry.servers)
+        .filter(([, entry]) => 'stale' in entry && entry.stale === true).map(([server]) => server);
+      if (failedServers.length) return { ok: false, changed: true, committed: true, savedName: name, failedServers,
+        message: `"${name}" 已${action}，但以下 MCP 掃描失敗（保留舊工具快取）：${failedServers.join(', ')}` + RUNTIME_NOTICE };
+    } catch {
+      return { ok: false, changed: true, committed: true, savedName: name,
+        message: `"${name}" 已${action}，但重新掃描失敗；設定與認證已保存，請修復掃描問題後重試掃描` + RUNTIME_NOTICE };
+    }
+  }
+  return { ok: true, changed: true, committed: true, savedName: name, message: `"${name}" 已${action}` + RUNTIME_NOTICE };
+}
+
 export async function installMcp(input: McpInstallInput, options: ManagementOptions = {}): Promise<OperationResult> {
-  const paths = ensureGatewayPaths(options);
   const name = input.name.trim();
   const category = input.category.trim();
   if (!name || !category) return { ok: false, message: 'MCP 名稱與分類不可為空' };
-  if (findMcpConfigFile(paths, name) && !input.overwrite) return { ok: false, message: `"${name}" 已存在` };
+  validatePathSegment(name, 'MCP 名稱'); validatePathSegment(category, '分類');
   const config = input.config ?? await createConfigFromSource(input.source ?? '');
-  saveMcpConfigFile(paths, category, name, config);
-  if (input.credential?.value) writeCredential(paths, { ...input.credential, mcpName: name });
-  if (input.rescan) await rescanRegistry(options);
-  return { ok: true, changed: true, message: `"${name}" 已安裝` };
+  validateMcpServerConfig(config);
+  const before = preflightPaths(options);
+  const existing = findMcpConfigFile(before, name);
+  if (existing && (!input.overwrite || existing.name !== name)) return { ok: false, message: `"${name}" 已存在` };
+  if (existing) planUpdateMcpConfig(before, { currentName: name, nextName: name, category, config });
+  else planSaveMcpConfig(before, category, name, config);
+  const credentials = loadCredentialStore(before);
+  if (input.credential) applyCredentialInput(credentials, { ...input.credential, mcpName: name });
+  credentialFileChanges(before, credentials);
+  const paths = ensureGatewayPaths(options);
+  const result = withDataLock(paths.dataDir, () => {
+    const existingNow = findMcpConfigFile(paths, name);
+    if (existingNow && (!input.overwrite || existingNow.name !== name)) return { ok: false, message: `"${name}" 已存在` };
+    const updated = existingNow ? planUpdateMcpConfig(paths, { currentName: name, nextName: name, category, config }) : undefined;
+    const store = loadCredentialStore(paths);
+    if (input.credential) applyCredentialInput(store, { ...input.credential, mcpName: name });
+    commitFileChanges(paths.dataDir, [
+      ...(updated ? updated.changes : [planSaveMcpConfig(paths, category, name, config)]),
+      ...(input.credential ? credentialFileChanges(paths, store) : []),
+    ]);
+    if (updated && updated.oldPath !== updated.newPath) removeEmptyDirectory(dirname(updated.oldPath));
+    return undefined;
+  });
+  if (result) return result;
+  return afterSave(name, '安裝', input.rescan, options);
 }
 
 export async function removeMcp(name: string, options: ManagementOptions = {}): Promise<OperationResult> {
+  validatePathSegment(name, 'MCP 名稱');
+  const before = preflightPaths(options);
+  if (!findMcpConfigFile(before, name)) return { ok: false, message: `找不到 "${name}"` };
   const paths = ensureGatewayPaths(options);
-  const removed = removeMcpConfigFile(paths, name);
-  if (!removed) return { ok: false, message: `找不到 "${name}"` };
-  removeCredential(paths, name);
-  return { ok: true, changed: true, message: `"${name}" 已移除` };
+  return withDataLock(paths.dataDir, () => {
+    const entry = findMcpConfigFile(paths, name);
+    if (!entry) return { ok: false, message: `找不到 "${name}"` };
+    const store = loadCredentialStore(paths);
+    const hadCredential = !!store[entry.name];
+    delete store[entry.name];
+    commitFileChanges(paths.dataDir, [{ path: entry.path, data: null }, ...(hadCredential ? credentialFileChanges(paths, store) : [])]);
+    removeEmptyDirectory(dirname(entry.path));
+    return { ok: true, changed: true, committed: true, message: `"${entry.name}" 已移除` + RUNTIME_NOTICE };
+  });
 }
 
 export function setMcpEnabled(name: string, enabled: boolean, options: ManagementOptions = {}): OperationResult {
+  validatePathSegment(name, 'MCP 名稱');
+  if (typeof enabled !== 'boolean') throw new Error('啟用狀態必須是布林值');
+  const before = preflightPaths(options);
+  if (!findMcpConfigFile(before, name)) return { ok: false, message: `找不到 "${name}"` };
   const paths = ensureGatewayPaths(options);
   const changed = setMcpConfigEnabled(paths, name, enabled);
-  return {
-    ok: true,
-    changed,
-    message: changed ? `"${name}" 已${enabled ? '啟用' : '停用'}` : `"${name}" 狀態未變更`,
-  };
+  return { ok: true, changed, message: changed ? `"${name}" 已${enabled ? '啟用' : '停用'}` + RUNTIME_NOTICE : `"${name}" 狀態未變更` };
 }
 
 export async function updateMcp(input: McpUpdateInput, options: ManagementOptions = {}): Promise<OperationResult> {
-  const paths = ensureGatewayPaths(options);
   const currentName = input.currentName.trim();
   const nextName = input.nextName.trim();
   const category = input.category.trim();
   if (!currentName || !nextName || !category) return { ok: false, message: 'MCP 名稱與分類不可為空' };
-  const existing = findMcpConfigFile(paths, currentName);
+  validatePathSegment(currentName, 'MCP 名稱'); validatePathSegment(nextName, 'MCP 名稱'); validatePathSegment(category, '分類');
+  validateMcpServerConfig(input.config);
+  const before = preflightPaths(options);
+  const existing = findMcpConfigFile(before, currentName);
   if (!existing) return { ok: false, message: `找不到 "${currentName}"` };
-  const conflict = currentName !== nextName ? findMcpConfigFile(paths, nextName) : undefined;
-  if (conflict) return { ok: false, message: `"${nextName}" 已存在` };
-  const credentialConflict = currentName !== nextName && loadCredentialStore(paths)[nextName];
-  if (credentialConflict) return { ok: false, message: `"${nextName}" 認證已存在` };
-
-  const updated = updateMcpConfigFile(paths, {
-    currentName,
-    nextName,
-    category,
-    config: input.config,
+  const conflict = findMcpConfigFile(before, nextName);
+  if (conflict && conflict.path !== existing.path) return { ok: false, message: `"${nextName}" 已存在` };
+  const credentials = loadCredentialStore(before);
+  if (existing.name !== nextName && credentials[nextName]) return { ok: false, message: `"${nextName}" 認證已存在` };
+  applyEditedCredential(credentials, existing.name, nextName, input.credential);
+  credentialFileChanges(before, credentials);
+  planUpdateMcpConfig(before, { currentName, nextName, category, config: input.config });
+  const paths = ensureGatewayPaths(options);
+  withDataLock(paths.dataDir, () => {
+    const updated = planUpdateMcpConfig(paths, { currentName, nextName, category, config: input.config });
+    const store = loadCredentialStore(paths);
+    const originalName = findMcpConfigFile(paths, currentName)!.name;
+    const hadCredential = !!store[originalName];
+    applyEditedCredential(store, originalName, nextName, input.credential);
+    commitFileChanges(paths.dataDir, [
+      ...updated.changes,
+      ...((updated.renamed && hadCredential) || input.credential ? credentialFileChanges(paths, store) : []),
+    ]);
+    if (updated.oldPath !== updated.newPath) removeEmptyDirectory(dirname(updated.oldPath));
   });
-  if (updated.renamed) renameCredentialInStore(paths, currentName, nextName);
-  if (input.rescan) await rescanRegistry(options);
-  return { ok: true, changed: true, message: `"${nextName}" 已更新` };
+  return afterSave(nextName, '更新', input.rescan, options);
 }
 
 export async function rescanRegistry(options: ManagementOptions = {}) {
@@ -142,17 +213,13 @@ async function createConfigFromSource(source: string): Promise<McpServerConfig> 
     return { command: 'npx', args: ['-y', 'mcp-remote', trimmed] };
   }
   const packageName = trimmed.includes('github.com') ? await packageNameFromGitHub(trimmed) : trimmed;
-  return { command: 'npx', args: ['-y', packageName.endsWith('@latest') ? packageName : `${packageName}@latest`] };
+  // Only a bare npm package receives the default tag; explicit versions, ranges and tags stay verbatim.
+  const barePackage = /^(?:@[a-z0-9._-]+\/)?[a-z0-9._-]+$/i.test(packageName);
+  return { command: 'npx', args: ['-y', barePackage ? `${packageName}@latest` : packageName] };
 }
 
 function parseConfigJson(raw: string): McpServerConfig {
-  const parsed = JSON.parse(raw) as { command?: unknown; args?: unknown; env?: unknown };
-  if (typeof parsed.command !== 'string') throw new Error('JSON 設定缺少 command');
-  const args = Array.isArray(parsed.args) ? parsed.args.map(String) : [];
-  const env = parsed.env && typeof parsed.env === 'object' && !Array.isArray(parsed.env)
-    ? parsed.env as Record<string, string>
-    : undefined;
-  return { command: parsed.command, args, ...(env ? { env } : {}) };
+  return validateMcpServerConfig(JSON.parse(raw));
 }
 
 async function packageNameFromGitHub(source: string): Promise<string> {
@@ -209,7 +276,3 @@ function summarizeTools(tools: Record<string, RegistryToolEntry>): McpToolSummar
     }));
 }
 
-function readPackageVersion(packageRoot: string): string {
-  const pkg = JSON.parse(readFileSync(resolve(packageRoot, 'package.json'), 'utf-8')) as { version?: string };
-  return pkg.version ?? '0.0.0';
-}

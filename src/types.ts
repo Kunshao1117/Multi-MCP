@@ -6,7 +6,7 @@
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 /** 認證狀態 */
-export type AuthStatus = 'valid' | 'expired' | 'not_configured' | 'unknown' | 'error';
+export type AuthStatus = 'valid' | 'expired' | 'not_configured' | 'unknown' | 'error' | 'forbidden';
 
 /** 閘道器設定 */
 export interface GatewayConfig {
@@ -37,6 +37,7 @@ export type ProcessState = 'dormant' | 'starting' | 'ready' | 'failed';
 /** 伺服器認證健康資訊 */
 export interface ServerHealthInfo {
   serverName: string;
+  workspace?: string;
   state: ProcessState;
   authStatus: AuthStatus;
   lastChecked: number;
@@ -54,8 +55,12 @@ export interface RegistryToolEntry {
 /** 集成表結構 */
 export interface ToolRegistry {
   version: string;
+  /** Optional opaque publication revision; older registries without it remain readable. */
+  revision?: string;
   generated_at: string;
   servers: Record<string, {
+    stale?: boolean;
+    scan_error?: string;
     tool_count: number;
     tools: Record<string, RegistryToolEntry>;
   }>;

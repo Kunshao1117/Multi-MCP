@@ -132,7 +132,7 @@ const KNOWN_GUIDES: Record<string, AuthGuide> = {
  * 如果不在已知清單中，回傳通用指南
  */
 export function getAuthGuide(serverName: string, envVars?: Record<string, string>): AuthGuide {
-  const known = KNOWN_GUIDES[serverName];
+  const known = Object.hasOwn(KNOWN_GUIDES, serverName) ? KNOWN_GUIDES[serverName] : undefined;
   if (known) return known;
 
   // 通用指南：從設定檔推斷需要的環境變數
@@ -163,13 +163,37 @@ export function getAuthGuide(serverName: string, envVars?: Record<string, string
 /**
  * 檢查指定伺服器的認證環境變數是否已設定
  */
-export function checkEnvVarsConfigured(serverName: string, envConfig?: Record<string, string>): {
-  configured: boolean;
-  missing: string[];
-} {
+export function checkEnvVarsConfigured(
+  serverName: string,
+  envConfig?: Record<string, string>,
+  environment: NodeJS.ProcessEnv = process.env,
+): { configured: boolean; missing: string[] } {
   const guide = getAuthGuide(serverName, envConfig);
-  const missing = guide.requiredEnvVars.filter((v) => !process.env[v]);
+  const missing = guide.requiredEnvVars.filter((name) => {
+    const value = envConfig?.[name] ?? environment[name];
+    return !value || /\$\{[^}]+\}/.test(value);
+  });
   return { configured: missing.length === 0, missing };
+}
+
+/** Only explicit protocol/HTTP status or a complete canonical error is evidence. */
+export function classifyAuthError(error: unknown): 'expired' | 'forbidden' | undefined {
+  if (error && typeof error === 'object') {
+    const record = error as Record<string, unknown>;
+    const data = record.data && typeof record.data === 'object' ? record.data as Record<string, unknown> : {};
+    for (const code of [record.status, record.statusCode, record.code, data.status, data.statusCode]) {
+      if (code === 401 || code === '401' || code === 'UNAUTHORIZED') return 'expired';
+      if (code === 403 || code === '403' || code === 'FORBIDDEN') return 'forbidden';
+    }
+  }
+  const message = typeof error === 'string' ? error : error instanceof Error ? error.message : '';
+  if (/^(?:HTTP\s+)?401(?:\s*[: -]?\s*Unauthorized)?[.!]?$/i.test(message.trim()) || /^Unauthorized[.!]?$/i.test(message.trim())) return 'expired';
+  if (/^(?:HTTP\s+)?403(?:\s*[: -]?\s*Forbidden)?[.!]?$/i.test(message.trim()) || /^Forbidden[.!]?$/i.test(message.trim())) return 'forbidden';
+  return undefined;
+}
+
+export function isAuthError(error: unknown): boolean {
+  return classifyAuthError(error) !== undefined;
 }
 
 // ─── 安裝提示系統（供 CLI 主控台使用）───

@@ -5,7 +5,7 @@
  */
 import { existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { dirname, isAbsolute, resolve } from 'node:path';
+import { dirname, isAbsolute, resolve, win32, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const MODULE_DIR = typeof __dirname === 'string'
@@ -40,13 +40,14 @@ export function getUserDataDir(
   env: GatewayPathEnv = process.env,
   platform: NodeJS.Platform = process.platform,
 ): string {
+  const platformPath = platform === 'win32' ? win32 : posix;
   if (env.MULTI_MCP_HOME) {
-    return resolve(env.MULTI_MCP_HOME);
+    return platformPath.resolve(env.MULTI_MCP_HOME);
   }
 
   if (platform === 'win32') {
-    const base = env.APPDATA ?? env.LOCALAPPDATA ?? resolve(homedir(), 'AppData', 'Roaming');
-    return resolve(base, 'multi-mcp-gateway');
+    const base = env.APPDATA ?? env.LOCALAPPDATA ?? win32.resolve(homedir(), 'AppData', 'Roaming');
+    return win32.resolve(base, 'multi-mcp-gateway');
   }
 
   if (platform === 'darwin') {
@@ -84,7 +85,9 @@ export function ensureUserDataDir(paths = getGatewayPaths()): GatewayPaths {
     writeFileSync(paths.envPath, defaultGatewayEnv(), 'utf-8');
   }
   if (!existsSync(paths.registryPath)) {
-    writeFileSync(paths.registryPath, defaultRegistry(), 'utf-8');
+    // A concurrent scanner may publish after existsSync; never overwrite its cache.
+    try { writeFileSync(paths.registryPath, defaultRegistry(), { encoding: 'utf8', flag: 'wx' }); }
+    catch (error) { if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error; }
   }
   seedDefaultMcps(paths);
 

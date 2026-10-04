@@ -1,33 +1,14 @@
 import * as vscode from 'vscode';
 import type { GatewayStatus, McpServerSummary } from '../../../src/management/index.js';
 import type { ExtensionUpdateState } from './extensionUpdate.js';
+import { createFormModel, type McpFormPayload } from './formModel.js';
+export type { McpFormPayload } from './formModel.js';
 
 export interface DashboardState {
   status: GatewayStatus;
   servers: McpServerSummary[];
   extensionUpdate?: ExtensionUpdateState;
-}
-
-export interface McpFormPayload {
-  mode: 'install' | 'edit';
-  currentName?: string;
-  nextName: string;
-  category: string;
-  sourceMode: 'npm' | 'remote' | 'custom' | 'json';
-  source: string;
-  command: string;
-  args: string[];
-  envVars: string[];
-  config?: {
-    command: string;
-    args: string[];
-    env?: Record<string, string>;
-  };
-  credential?: {
-    envVar: string;
-    label: string;
-  };
-  rescan: boolean;
+  extensionVersion?: string;
 }
 
 export interface CredentialFormPayload {
@@ -41,12 +22,14 @@ export type WebviewMessage =
   | { command: 'openInstallForm'; mode?: 'source' | 'json' }
   | { command: 'openEditForm'; name: string }
   | { command: 'cancelMcpForm' }
-  | { command: 'saveMcpForm'; payload: McpFormPayload }
+  | { command: 'saveMcpForm'; operationId: string; payload: McpFormPayload }
+  | { command: 'getFormResult'; operationId: string }
   | { command: 'removeServer'; name: string }
   | { command: 'setEnabled'; name: string; enabled: boolean }
   | { command: 'openCredentialPanel'; name: string }
-  | { command: 'saveCredential'; payload: CredentialFormPayload }
-  | { command: 'deleteCredential'; name: string }
+  | { command: 'saveCredential'; operationId: string; payload: CredentialFormPayload }
+  | { command: 'switchCredential'; operationId: string; name: string; label: string }
+  | { command: 'deleteCredential'; operationId: string; name: string }
   | { command: 'rescan' }
   | { command: 'checkVersions' }
   | { command: 'checkExtensionUpdate' }
@@ -704,12 +687,33 @@ export function renderDashboardHtml(
   </div>
   <script nonce="${nonce}">
     const vscode = acquireVsCodeApi();
+    const formModel = (${createFormModel.toString()})();
     const collapsedCategories = new Set();
     const expandedServers = new Set();
-    let activeForm = null;
     let state = ${initialState};
+    const savedState = vscode.getState();
+    const restored = formModel.restore(savedState?.draft, state.servers ?? [], savedState?.pending);
+    let activeForm = restored.form;
+    let formNotice = restored.notice;
+    let pending = restored.pending;
 
     window.addEventListener('message', (event) => {
+      if (event.data?.command === 'formPending') {
+        if (!pending || pending.operationId !== event.data.operationId || activeForm?.draftId !== pending.draftId) return;
+        if (event.data.state) state = event.data.state;
+        render();
+        return;
+      }
+      if (event.data?.command === 'formResult') {
+        const result = event.data;
+        if (!pending || pending.operationId !== result.operationId || activeForm?.draftId !== pending.draftId) return;
+        if (result.state) state = result.state;
+        activeForm = formModel.settle(activeForm, pending, result, state.servers ?? []);
+        pending = null;
+        formNotice = result.message || '';
+        render();
+        return;
+      }
       if (event.data?.command === 'state') {
         state = event.data.state;
         render();
@@ -737,61 +741,89 @@ export function renderDashboardHtml(
 
       const button = event.target.closest('button[data-command]');
       if (!button) return;
+      if (button.disabled) return;
       const command = button.dataset.command;
+      if (pending && ['openInstallForm', 'openEditForm', 'openCredentialPanel', 'cancelMcpForm', 'confirmRestoredConfig'].includes(command)) return;
       const name = button.dataset.name;
       const enabled = button.dataset.enabled === 'true';
       if (command === 'openInstallForm') {
+        formNotice = '';
         activeForm = createInstallForm(button.dataset.mode === 'json' ? 'json' : 'npm');
         render();
         return;
       }
       if (command === 'openEditForm') {
         const server = findServer(name);
+        formNotice = '';
         if (server) activeForm = createEditForm(server);
         render();
         return;
       }
       if (command === 'openCredentialPanel') {
         const server = findServer(name);
+        formNotice = '';
         if (server) activeForm = createCredentialForm(server);
         render();
         return;
       }
       if (command === 'cancelMcpForm') {
         activeForm = null;
+        pending = null;
+        formNotice = '';
         render();
         return;
       }
-      if (command === 'saveMcpForm') {
-        const payload = readFormPayload();
-        if (payload) vscode.postMessage({ command, payload });
+      if (command === 'confirmRestoredConfig') {
+        activeForm.sensitiveDraftLost = false;
+        formNotice = '請檢查目前顯示的來源與啟動設定後再儲存';
+        render();
         return;
       }
-      if (command === 'saveCredential') {
-        const payload = readCredentialPayload();
-        if (payload) vscode.postMessage({ command, payload });
-        return;
-      }
-      if (command === 'deleteCredential') {
-        vscode.postMessage({ command, name });
+      if (['saveMcpForm', 'saveCredential', 'switchCredential', 'deleteCredential'].includes(command)) {
+        if (pending || !activeForm) return;
+        try {
+          const payload = command === 'saveMcpForm' ? readFormPayload() : readCredentialPayload();
+          if (!payload) return;
+          const operationId = formModel.newOperationId(activeForm);
+          pending = { operationId, draftId: activeForm.draftId };
+          formNotice = '處理中…';
+          const label = document.getElementById('credential-active')?.value ?? '';
+          // Persist correlation and disable the form before handing the mutation to the host.
+          render();
+          vscode.postMessage({ command, operationId, payload, name: activeForm.currentName, label });
+        } catch (error) {
+          formNotice = error.message;
+          render();
+        }
         return;
       }
       vscode.postMessage({ command, name, enabled });
     });
 
     document.body.addEventListener('input', (event) => {
-      if (!activeForm || !event.target.closest('#mcp-form')) return;
+      if (pending || !activeForm || !event.target.closest('#mcp-form')) return;
       syncActiveFormFromDom();
+      persistDraft();
       renderFormPreview();
     });
 
     document.body.addEventListener('change', (event) => {
-      if (!activeForm || !event.target.closest('#mcp-form')) return;
+      if (pending || !activeForm || !event.target.closest('#mcp-form')) return;
       syncActiveFormFromDom();
+      if (event.target.id === 'mcp-source' || event.target.id === 'mcp-source-mode') {
+        formModel.applySourceDefaults(activeForm);
+        render();
+        return;
+      }
+      persistDraft();
       updateSourceModeVisibility();
       updateKeyPanelVisibility();
       renderFormPreview();
     });
+
+    function persistDraft() {
+      vscode.setState({ draft: formModel.persist(activeForm), pending: formModel.persistPending(pending, activeForm) });
+    }
 
     function render() {
       const root = document.getElementById('root');
@@ -799,12 +831,18 @@ export function renderDashboardHtml(
       const servers = state.servers ?? [];
       root.innerHTML = [
         renderOverview(status, state.extensionUpdate),
+        formNotice ? '<p role=\"status\" class=\"credential-help\">' + escapeHtml(formNotice) + '</p>' : '',
         renderMcpForm(),
         renderServers(servers)
       ].join('');
       updateSourceModeVisibility();
       updateKeyPanelVisibility();
       renderFormPreview();
+      for (const element of document.querySelectorAll('button[data-command=\"openInstallForm\"], button[data-command=\"openEditForm\"], button[data-command=\"openCredentialPanel\"]')) element.disabled = !!pending;
+      if (pending) {
+        for (const element of document.querySelectorAll('#mcp-form input, #mcp-form select, #mcp-form textarea, #mcp-form button, button[data-command=\"openInstallForm\"], button[data-command=\"openEditForm\"], button[data-command=\"openCredentialPanel\"]')) element.disabled = true;
+      }
+      persistDraft();
     }
 
     function findServer(name) {
@@ -817,58 +855,11 @@ export function renderDashboardHtml(
     }
 
     function createInstallForm(sourceMode) {
-      const categories = existingCategories();
-      return {
-        kind: 'mcp',
-        mode: 'install',
-        currentName: '',
-        nextName: '',
-        category: categories[0] ?? '未分類',
-        sourceMode,
-        source: '',
-        command: 'npx',
-        argsText: '',
-        jsonText: '',
-        envVarsText: '',
-        rescan: true,
-        saveCredential: false,
-        credentialEnvVar: '',
-        credentialLabel: 'default',
-        credentialSummary: '目前未設定金鑰；安裝完成後也可以再補。'
-      };
+      return formModel.createInstall(sourceMode, existingCategories()[0] ?? '未分類');
     }
 
-    function createEditForm(server) {
-      const envVar = server.credential?.envVar ?? server.requiredEnvVars?.[0] ?? '';
-      return {
-        kind: 'mcp',
-        mode: 'edit',
-        currentName: server.name,
-        nextName: server.name,
-        category: server.category || '未分類',
-        sourceMode: server.sourceType === 'remote' ? 'remote' : (server.sourceType === 'npm' ? 'npm' : 'custom'),
-        source: server.source ?? '',
-        command: server.config?.command ?? '',
-        argsText: (server.config?.args ?? []).join('\\n'),
-        jsonText: JSON.stringify(server.config ?? {}, null, 2),
-        envVarsText: (server.requiredEnvVars ?? []).join('\\n'),
-        rescan: false,
-        saveCredential: false,
-        credentialEnvVar: envVar,
-        credentialLabel: server.credential?.active ?? 'default',
-        credentialSummary: server.credential?.active ? '已設定金鑰：' + server.credential.active + (server.credential.maskedValue ? ' · ' + server.credential.maskedValue : '') : (envVar ? '建議設定金鑰：' + envVar : '此 MCP 未偵測到必要金鑰')
-      };
-    }
-
-    function createCredentialForm(server) {
-      return {
-        kind: 'credential',
-        currentName: server.name,
-        credentialEnvVar: server.credential?.envVar ?? server.requiredEnvVars?.[0] ?? '',
-        credentialLabel: server.credential?.active ?? 'default',
-        credentialSummary: server.credential?.active ? '已設定金鑰：' + server.credential.active + (server.credential.maskedValue ? ' · ' + server.credential.maskedValue : '') : '尚未設定金鑰'
-      };
-    }
+    function createEditForm(server) { return formModel.createEdit(server); }
+    function createCredentialForm(server) { return formModel.createCredential(server); }
 
     function renderMcpForm() {
       if (!activeForm) return '<section class="form-shell" id="mcp-form-shell"></section>';
@@ -883,13 +874,15 @@ export function renderDashboardHtml(
               '<div class="credential-panel standalone">' +
                 '<div class="credential-summary">' +
                   '<div class="key-status"><span class="pill">' + escapeHtml(activeForm.credentialSummary) + '</span></div>' +
-                  '<div class="credential-help">這裡設定的是 MCP 啟動時要讀取的環境變數名稱，以及這組金鑰在本機的標籤。完整金鑰值不會出現在此畫面。</div>' +
+                  '<div class="credential-help">這裡設定的是 MCP 啟動時要讀取的環境變數名稱，以及這組金鑰在本機的標籤。完整金鑰值不會出現在此畫面。目前每個 MCP 僅管理一個環境變數，可儲存多個帳號標籤；新增標籤不會自動切換使用中的帳號。</div>' +
                 '</div>' +
                 '<div class="credential-layout">' +
-                  '<div class="field"><label for="credential-env">MCP 要讀取的環境變數</label><input id="credential-env" value="' + escapeAttr(activeForm.credentialEnvVar) + '" placeholder="GITHUB_TOKEN"></div>' +
+                  '<div class="field"><label for="credential-env">MCP 要讀取的環境變數</label><input id="credential-env" value="' + escapeAttr(activeForm.credentialEnvVar) + '" ' + (activeForm.credentialLocked ? 'readonly' : '') + ' placeholder="GITHUB_TOKEN"></div>' +
                   '<div class="field"><label for="credential-label">本機標籤</label><input id="credential-label" value="' + escapeAttr(activeForm.credentialLabel) + '" placeholder="default"><div class="field-help">只用來區分多組金鑰，例如 default、work。</div></div>' +
                 '</div>' +
+                '<div class="field"><label for="credential-active">使用中的帳號</label><select id="credential-active">' + activeForm.accountLabels.map((label) => option(label, label, activeForm.activeLabel)).join('') + '</select><div class="field-help">目前使用：' + escapeHtml(activeForm.activeLabel || '尚未設定') + '。刪除金鑰會移除所有標籤。執行中的 Gateway 需重新載入／重連後使用新帳號。</div></div>' +
                 '<div class="credential-actions-bar">' +
+                  '<button data-command="switchCredential" ' + (activeForm.accountLabels.length ? '' : 'disabled') + '>切換使用的帳號</button>' +
                   '<button data-command="saveCredential" data-name="' + escapeAttr(activeForm.currentName) + '">設定 / 更新金鑰值</button>' +
                   '<button class="danger" data-command="deleteCredential" data-name="' + escapeAttr(activeForm.currentName) + '">刪除金鑰</button>' +
                 '</div>' +
@@ -902,7 +895,7 @@ export function renderDashboardHtml(
       const title = activeForm.mode === 'install' ? '新增 MCP' : '編輯 MCP';
       const submit = activeForm.mode === 'install' ? '安裝 MCP' : '套用變更';
       const categories = existingCategories();
-      const hasSuggestedKey = parseLines(activeForm.envVarsText).length > 0;
+      const hasSuggestedKey = !!activeForm.credentialEnvVar;
       const keyFieldsClass = activeForm.saveCredential || hasSuggestedKey ? 'key-fields' : 'key-fields hidden';
       return '<section class="form-shell active" id="mcp-form-shell">' +
         '<div class="mcp-form-panel" id="mcp-form">' +
@@ -911,6 +904,7 @@ export function renderDashboardHtml(
             '<button class="ghost" data-command="cancelMcpForm">取消</button>' +
           '</div>' +
           '<div class="form-body">' +
+            (activeForm.sensitiveDraftLost ? '<div class="credential-help">未保存的來源／啟動設定沒有持久保存。請重新輸入，或檢查後<button class="ghost" data-command="confirmRestoredConfig">確認使用目前設定</button></div>' : '') +
             '<div class="form-section">' +
               '<div class="form-section-title">來源</div>' +
               '<div class="form-grid">' +
@@ -935,7 +929,7 @@ export function renderDashboardHtml(
               '<div class="form-section-title">啟動設定</div>' +
               '<div class="form-grid">' +
                 '<div class="field source-panel" data-source-panel="custom json npm remote"><label for="mcp-command">command</label><input id="mcp-command" value="' + escapeAttr(activeForm.command) + '" placeholder="npx"></div>' +
-                '<div class="field full source-panel" data-source-panel="custom json npm remote"><label for="mcp-args">args</label><textarea id="mcp-args" placeholder="每行一個參數">' + escapeHtml(activeForm.argsText) + '</textarea><div class="field-help">npm 與 remote 來源會依來源自動建議 command/args；仍可在套用前微調。</div></div>' +
+                '<div class="field full source-panel" data-source-panel="custom json npm remote"><label for="mcp-args">args</label><textarea id="mcp-args" placeholder="[&quot;-y&quot;, &quot;server&quot;]">' + escapeHtml(activeForm.argsText) + '</textarea><div class="field-help">使用 JSON 字串陣列，可保留空字串、空白與換行。只有主動變更來源或類型才產生建議；一般編輯保留原設定。</div></div>' +
               '</div>' +
             '</div>' +
             '<div class="form-section">' +
@@ -946,7 +940,7 @@ export function renderDashboardHtml(
                 '<label class="check-row"><input type="checkbox" id="mcp-save-credential" ' + (activeForm.saveCredential ? 'checked' : '') + '><span><strong>這個 MCP 需要金鑰</strong><small>勾選後可指定環境變數與本機標籤；儲存時會再要求輸入金鑰值。</small></span></label>' +
                 '<div class="' + keyFieldsClass + '">' +
                   '<div class="form-grid">' +
-                    '<div class="field"><label for="mcp-env-vars">MCP 要讀取的環境變數</label><textarea id="mcp-env-vars" placeholder="GITHUB_TOKEN">' + escapeHtml(activeForm.envVarsText) + '</textarea><div class="field-help">每行一個變數；若 MCP 文件要求 GITHUB_TOKEN，就填 GITHUB_TOKEN。</div></div>' +
+                    '<div class="field"><label for="mcp-env-var">金鑰環境變數（單一）</label><input id="mcp-env-var" value="' + escapeAttr(activeForm.credentialEnvVar) + '" ' + (activeForm.credentialLocked ? 'readonly' : '') + ' placeholder="GITHUB_TOKEN"><div class="field-help">每個 MCP 目前只管理一個金鑰環境變數；已有設定不可改成另一個名稱，以免遺失原設定。多鍵設定須透過完整 JSON／外部環境管理。新增標籤不會自動切換使用中的帳號。</div></div>' +
                     '<div class="field"><label for="mcp-credential-label">本機標籤</label><input id="mcp-credential-label" value="' + escapeAttr(activeForm.credentialLabel) + '" placeholder="default"><div class="field-help">只用來區分多組金鑰，例如 default、work。</div></div>' +
                   '</div>' +
                 '</div>' +
@@ -983,26 +977,10 @@ export function renderDashboardHtml(
       activeForm.category = document.getElementById('mcp-category')?.value ?? activeForm.category;
       activeForm.command = document.getElementById('mcp-command')?.value ?? activeForm.command;
       activeForm.argsText = document.getElementById('mcp-args')?.value ?? activeForm.argsText;
-      activeForm.envVarsText = document.getElementById('mcp-env-vars')?.value ?? activeForm.envVarsText;
+      activeForm.credentialEnvVar = document.getElementById('mcp-env-var')?.value ?? activeForm.credentialEnvVar;
       activeForm.credentialLabel = document.getElementById('mcp-credential-label')?.value ?? activeForm.credentialLabel;
       activeForm.saveCredential = document.getElementById('mcp-save-credential')?.checked ?? false;
       activeForm.rescan = document.getElementById('mcp-rescan')?.checked ?? false;
-      applySourceDefaults(activeForm);
-    }
-
-    function applySourceDefaults(form) {
-      if (form.sourceMode === 'npm' && form.source && (!form.command || form.command === 'npx')) {
-        form.command = 'npx';
-        const packageName = form.source.endsWith('@latest') ? form.source : form.source + '@latest';
-        form.argsText = '-y\\n' + packageName;
-      }
-      if (form.sourceMode === 'remote' && form.source && (!form.command || form.command === 'npx')) {
-        form.command = 'npx';
-        form.argsText = '-y\\nmcp-remote\\n' + form.source;
-      }
-      if (!form.nextName && form.sourceMode !== 'json') {
-        form.nextName = defaultNameFromSource(form.source);
-      }
     }
 
     function updateSourceModeVisibility() {
@@ -1017,7 +995,7 @@ export function renderDashboardHtml(
       if (!activeForm || activeForm.kind !== 'mcp') return;
       const keyFields = document.querySelector('.key-fields');
       if (!keyFields) return;
-      keyFields.classList.toggle('hidden', !activeForm.saveCredential && parseLines(activeForm.envVarsText).length === 0);
+      keyFields.classList.toggle('hidden', !activeForm.saveCredential && !activeForm.credentialEnvVar);
     }
 
     function renderFormPreview() {
@@ -1029,7 +1007,7 @@ export function renderDashboardHtml(
       const items = [];
       items.push((activeForm.mode === 'install' ? '將建立' : '將更新') + ' mcps/' + category + '/' + name + '.json');
       if (activeForm.mode === 'edit' && activeForm.currentName !== activeForm.nextName) items.push('重新命名時會同步搬移認證 key');
-      items.push('啟動設定：' + (activeForm.command || '(尚未設定)') + ' ' + parseLines(activeForm.argsText).join(' '));
+      items.push('啟動設定：' + (activeForm.command || '(尚未設定)') + ' ' + activeForm.argsText);
       if (activeForm.saveCredential) items.push('儲存時會開啟 VS Code 密碼輸入框設定金鑰值');
       if (activeForm.rescan) items.push('儲存後會重新掃描 Registry');
       list.innerHTML = items.map((item) => '<li><span class="preview-code">' + escapeHtml(item) + '</span></li>').join('');
@@ -1038,26 +1016,7 @@ export function renderDashboardHtml(
     function readFormPayload() {
       if (!activeForm || activeForm.kind !== 'mcp') return undefined;
       syncActiveFormFromDom();
-      const envVars = parseLines(activeForm.envVarsText);
-      const payload = {
-        mode: activeForm.mode,
-        currentName: activeForm.currentName || undefined,
-        nextName: activeForm.nextName.trim(),
-        category: activeForm.category.trim(),
-        sourceMode: activeForm.sourceMode,
-        source: activeForm.sourceMode === 'json' ? activeForm.jsonText : activeForm.source.trim(),
-        command: activeForm.command.trim(),
-        args: parseLines(activeForm.argsText),
-        envVars,
-        rescan: activeForm.rescan
-      };
-      if (activeForm.sourceMode !== 'json') {
-        payload.config = { command: payload.command, args: payload.args };
-      }
-      if (activeForm.saveCredential) {
-        payload.credential = { envVar: envVars[0] ?? '', label: activeForm.credentialLabel.trim() || 'default' };
-      }
-      return payload;
+      return formModel.buildPayload(activeForm);
     }
 
     function readCredentialPayload() {
@@ -1083,7 +1042,9 @@ export function renderDashboardHtml(
     function renderOverview(status, extensionUpdate) {
       return '<section><h2>狀態總覽</h2><div class="cards">' +
         card('Gateway', status.initialized ? '就緒' : '尚未初始化') +
-        card('版本', status.packageVersion) +
+        card('內含 Gateway core', status.packageVersion) +
+        card('VS Code 插件', state.extensionVersion ?? extensionUpdate?.currentVersion ?? 'unknown') +
+        card('執行中的 Gateway', 'unknown（未連線）') +
         card('插件更新', extensionUpdateLabel(extensionUpdate), 'extension-update-card') +
         card('已啟用 MCP', status.enabledServers + '/' + status.totalServers) +
         card('已註冊工具', String(status.totalTools)) +
@@ -1213,6 +1174,9 @@ export function renderDashboardHtml(
     }
 
     render();
+    // Reconcile an operation whose acknowledgement arrived while this view was absent.
+    // This is read-only: never replay a saved mutation or re-prompt for its secret.
+    if (pending) vscode.postMessage({ command: 'getFormResult', operationId: pending.operationId });
   </script>
 </body>
 </html>`;
