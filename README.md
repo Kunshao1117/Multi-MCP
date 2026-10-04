@@ -67,7 +67,7 @@ Multi-MCP Gateway 將所有 MCP 伺服器整合在一個統一的閘道器之下
 MCP 設定檔按功能分類存放在 `mcps/` 資料夾中（如 `mcps/開發工具/github.json`），直覺且易於維護。
 
 ### 🏥 健康檢查與認證診斷
-內建認證狀態監控、伺服器健康檢查、授權引導指南，確保所有工具在任何時刻都處於可用狀態。
+提供連線檢查、認證狀態與授權引導。MCP 握手成功只表示協定已連線；未執行服務專屬權限探測時，金鑰與權限維持 unknown。
 
 ### 🧩 VS Code 儀表板管理
 Multi-MCP Manager 延伸模組提供 Activity Bar 儀表板，可安裝、編輯、移除、啟用、停用、掃描 MCP，並用共用表單管理相容的 `gateway.env` / `credentials.json` 認證檔。
@@ -128,7 +128,16 @@ Multi-MCP Manager 延伸模組提供 Activity Bar 儀表板，可安裝、編輯
 | **日誌系統** | `src/logger.ts` | 結構化 JSON 日誌，輸出至 stderr（避免干擾 stdio 通訊） |
 | **型別定義** | `src/types.ts` | 全域共用型別（GatewayConfig、ToolRegistry、ProcessState 等） |
 
-### VS Code 延伸模組與舊 CLI 模組
+#### 設定與重掃的生效範圍
+
+- Gateway 自己的 `gateway__rescan` 會重讀啟動時的同一份設定、排空已移除或變更的下游程序，再更新工具快取與工具描述
+- VS Code extension 的安裝／編輯／啟停／認證與掃描會更新磁碟；它沒有跨程序 IPC。已執行的 Gateway 需重新連線，或由該 Gateway 呼叫 rescan／reload 才會生效
+- 暫時掃描失敗時保留該已啟用服務的最後工具快取，標示 stale 並回報失敗名單；未啟用服務不會保留可呼叫入口
+- `--config=...` 在切換工作目錄前解析，重掃使用同一 config 與所在資料夾的 registry；含 `=` 的檔名保持完整
+- 認證資料損壞會拒絕寫入並保留原檔。保存採每檔原子替換及失敗還原；不宣稱多檔交易能抵抗斷電。若有中斷後的 lock 或備份，確認沒有管理程序後先復原再繼續
+- 為防止越界，管理檔案拒絕含路徑分隔符／保留檔名的名稱與符號連結路徑；遇既有不合法名稱或重複設定，先整理資料再管理，不會自動刪除
+
+## VS Code 延伸模組與舊 CLI 模組
 
 | 模組 | 檔案 | 職責 |
 |------|------|------|
@@ -451,6 +460,8 @@ Gateway 啟動後會暴露 10 個管理工具，供 AI 助理直接呼叫：
 
 `workspace` 是每次呼叫的唯一可信專案來源。Gateway 不保存固定全域工作目錄，也不再使用啟動時的 `--workspace` 或 IDE 環境變數作為預設值；AI 應在確認當前專案後，於每次 `gateway__call_tool` 呼叫中明確帶入該專案的絕對路徑，避免多專案共用同一 Gateway 時路徑互相污染。
 
+Gateway 以每次 workspace 隔離下游程序的 cwd。自訂設定中的相對 command、啟動腳本與資料參數將相對該 workspace 解析；若啟動腳本固定在別處，請改用絕對路徑並先在測試專案驗證。這不影響本專案使用 npm/npx 的預設 MCP；只有工具 schema 宣告 `projectRoot` 才會注入該欄位。若呼叫已傳 `projectRoot`，必須與 workspace 指向相同絕對路徑，衝突會明確拒絕，不再猜測或改成另一個專案。
+
 若下游工具因參數驗證失敗，Gateway 會根據該工具的 `inputSchema` 產生保守診斷，例如列出未知參數、缺少的 required 參數，以及高相似度的參數名稱建議（如 `module` 可能應改為 `moduleName`）。這只是輔助提示，Gateway 不會自動改寫 arguments 或重試；AI 必須確認 schema 後重新透過 `gateway__call_tool` 呼叫。
 
 ### 認證管理
@@ -458,7 +469,7 @@ Gateway 啟動後會暴露 10 個管理工具，供 AI 助理直接呼叫：
 | 工具 | 說明 |
 |------|------|
 | `gateway__auth_status` | 查看所有伺服器的認證狀態 |
-| `gateway__auth_test` | 測試指定伺服器的認證是否有效 |
+| `gateway__auth_test` | 測試協定連線；不把握手成功當成金鑰或權限有效 |
 | `gateway__auth_guide` | 取得指定伺服器的授權步驟指南 |
 
 ### 伺服器管理
@@ -468,6 +479,15 @@ Gateway 啟動後會暴露 10 個管理工具，供 AI 助理直接呼叫：
 | `gateway__server_status` | 查看所有伺服器的運行狀態（JSON） |
 | `gateway__reload_server` | 重新載入指定伺服器（更新密鑰後使用） |
 | `gateway__rescan` | 熱掃描所有 MCP 並更新集成表（無需重啟） |
+
+### 設定與重掃的生效範圍
+
+- Gateway 自己的 `gateway__rescan` 會重讀啟動時的同一份設定、排空已移除或變更的下游程序，再更新工具快取與工具描述
+- VS Code extension 的安裝／編輯／啟停／認證與掃描會更新磁碟；它沒有跨程序 IPC。已執行的 Gateway 需重新連線，或由該 Gateway 呼叫 rescan／reload 才會生效
+- 暫時掃描失敗時保留該已啟用服務的最後工具快取，標示 stale 並回報失敗名單；未啟用服務不會保留可呼叫入口
+- `--config=...` 在切換工作目錄前解析，重掃使用同一 config 與所在資料夾的 registry；含 `=` 的檔名保持完整
+- 認證資料損壞會拒絕寫入並保留原檔。保存採每檔原子替換及失敗還原；不宣稱多檔交易能抵抗斷電。若有中斷後的 lock 或備份，確認沒有管理程序後先復原再繼續
+- 為防止越界，管理檔案拒絕含路徑分隔符／保留檔名的名稱與符號連結路徑；遇既有不合法名稱或重複設定，先整理資料再管理，不會自動刪除
 
 ## VS Code 延伸模組
 
@@ -520,8 +540,8 @@ git push origin vscode-multi-mcp-manager-v0.1.3
 | `npm run console` | 顯示互動式 CLI 已停用與 VS Code extension 遷移提示 |
 | `npm run build` | 編譯 TypeScript 至 `dist/` |
 | `npm run typecheck` | 執行 TypeScript 型別檢查，不輸出檔案 |
-| `npm run verify:runtime` | 以 MCP stdio 啟動 `dist/index.js`，驗證 Gateway 工具暴露與 cartridge-system 工具數量 |
-| `npm run preflight:gateway` | 依序執行 typecheck、核心測試、build 與 runtime 驗證 |
+| `npm run verify:runtime` | 以隔離資料夾與本地 MCP fixture 驗證真實 Gateway stdio、分頁、workspace、重掃及停用；不下載第三方 MCP、不讀寫使用者資料 |
+| `npm run preflight:gateway` | 依序執行 typecheck、全部 src 測試（含管理 API / subprocess）、build 與隔離 runtime 驗證 |
 | `npm run build:extension` | 編譯 Gateway 與 Multi-MCP Manager extension |
 | `npm run package:extension` | 打包 VSIX 到 `extensions/vscode-multi-mcp-manager/` |
 | `npm run preflight:extension` | 編譯並執行 VS Code extension smoke test |
@@ -570,7 +590,7 @@ Gateway 的日誌以**結構化 JSON 格式**輸出至 `stderr`，避免干擾 s
 
 ## 測試
 
-專案包含完整的單元測試覆蓋：
+專案包含單元測試與受控 MCP 程序整合測試；測試結果不代表真實第三方服務、Windows 或 VS Code GUI 已驗證：
 
 ```bash
 # 執行所有測試

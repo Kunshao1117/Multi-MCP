@@ -2,30 +2,60 @@
  * Multi-MCP Gateway — 工具路由引擎
  * 含認證錯誤優雅降級 + 閘道器管理工具（含增值功能）
  */
-import fs from 'node:fs';
 import path from 'node:path';
 import type { ToolRegistry, ParsedToolName, SearchToolsResult } from './types.js';
 import { NAMESPACE_SEPARATOR, GATEWAY_TOOL_PREFIX } from './types.js';
 import type { ProcessPool } from './process-pool.js';
-import { getAuthGuide } from './auth-guides.js';
-import { searchTools } from './registry.js';
+import { getAuthGuide, isAuthError } from './auth-guides.js';
+import { searchTools, saveRegistry } from './registry.js';
+import { getConfigContext } from './config-loader.js';
 import type { GatewayConfig } from './types.js';
 import { callToolSearchResult, searchGatewayTools } from './gateway-tools.js';
 import { createLogger } from './logger.js';
 
 const logger = createLogger('tool-router');
-const AUTH_KEYWORDS = ['unauthorized', 'forbidden', '401', '403', 'auth', 'token', 'credential'];
+function absoluteWorkspace(value: string): boolean {
+  if (process.platform !== 'win32') return path.isAbsolute(value);
+  return /^[A-Za-z]:[\\/]/.test(value) || /^\\\\[^\\/]+[\\/][^\\/]+/.test(value);
+}
+
+export interface RouteOptions { signal?: AbortSignal; workspace?: string }
+export interface RouterContext { configPath?: string; registryPath?: string }
 
 export class ToolRouter {
   constructor(
     private registry: ToolRegistry,
     private readonly processPool: ProcessPool,
-    private readonly config: GatewayConfig,
-  ) {}
+    private config: GatewayConfig,
+    private readonly context: RouterContext = {},
+  ) { this.registry = this.enabledRegistry(registry); }
+
+  private enabledRegistry(registry: ToolRegistry): ToolRegistry {
+    const servers = Object.fromEntries(Object.entries(registry.servers).filter(([name]) => Object.prototype.hasOwnProperty.call(this.config.mcpServers, name)));
+    const all_tools = Object.fromEntries(Object.entries(registry.all_tools).filter(([, name]) => name in servers));
+    return { ...registry, servers, all_tools };
+  }
+
+  getRegistry(): ToolRegistry { return this.registry; }
+  getConfig(): GatewayConfig { return this.config; }
+  private rescanPromise?: Promise<unknown>;
+  private mutationTail: Promise<void> = Promise.resolve();
+
+  private mutate<T>(operation: () => Promise<T>): Promise<T> {
+    const pending = this.mutationTail.then(operation);
+    this.mutationTail = pending.then(() => undefined, () => undefined);
+    return pending;
+  }
+
+  private requireEnabled(name: string): void {
+    if (!Object.prototype.hasOwnProperty.call(this.config.mcpServers, name)) {
+      throw new Error(`server 未註冊、未啟用或已移除: ${name}。請重新掃描後確認可用下游 MCP。`);
+    }
+  }
 
   /** 熱替換集成表（掃描後呼叫） */
   updateRegistry(newRegistry: ToolRegistry): void {
-    this.registry = newRegistry;
+    this.registry = this.enabledRegistry(newRegistry);
   }
 
   /** 解析帶有命名空間前綴的工具名稱 */
@@ -41,12 +71,12 @@ export class ToolRouter {
   }
 
   /** 路由工具呼叫到正確的下游 MCP */
-  async route(namespacedName: string, args: Record<string, unknown>): Promise<unknown> {
+  async route(namespacedName: string, args: Record<string, unknown>, options: RouteOptions = {}): Promise<unknown> {
     const { serverName, originalToolName } = this.parseToolName(namespacedName);
 
     // 閘道器自身的管理工具
     if (serverName === GATEWAY_TOOL_PREFIX) {
-      return this.handleGatewayTool(originalToolName, args);
+      return this.handleGatewayTool(originalToolName, args, options);
     }
 
     // 驗證工具存在
@@ -58,8 +88,9 @@ export class ToolRouter {
       throw new Error(`工具不存在: ${namespacedName}。請先用 gateway__search_tools 或 gateway__list_server_tools 查詢正確工具名稱與 inputSchema。`);
     }
 
+    this.requireEnabled(serverName);
+    if (!options.workspace || !absoluteWorkspace(options.workspace)) throw new Error('請透過 gateway__call_tool 傳入 workspace 絕對路徑。');
     logger.info('路由呼叫', { tool: namespacedName, server: serverName });
-    const client = await this.processPool.getClient(serverName);
 
     // 根據集成表中的 inputSchema 自動修正參數型別
     const toolEntry = this.registry.servers[serverName]?.tools[namespacedName];
@@ -71,15 +102,14 @@ export class ToolRouter {
       : [];
 
     try {
-      const result = await client.callTool({ name: originalToolName, arguments: coercedArgs });
+      const result = await this.processPool.callTool(serverName, { name: originalToolName, arguments: coercedArgs }, options);
       return this.appendArgumentDiagnosticsToErrorResult(result, argumentDiagnostics);
     } catch (err) {
       const errorMsg = (err as Error).message;
 
       // 認證失敗 → 優雅降級：回傳操作指引而非原始錯誤碼
-      if (this.isAuthError(errorMsg)) {
+      if (isAuthError(err)) {
         const guide = getAuthGuide(serverName, this.config.mcpServers[serverName]?.env);
-        await this.processPool.reloadServer(serverName);
 
         return {
           content: [{
@@ -111,7 +141,7 @@ export class ToolRouter {
   }
 
   /** 處理閘道器管理工具 */
-  private async handleGatewayTool(toolName: string, args: Record<string, unknown>): Promise<unknown> {
+  private async handleGatewayTool(toolName: string, args: Record<string, unknown>, options: RouteOptions): Promise<unknown> {
     switch (toolName) {
       // === 認證增值工具 ===
 
@@ -124,7 +154,7 @@ export class ToolRouter {
             : h.authStatus === 'error' ? '💥'
             : '❓';
           const detail = h.lastError ? ` — ${h.lastError}` : '';
-          return `${icon} ${h.serverName}: ${h.authStatus} (${h.state})${detail}`;
+          return `${icon} ${h.serverName}${h.workspace ? ` [${h.workspace}]` : ''}: ${h.authStatus} (${h.state})${detail}`;
         });
         return { content: [{ type: 'text' as const, text: statusLines.join('\n') || '目前沒有已設定的伺服器' }] };
       }
@@ -132,9 +162,10 @@ export class ToolRouter {
       case 'auth_test': {
         const serverName = args.server_name as string;
         if (!serverName) throw new Error('缺少 server_name 參數');
+        this.requireEnabled(serverName);
         try {
-          await this.processPool.getClient(serverName);
-          return { content: [{ type: 'text' as const, text: `✅ ${serverName} 認證有效，連線成功` }] };
+          await this.processPool.getClient(serverName, options);
+          return { content: [{ type: 'text' as const, text: `✅ ${serverName} 協定連線成功；金鑰與權限尚未驗證` }] };
         } catch (err) {
           const guide = getAuthGuide(serverName, this.config.mcpServers[serverName]?.env);
           return {
@@ -157,6 +188,7 @@ export class ToolRouter {
       case 'auth_guide': {
         const serverName = args.server_name as string;
         if (!serverName) throw new Error('缺少 server_name 參數');
+        this.requireEnabled(serverName);
         const guide = getAuthGuide(serverName, this.config.mcpServers[serverName]?.env);
         return {
           content: [{
@@ -182,8 +214,21 @@ export class ToolRouter {
       case 'reload_server': {
         const serverName = args.server_name as string;
         if (!serverName) throw new Error('缺少 server_name 參數');
-        await this.processPool.reloadServer(serverName);
-        return { content: [{ type: 'text' as const, text: `✅ 已重新載入 ${serverName}，下次呼叫時使用新的環境變數` }] };
+        return this.mutate(async () => {
+          if (options.signal?.aborted) throw new Error('MCP operation cancelled');
+          this.requireEnabled(serverName);
+          await this.processPool.reloadServer(serverName);
+          this.config = this.processPool.getConfig();
+          const prior = this.registry;
+          this.registry = this.enabledRegistry(prior);
+          if (Object.keys(prior.servers).length !== Object.keys(this.registry.servers).length) {
+            const configPath = getConfigContext(this.config)?.configPath;
+            const registryPath = this.context.registryPath ?? (configPath ? path.join(path.dirname(configPath), 'registry.json') : undefined);
+            if (registryPath) saveRegistry(this.registry, registryPath);
+          }
+          this.requireEnabled(serverName);
+          return { content: [{ type: 'text' as const, text: `✅ 已重新載入 ${serverName}，下次呼叫時使用新的環境變數` }] };
+        });
       }
 
       case 'list_servers':
@@ -237,7 +282,8 @@ export class ToolRouter {
 
       case 'call_tool': {
         const toolName = args.name as string;
-        const toolArgs = (args.arguments ?? {}) as Record<string, unknown>;
+        if (args.arguments !== undefined && (!args.arguments || typeof args.arguments !== 'object' || Array.isArray(args.arguments))) throw new Error('arguments 必須是 JSON object');
+        const toolArgs = { ...(args.arguments ?? {}) as Record<string, unknown> };
         const callWorkspace = typeof args.workspace === 'string' ? args.workspace.trim() : '';
         if (!toolName) throw new Error('缺少 name 參數');
         if (!callWorkspace) {
@@ -254,29 +300,27 @@ export class ToolRouter {
           throw new Error(`工具不存在: ${toolName}。請先用 gateway__search_tools 或 gateway__list_server_tools 查詢正確工具名稱與 inputSchema。`);
         }
 
-        // workspace 是每次呼叫的唯一可信專案來源，不在 Gateway 內保存全域狀態。
-        const effectiveWorkspace = callWorkspace;
-        if (typeof toolArgs.projectRoot === 'string') {
-          const agentsAtArg = path.join(toolArgs.projectRoot, '.agents');
-          const agentsAtWs = path.join(effectiveWorkspace, '.agents');
-          if (!fs.existsSync(agentsAtArg) && fs.existsSync(agentsAtWs)) {
-            logger.info('projectRoot 自動修正', {
-              from: toolArgs.projectRoot,
-              to: effectiveWorkspace,
-            });
-            toolArgs.projectRoot = effectiveWorkspace;
+        this.requireEnabled(parsed.serverName);
+        if (!absoluteWorkspace(callWorkspace)) throw new Error('workspace 必須是此主機的絕對路徑');
+        const effectiveWorkspace = path.resolve(callWorkspace);
+        const schema = this.registry.servers[parsed.serverName].tools[toolName]?.inputSchema;
+        const properties = schema?.properties as Record<string, unknown> | undefined;
+        // Inject only into a declared schema field. Strict tools must not receive an invented argument.
+        if (properties && Object.prototype.hasOwnProperty.call(properties, 'projectRoot')) {
+          if ('projectRoot' in toolArgs && (typeof toolArgs.projectRoot !== 'string'
+            || !absoluteWorkspace(toolArgs.projectRoot)
+            || path.resolve(toolArgs.projectRoot) !== effectiveWorkspace)) {
+            throw new Error('projectRoot 與 workspace 必須是相同的專案絕對路徑');
           }
-        } else if (!('projectRoot' in toolArgs)) {
           toolArgs.projectRoot = effectiveWorkspace;
-          logger.info('projectRoot 自動注入', { value: effectiveWorkspace });
         }
-
-        return this.route(toolName, toolArgs);
+        return this.route(toolName, toolArgs, { ...options, workspace: effectiveWorkspace });
       }
 
       case 'list_server_tools': {
         const serverName = args.server_name as string;
         if (!serverName) throw new Error('缺少 server_name 參數');
+        this.requireEnabled(serverName);
         const serverEntry = this.registry.servers[serverName];
         if (!serverEntry) throw new Error(`server 未註冊: ${serverName}。請先用 gateway__list_servers 確認可用下游 MCP。`);
         const list = Object.entries(serverEntry.tools).map(([ns, t]) =>
@@ -288,6 +332,7 @@ export class ToolRouter {
             type: 'text' as const,
             text: [
               `${serverName} 共有 ${actualToolCount} 個工具：`,
+              ...(serverEntry.stale ? ['⚠️ 上次掃描失敗；以下為最後可用快取，可能已過期。'] : []),
               '',
               list,
               '',
@@ -298,22 +343,31 @@ export class ToolRouter {
       }
 
       case 'rescan': {
-        const { scanAndGenerateRegistry } = await import('./registry.js');
-        const { loadConfig } = await import('./config-loader.js');
-        const freshConfig = loadConfig();
-        const newRegistry = await scanAndGenerateRegistry(freshConfig);
-        this.updateRegistry(newRegistry);
-        // 同步所有伺服器設定到程序池（新增或更新）
-        for (const name of Object.keys(freshConfig.mcpServers)) {
-          this.processPool.addServer(name, freshConfig.mcpServers[name]);
-        }
-        const total = Object.keys(newRegistry.all_tools).length;
-        return { content: [{ type: 'text' as const, text: `✅ 重新掃描完成！共 ${total} 個工具已更新` }] };
+        if (this.rescanPromise) return this.rescanPromise;
+        this.rescanPromise = this.mutate(() => this.rescan(options)).finally(() => { this.rescanPromise = undefined; });
+        return this.rescanPromise;
       }
 
       default:
         throw new Error(`Gateway 本身缺少呼叫入口或管理工具不存在: gateway__${toolName}`);
     }
+  }
+
+  private async rescan(options: RouteOptions): Promise<unknown> {
+    if (options.signal?.aborted) throw new Error('MCP scan cancelled');
+    const { scanAndGenerateRegistry } = await import('./registry.js');
+    const { getConfigContext, loadConfig, reloadConfig } = await import('./config-loader.js');
+    const freshConfig = getConfigContext(this.config) || !this.context.configPath ? reloadConfig(this.config) : loadConfig(this.context.configPath);
+    // Drain removed or changed runtimes before publishing their replacement discovery snapshot.
+    await this.processPool.reconcile(freshConfig);
+    this.config = freshConfig;
+    this.registry = this.enabledRegistry(this.registry);
+    const newRegistry = await scanAndGenerateRegistry(freshConfig, this.context.registryPath, { signal: options.signal });
+    this.updateRegistry(newRegistry);
+    const failed = Object.entries(newRegistry.servers).filter(([, value]) => value.stale).map(([name]) => name);
+    return { content: [{ type: 'text', text: failed.length
+      ? `⚠️ 部分掃描失敗：${failed.join(', ')}；保留可用舊快取，請修正後重試。`
+      : `✅ 重新掃描完成！共 ${Object.keys(newRegistry.all_tools).length} 個工具已更新` }], isError: failed.length > 0 };
   }
 
   private mergeSearchResults(
@@ -360,7 +414,7 @@ export class ToolRouter {
 
       if ((expectedType === 'number' || expectedType === 'integer') && typeof value === 'string') {
         const num = Number(value);
-        if (!Number.isNaN(num)) result[key] = num;
+        if (value.trim() !== '' && Number.isFinite(num) && (expectedType !== 'integer' || Number.isInteger(num))) result[key] = num;
       } else if (expectedType === 'boolean' && typeof value === 'string') {
         if (value === 'true') result[key] = true;
         else if (value === 'false') result[key] = false;
@@ -369,7 +423,7 @@ export class ToolRouter {
       }
     }
     if (Object.keys(result).some((k) => result[k] !== args[k])) {
-      logger.info('參數型別強轉', { before: args, after: result });
+      logger.info('參數型別強轉', { changes: Object.keys(result).filter((key) => result[key] !== args[key]).map((key) => ({ key, fromType: typeof args[key], toType: typeof result[key] })) });
     }
     return result;
   }
@@ -477,8 +531,4 @@ export class ToolRouter {
     return key.toLowerCase().replace(/[\s_-]/g, '');
   }
 
-  /** 判斷錯誤訊息是否與認證相關 */
-  private isAuthError(message: string): boolean {
-    return AUTH_KEYWORDS.some((kw) => message.toLowerCase().includes(kw));
-  }
 }

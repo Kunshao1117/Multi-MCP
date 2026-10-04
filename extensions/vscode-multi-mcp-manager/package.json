@@ -210,12 +210,13 @@
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('out',{recursive:true,force:true})\"",
     "check": "tsc -p ./ --noEmit",
-    "bundle": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --outfile=out/src/extension.cjs --sourcemap --minify --log-override:empty-import-meta=silent",
+    "bundle": "node scripts/bundle.mjs",
     "compile-tests": "tsc -p ./tsconfig.test.json",
     "compile": "npm run clean && npm run check && npm run bundle && npm run compile-tests",
     "watch": "tsc -watch -p ./ --noEmit",
     "test": "npm run compile && node ./out/test/runTest.js",
-    "package": "npm run compile && vsce package --allow-missing-repository --no-dependencies"
+    "package": "npm run compile && vsce package --allow-missing-repository --no-dependencies",
+    "test:unit": "node --test test/unit/*.test.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.13.0",

@@ -1,0 +1,50 @@
+name: Pull request checks
+
+"on":
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+# No publish, deployment, repository writes, saved credentials, or account secrets.
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            extensions/vscode-multi-mcp-manager/package-lock.json
+      - name: Install locked gateway dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify gateway types, all tests, build and hermetic stdio runtime
+        run: npm run preflight:gateway
+      - name: Install locked extension dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund --prefix extensions/vscode-multi-mcp-manager
+      - name: Verify extension form and host unit tests
+        run: node --test extensions/vscode-multi-mcp-manager/test/unit/forms.test.mjs extensions/vscode-multi-mcp-manager/test/unit/host.test.mjs
+      - name: Compile and package extension without publishing
+        run: npm run package --prefix extensions/vscode-multi-mcp-manager
+      - name: Run VS Code smoke test on Linux
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run test --prefix extensions/vscode-multi-mcp-manager
+      - name: Run VS Code smoke test on Windows
+        if: runner.os == 'Windows'
+        run: npm run test --prefix extensions/vscode-multi-mcp-manager

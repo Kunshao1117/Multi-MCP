@@ -25,6 +25,7 @@ export interface CredentialSummary {
   envVar: string;
   active?: string;
   accountCount: number;
+  accountLabels?: string[];
   maskedValue?: string;
 }
 
@@ -65,6 +66,7 @@ export interface McpUpdateInput {
   nextName: string;
   category: string;
   config: McpServerConfig;
+  credential?: Omit<CredentialInput, 'mcpName'>;
   rescan?: boolean;
 }
 
@@ -97,4 +99,7 @@ export interface OperationResult {
   ok: boolean;
   message: string;
   changed?: boolean;
+  committed?: boolean;
+  savedName?: string;
+  failedServers?: string[];
 }

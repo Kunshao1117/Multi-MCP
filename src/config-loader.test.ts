@@ -20,7 +20,7 @@ vi.mock('node:fs', () => ({
   writeFileSync: vi.fn(),
 }));
 
-import { loadConfig } from './config-loader.js';
+import { loadConfig, getConfigContext } from './config-loader.js';
 
 /** 產生最小合法設定 JSON 字串 */
 function validJSON(overrides?: Record<string, unknown>): string {
@@ -155,7 +155,7 @@ describe('loadConfig — 環境變數解析', () => {
     expect(config.mcpServers.test.env?.T).toBe('nested_val');
   });
 
-  it('gateway.env 檔案注入環境變數', () => {
+  it('gateway.env 只進入設定snapshot，不污染process.env', () => {
     mockReadFileSync.mockImplementation(((path: string) => {
       const p = String(path);
       if (p.includes('gateway.config')) return gatewayJSON({ env_file: 'gateway.env' });
@@ -165,7 +165,8 @@ describe('loadConfig — 環境變數解析', () => {
     mockExistsSync.mockReturnValue(true);
 
     const config = loadConfig();
-    expect(process.env.__FROM_ENV_FILE__).toBe('injected_value');
+    expect(process.env.__FROM_ENV_FILE__).toBeUndefined();
+    expect(getConfigContext(config)?.environment.__FROM_ENV_FILE__).toBe('injected_value');
   });
 
   it('系統環境變數優先於 gateway.env', () => {
@@ -198,10 +199,11 @@ describe('loadConfig — 環境變數解析', () => {
     }) as typeof mockReadFileSync);
     mockExistsSync.mockReturnValue(true);
 
-    loadConfig('D:/portable/gateway.config.json');
+    const config = loadConfig('D:/portable/gateway.config.json');
 
-    expect(process.env.__RELATIVE_ENV__).toBe('ok');
-    expect(readPaths.some((p) => p.endsWith('portable\\nested\\gateway.env'))).toBe(true);
+    expect(process.env.__RELATIVE_ENV__).toBeUndefined();
+    expect(getConfigContext(config)?.environment.__RELATIVE_ENV__).toBe('ok');
+    expect(readPaths.some((p) => p.replace(/\\/g, '/').endsWith('portable/nested/gateway.env'))).toBe(true);
   });
 });
 
@@ -275,6 +277,6 @@ describe('loadConfig — MCP 目錄掃描', () => {
     const config = loadConfig('D:/portable/gateway.config.json');
 
     expect(config.mcpServers).toHaveProperty('tool');
-    expect(readdirPaths.some((p) => p.endsWith('portable\\custom-mcps'))).toBe(true);
+    expect(readdirPaths.some((p) => p.replace(/\\/g, '/').endsWith('portable/custom-mcps'))).toBe(true);
   });
 });

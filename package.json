@@ -39,7 +39,7 @@
     "build:extension": "npm run build && npm install --prefix extensions/vscode-multi-mcp-manager && npm run compile --prefix extensions/vscode-multi-mcp-manager",
     "package:extension": "npm run build:extension && npm run package --prefix extensions/vscode-multi-mcp-manager",
     "preflight:extension": "npm run build:extension && npm run test --prefix extensions/vscode-multi-mcp-manager",
-    "preflight:gateway": "npm run typecheck && vitest run src/paths.test.ts src/config-loader.test.ts src/process-pool.test.ts src/registry.test.ts src/tool-router.test.ts src/runtime-guard.test.ts && npm run build && npm run verify:runtime"
+    "preflight:gateway": "npm run typecheck && npm test && npm run build && npm run verify:runtime"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0"

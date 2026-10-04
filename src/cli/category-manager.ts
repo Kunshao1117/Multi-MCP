@@ -2,7 +2,8 @@
  * Multi-MCP Gateway CLI — 分類管理
  * 分類的新增、移動 MCP、重新命名、刪除空分類。
  */
-import { existsSync, mkdirSync, readdirSync, renameSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, renameSync, rmdirSync } from 'node:fs';
+import { assertSafePath, validatePathSegment } from '../management/storage.js';
 import { resolve } from 'node:path';
 import {
   ask, pause, header,
@@ -39,6 +40,8 @@ export async function categoryMenu(): Promise<void> {
       case 'A': {
         const name = await ask('? 新分類名稱: ');
         if (name) {
+          validatePathSegment(name, '分類');
+          assertSafePath(MCPS_DIR, resolve(MCPS_DIR, name));
           mkdirSync(resolve(MCPS_DIR, name), { recursive: true });
           console.log(`\n  ✅ 分類「${name}」已建立`);
         }
@@ -65,10 +68,16 @@ export async function categoryMenu(): Promise<void> {
             ? await ask('? 新分類名稱: ')
             : cats[parseInt(cChoice) - 1];
           if (targetCat && targetCat !== oldCat) {
+            validatePathSegment(targetCat, '分類');
+            validatePathSegment(mcpName, 'MCP 名稱');
             const targetDir = resolve(MCPS_DIR, targetCat);
+            assertSafePath(MCPS_DIR, targetDir);
             if (!existsSync(targetDir)) mkdirSync(targetDir, { recursive: true });
             const oldPath = resolve(MCPS_DIR, oldCat!, `${mcpName}.json`);
             const newPath = resolve(targetDir, `${mcpName}.json`);
+            assertSafePath(MCPS_DIR, oldPath);
+            assertSafePath(MCPS_DIR, newPath);
+            if (existsSync(newPath)) throw new Error('目標設定檔已存在');
             renameSync(oldPath, newPath);
             console.log(`\n  ✅ "${mcpName}" 已從「${oldCat}」移到「${targetCat}」`);
           }
@@ -87,6 +96,10 @@ export async function categoryMenu(): Promise<void> {
         if (rIdx >= 0 && rIdx < catNames.length) {
           const newName = await ask('? 新名稱: ');
           if (newName) {
+            validatePathSegment(newName, '分類');
+            assertSafePath(MCPS_DIR, resolve(MCPS_DIR, catNames[rIdx]));
+            assertSafePath(MCPS_DIR, resolve(MCPS_DIR, newName));
+            if (existsSync(resolve(MCPS_DIR, newName))) throw new Error('目標分類已存在');
             renameSync(resolve(MCPS_DIR, catNames[rIdx]), resolve(MCPS_DIR, newName));
             console.log(`\n  ✅ 「${catNames[rIdx]}」已重新命名為「${newName}」`);
           }
@@ -95,7 +108,10 @@ export async function categoryMenu(): Promise<void> {
         break;
       }
       case 'D': {
-        const emptyCats = catNames.filter((c) => Object.keys(categories[c]).length === 0);
+        const emptyCats = catNames.filter((c) => {
+          assertSafePath(MCPS_DIR, resolve(MCPS_DIR, c));
+          return readdirSync(resolve(MCPS_DIR, c)).length === 0;
+        });
         if (emptyCats.length === 0) {
           console.log('  沒有空的分類可刪除');
           await pause();
@@ -104,8 +120,9 @@ export async function categoryMenu(): Promise<void> {
         emptyCats.forEach((c, i) => console.log(`  [${i + 1}] ${c}`));
         const dIdx = parseInt(await ask('\n? 選擇要刪除的空分類: ')) - 1;
         if (dIdx >= 0 && dIdx < emptyCats.length) {
-          const { rmSync } = await import('node:fs');
-          rmSync(resolve(MCPS_DIR, emptyCats[dIdx]), { recursive: true });
+          const categoryPath = resolve(MCPS_DIR, emptyCats[dIdx]);
+          assertSafePath(MCPS_DIR, categoryPath);
+          rmdirSync(categoryPath);
           console.log(`\n  ✅ 「${emptyCats[dIdx]}」已刪除`);
         }
         await pause();

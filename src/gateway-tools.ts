@@ -17,12 +17,12 @@ const SEARCH_TOOL_NAME = `${GATEWAY_TOOL_PREFIX}${NAMESPACE_SEPARATOR}search_too
 export const GATEWAY_TOOL_DEFINITIONS: GatewayToolDefinition[] = [
   {
     name: `${GATEWAY_TOOL_PREFIX}${NAMESPACE_SEPARATOR}auth_status`,
-    description: '查看所有 MCP 伺服器的認證狀態（有效/過期/未設定）',
+    description: '查看所有 MCP 伺服器的連線與認證狀態；unknown 表示尚未驗證金鑰或權限',
     inputSchema: { type: 'object', properties: {} },
   },
   {
     name: `${GATEWAY_TOOL_PREFIX}${NAMESPACE_SEPARATOR}auth_test`,
-    description: '測試指定 MCP 伺服器的認證是否有效',
+    description: '測試指定 MCP 伺服器的協定連線；握手成功不代表金鑰或權限有效',
     inputSchema: {
       type: 'object',
       properties: { server_name: { type: 'string', description: '伺服器名稱' } },
@@ -77,6 +77,7 @@ export const GATEWAY_TOOL_DEFINITIONS: GatewayToolDefinition[] = [
       'name 必須是完整命名空間工具名，例如 cartridge-system__memory_audit、cartridge-system__workspace_brief、cartridge-system__commit_preflight。',
       'arguments 必須符合下游工具 inputSchema。參數不明時，先用 gateway__search_tools 或 gateway__list_server_tools 查 schema；不要自行猜參數名。例如 cartridge-system__memory_deps 使用 moduleName，不是 module。',
       'workspace 必須是本次操作的當前專案絕對路徑，且每次呼叫都要明確傳入；Gateway 不保存固定全域 workspace，避免多專案共用時路徑互相污染。',
+      'Gateway 按 workspace 隔離下游程序 cwd；只有 schema 宣告 projectRoot 時才注入，若已提供則必須與 workspace 相同。',
       '當使用者明確要求 Gateway MCP 真實呼叫時，不要用 stdio E2E、終端 handler、單元測試或其他替代方案取代本工具；替代方案只能標示為補充驗證。',
       'English discovery terms: call tool, call downstream MCP tool, Gateway call, invoke downstream tool.',
     ].join('\n'),

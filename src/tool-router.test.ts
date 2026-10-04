@@ -7,6 +7,7 @@ import { ToolRouter } from './tool-router.js';
 import type { ToolRegistry, GatewayConfig } from './types.js';
 import type { ProcessPool } from './process-pool.js';
 import { GATEWAY_TOOL_DEFINITIONS } from './gateway-tools.js';
+import path from 'node:path';
 
 /** 建立測試用集成表 */
 function createTestRegistry(): ToolRegistry {
@@ -79,6 +80,7 @@ function createTestConfig(): GatewayConfig {
   return {
     gateway: { idle_timeout_ms: 300000, startup_timeout_ms: 30000, max_retries: 3, log_level: 'info' },
     mcpServers: {
+      'cartridge-system': { command: 'fixture', args: [] },
       supabase: { command: 'npx', args: ['-y', '@supabase/mcp-server-supabase'], env: { SUPABASE_ACCESS_TOKEN: '${SUPABASE_ACCESS_TOKEN}' } },
     },
   };
@@ -86,8 +88,12 @@ function createTestConfig(): GatewayConfig {
 
 /** 建立模擬程序池 */
 function createMockPool() {
+  const getClient = vi.fn();
   return {
-    getClient: vi.fn(),
+    getClient,
+    getConfig: () => createTestConfig(),
+    callTool: vi.fn(async (name, params) => (await getClient(name)).callTool(params)),
+    reconcile: vi.fn().mockResolvedValue(undefined),
     getHealthInfo: vi.fn().mockReturnValue([
       { serverName: 'supabase', state: 'ready', authStatus: 'valid', lastChecked: Date.now() },
     ]),
@@ -254,12 +260,12 @@ describe('route — 下游 MCP 呼叫', () => {
     const mockClient = { callTool: vi.fn().mockResolvedValue({ content: [{ type: 'text', text: 'ok' }] }) };
     (pool.getClient as ReturnType<typeof vi.fn>).mockResolvedValue(mockClient);
 
-    await router.route('supabase__list_tables', { project_id: 'test' });
+    await router.route('supabase__list_tables', { project_id: 'test' }, { workspace: process.cwd() });
     expect(mockClient.callTool).toHaveBeenCalledWith({ name: 'list_tables', arguments: { project_id: 'test' } });
   });
 
   it('未知工具拋錯', async () => {
-    await expect(router.route('supabase__nonexistent', {})).rejects.toThrow('工具不存在');
+    await expect(router.route('supabase__nonexistent', {}, { workspace: process.cwd() })).rejects.toThrow('工具不存在');
   });
 
   it('未知下游 server 拋出 server 未註冊', async () => {
@@ -270,7 +276,7 @@ describe('route — 下游 MCP 呼叫', () => {
     const mockClient = { callTool: vi.fn().mockRejectedValue(new Error('401 Unauthorized')) };
     (pool.getClient as ReturnType<typeof vi.fn>).mockResolvedValue(mockClient);
 
-    const result = await router.route('supabase__list_tables', {}) as { content: Array<{ text: string }>; isError: boolean };
+    const result = await router.route('supabase__list_tables', {}, { workspace: process.cwd() }) as { content: Array<{ text: string }>; isError: boolean };
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain('認證失敗');
     expect(result.content[0].text).toContain('修復步驟');
@@ -280,7 +286,7 @@ describe('route — 下游 MCP 呼叫', () => {
     const mockClient = { callTool: vi.fn().mockRejectedValue(new Error('ECONNREFUSED')) };
     (pool.getClient as ReturnType<typeof vi.fn>).mockResolvedValue(mockClient);
 
-    await expect(router.route('supabase__list_tables', {})).rejects.toThrow('ECONNREFUSED');
+    await expect(router.route('supabase__list_tables', {}, { workspace: process.cwd() })).rejects.toThrow('ECONNREFUSED');
   });
 
   it('參數名稱疑似錯誤時提示相近 schema 參數', async () => {
@@ -289,7 +295,7 @@ describe('route — 下游 MCP 呼叫', () => {
     const mockClient = { callTool: vi.fn().mockRejectedValue(new Error('Required')) };
     (pool.getClient as ReturnType<typeof vi.fn>).mockResolvedValue(mockClient);
 
-    await expect(router.route('cartridge-system__memory_deps', { module: '_system' }))
+    await expect(router.route('cartridge-system__memory_deps', { module: '_system' }, { workspace: process.cwd() }))
       .rejects.toThrow(/收到未知參數: module[\s\S]*疑似應改用: module -> moduleName[\s\S]*此工具接受的 arguments: moduleName, projectRoot/);
   });
 
@@ -300,7 +306,7 @@ describe('route — 下游 MCP 呼叫', () => {
     (pool.getClient as ReturnType<typeof vi.fn>).mockResolvedValue(mockClient);
 
     try {
-      await router.route('cartridge-system__memory_status', { abc: 'x' });
+      await router.route('cartridge-system__memory_status', { abc: 'x' }, { workspace: process.cwd() });
       throw new Error('Expected route to fail');
     } catch (err) {
       const message = (err as Error).message;
@@ -320,7 +326,7 @@ describe('route — 下游 MCP 呼叫', () => {
     const mockClient = { callTool: vi.fn().mockRejectedValue(new Error('Required')) };
     (pool.getClient as ReturnType<typeof vi.fn>).mockResolvedValue(mockClient);
 
-    await expect(router.route('supabase__execute_sql', {}))
+    await expect(router.route('supabase__execute_sql', {}, { workspace: process.cwd() }))
       .rejects.toThrow(/缺少必要參數: query[\s\S]*此工具接受的 arguments: query/);
   });
 
@@ -332,7 +338,7 @@ describe('route — 下游 MCP 呼叫', () => {
     (pool.getClient as ReturnType<typeof vi.fn>).mockResolvedValue(mockClient);
 
     try {
-      await router.route('supabase__list_tables', { module: '_system' });
+      await router.route('supabase__list_tables', { module: '_system' }, { workspace: process.cwd() });
       throw new Error('Expected route to fail');
     } catch (err) {
       const message = (err as Error).message;
@@ -357,7 +363,7 @@ describe('route — 下游 MCP 呼叫', () => {
     };
     (pool.getClient as ReturnType<typeof vi.fn>).mockResolvedValue(mockClient);
 
-    const result = await router.route('cartridge-system__memory_deps', { module: '_system' }) as { content: Array<{ text: string }> };
+    const result = await router.route('cartridge-system__memory_deps', { module: '_system' }, { workspace: process.cwd() }) as { content: Array<{ text: string }> };
     const text = result.content.map((item) => item.text).join('\n');
     expect(text).toContain('Gateway 參數診斷');
     expect(text).toContain('收到未知參數: module');
@@ -410,7 +416,7 @@ describe('coerceArgs — 參數型別容錯強轉', () => {
   it('字串數字自動轉為 number', async () => {
     const mockClient = { callTool: vi.fn().mockResolvedValue({ content: [] }) };
     (pool.getClient as ReturnType<typeof vi.fn>).mockResolvedValue(mockClient);
-    await router.route('supabase__execute_sql', { query: 'SELECT 1', limit: '10', offset: '5' });
+    await router.route('supabase__execute_sql', { query: 'SELECT 1', limit: '10', offset: '5' }, { workspace: process.cwd() });
     expect(mockClient.callTool).toHaveBeenCalledWith({
       name: 'execute_sql',
       arguments: expect.objectContaining({ limit: 10, offset: 5 }),
@@ -420,7 +426,7 @@ describe('coerceArgs — 參數型別容錯強轉', () => {
   it('字串布林自動轉為 boolean', async () => {
     const mockClient = { callTool: vi.fn().mockResolvedValue({ content: [] }) };
     (pool.getClient as ReturnType<typeof vi.fn>).mockResolvedValue(mockClient);
-    await router.route('supabase__execute_sql', { query: 'SELECT 1', verbose: 'true' });
+    await router.route('supabase__execute_sql', { query: 'SELECT 1', verbose: 'true' }, { workspace: process.cwd() });
     expect(mockClient.callTool).toHaveBeenCalledWith({
       name: 'execute_sql',
       arguments: expect.objectContaining({ verbose: true }),
@@ -430,7 +436,7 @@ describe('coerceArgs — 參數型別容錯強轉', () => {
   it('無法轉換的值保持原樣', async () => {
     const mockClient = { callTool: vi.fn().mockResolvedValue({ content: [] }) };
     (pool.getClient as ReturnType<typeof vi.fn>).mockResolvedValue(mockClient);
-    await router.route('supabase__execute_sql', { query: 'SELECT 1', limit: 'abc' });
+    await router.route('supabase__execute_sql', { query: 'SELECT 1', limit: 'abc' }, { workspace: process.cwd() });
     expect(mockClient.callTool).toHaveBeenCalledWith({
       name: 'execute_sql',
       arguments: expect.objectContaining({ limit: 'abc' }),
@@ -442,138 +448,67 @@ describe('coerceArgs — 參數型別容錯強轉', () => {
 // call_tool — projectRoot 智慧填充
 // ═══════════════════════════════════
 
-// 模擬 node:fs 以控制 .agents 目錄的存在判斷
-vi.mock('node:fs', () => ({
-  default: {
-    existsSync: vi.fn(() => false),
-  },
-}));
-
-import fs from 'node:fs';
-
-describe('call_tool — projectRoot 智慧填充', () => {
-  let pool: ReturnType<typeof createMockPool>;
-  let router: ToolRouter;
-  let mockClient: { callTool: ReturnType<typeof vi.fn> };
-
-  // 集成表需包含一個接受 projectRoot 的下游工具
-  function createRegistryWithCartridge(): ToolRegistry {
-    return {
-      version: '1.0.0',
-      generated_at: '2026-01-01T00:00:00+08:00',
-      servers: {
-        'cartridge-system': {
-          tool_count: 1,
-          tools: {
-            'cartridge-system__memory_list': {
-              original_name: 'memory_list', server_name: 'cartridge-system',
-              description: 'List memory cards.',
-              inputSchema: { type: 'object', properties: { projectRoot: { type: 'string' } } },
-            },
-          },
-        },
-      },
-      all_tools: {
-        'cartridge-system__memory_list': 'cartridge-system',
-      },
-    };
+describe('call_tool workspace contract', () => {
+  function createRouter() {
+    const pool = createMockPool();
+    const client = { callTool: vi.fn().mockResolvedValue({ content: [] }) };
+    vi.mocked(pool.getClient).mockResolvedValue(client as never);
+    return { pool, client, router: new ToolRouter(createRegistryWithCartridgeTools(), pool, createTestConfig()) };
   }
-
-  beforeEach(() => {
-    vi.mocked(fs.existsSync).mockReset();
-    pool = createMockPool();
-    mockClient = { callTool: vi.fn().mockResolvedValue({ content: [{ type: 'text', text: 'ok' }] }) };
-    (pool.getClient as ReturnType<typeof vi.fn>).mockResolvedValue(mockClient);
-    router = new ToolRouter(createRegistryWithCartridge(), pool, createTestConfig());
+  it('injects only a declared projectRoot and leaves the original caller arguments untouched', async () => {
+    const { client, router } = createRouter();
+    const args = {};
+    await router.route('gateway__call_tool', { name: 'cartridge-system__memory_list', arguments: args, workspace: process.cwd() });
+    expect(client.callTool).toHaveBeenCalledWith({ name: 'memory_list', arguments: { projectRoot: process.cwd() } });
+    expect(args).toEqual({});
   });
-
-  it('AI 填了正確的 projectRoot（底下有 .agents）→ 保持不變', async () => {
-    // 目標路徑下有 .agents → 不修正
-    vi.mocked(fs.existsSync).mockImplementation((p) =>
-      String(p).endsWith('d:\\Project\\.agents') ? true : false,
-    );
-
-    await router.route('gateway__call_tool', {
-      name: 'cartridge-system__memory_list',
-      arguments: { projectRoot: 'd:\\Project' },
-      workspace: 'd:\\Workspace',
-    });
-
-    expect(mockClient.callTool).toHaveBeenCalledWith(
-      expect.objectContaining({
-        arguments: expect.objectContaining({ projectRoot: 'd:\\Project' }),
-      }),
-    );
-  });
-
-  it('AI 填了錯誤的 projectRoot 且 workspace 正確 → 自動修正', async () => {
-    vi.mocked(fs.existsSync).mockImplementation((p) => {
-      const s = String(p);
-      // 錯誤路徑下無 .agents，workspace 下有
-      if (s.endsWith('d:\\Wrong\\.agents')) return false;
-      if (s.endsWith('d:\\Workspace\\.agents')) return true;
-      return false;
-    });
-
-    await router.route('gateway__call_tool', {
-      name: 'cartridge-system__memory_list',
-      arguments: { projectRoot: 'd:\\Wrong' },
-      workspace: 'd:\\Workspace',
-    });
-
-    expect(mockClient.callTool).toHaveBeenCalledWith(
-      expect.objectContaining({
-        arguments: expect.objectContaining({ projectRoot: 'd:\\Workspace' }),
-      }),
-    );
-  });
-
-  it('AI 沒填 projectRoot 但 workspace 存在 → 自動注入', async () => {
-    await router.route('gateway__call_tool', {
-      name: 'cartridge-system__memory_list',
-      arguments: {},
-      workspace: 'd:\\Workspace',
-    });
-
-    expect(mockClient.callTool).toHaveBeenCalledWith(
-      expect.objectContaining({
-        arguments: expect.objectContaining({ projectRoot: 'd:\\Workspace' }),
-      }),
-    );
-  });
-
-  it('缺少 workspace 時拒絕呼叫，避免使用固定全域路徑', async () => {
+  it('rejects conflicts rather than silently changing the requested project', async () => {
+    const { client, router } = createRouter();
     await expect(router.route('gateway__call_tool', {
-      name: 'cartridge-system__memory_list',
-      arguments: {},
-    })).rejects.toThrow('缺少 workspace 參數');
-
-    expect(mockClient.callTool).not.toHaveBeenCalled();
+      name: 'cartridge-system__memory_list', arguments: { projectRoot: path.resolve('other') }, workspace: process.cwd(),
+    })).rejects.toThrow(/projectRoot.*workspace/);
+    expect(client.callTool).not.toHaveBeenCalled();
   });
-
-  it('不同呼叫的 workspace 只影響本次 projectRoot 注入', async () => {
-    await router.route('gateway__call_tool', {
-      name: 'cartridge-system__memory_list',
-      arguments: {},
-      workspace: 'd:\\ProjectA',
-    });
-    await router.route('gateway__call_tool', {
-      name: 'cartridge-system__memory_list',
-      arguments: {},
-      workspace: 'd:\\ProjectB',
-    });
-
-    expect(mockClient.callTool).toHaveBeenNthCalledWith(
-      1,
-      expect.objectContaining({
-        arguments: expect.objectContaining({ projectRoot: 'd:\\ProjectA' }),
-      }),
-    );
-    expect(mockClient.callTool).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({
-        arguments: expect.objectContaining({ projectRoot: 'd:\\ProjectB' }),
-      }),
-    );
+  it('rejects missing, relative, and wrong-platform workspaces', async () => {
+    const { client, router } = createRouter();
+    for (const workspace of [undefined, '', 'relative/project', process.platform === 'win32' ? '/linux/path' : 'C:\\Windows']) {
+      await expect(router.route('gateway__call_tool', { name: 'cartridge-system__memory_list', arguments: {}, workspace })).rejects.toThrow(/workspace/);
+    }
+    expect(client.callTool).not.toHaveBeenCalled();
+  });
+  it('does not inject projectRoot into strict tools which do not declare it', async () => {
+    const pool = createMockPool();
+    const client = { callTool: vi.fn().mockResolvedValue({ content: [] }) };
+    vi.mocked(pool.getClient).mockResolvedValue(client as never);
+    const registry = createTestRegistry();
+    registry.servers.supabase.tools.supabase__execute_sql.inputSchema.additionalProperties = false;
+    const router = new ToolRouter(registry, pool, createTestConfig());
+    await router.route('gateway__call_tool', { name: 'supabase__execute_sql', arguments: { query: 'test' }, workspace: process.cwd() });
+    expect(client.callTool).toHaveBeenCalledWith({ name: 'execute_sql', arguments: { query: 'test' } });
+  });
+  it('forwards cancellation and a different workspace for each call', async () => {
+    const { pool, router } = createRouter();
+    const signal = new AbortController().signal;
+    for (const workspace of [path.resolve('A'), path.resolve('B')]) {
+      await router.route('gateway__call_tool', { name: 'cartridge-system__memory_list', arguments: {}, workspace }, { signal });
+      expect(pool.callTool).toHaveBeenLastCalledWith('cartridge-system', expect.anything(), { workspace, signal });
+    }
+  });
+  it('keeps ordinary token/auth errors as call errors without reloading', async () => {
+    const { client, pool, router } = createRouter();
+    for (const message of ['Unexpected token in JSON', 'author not found', 'token budget exceeded']) {
+      client.callTool.mockRejectedValueOnce(new Error(message));
+      await expect(router.route('gateway__call_tool', { name: 'cartridge-system__memory_list', arguments: {}, workspace: process.cwd() })).rejects.toThrow(message);
+    }
+    expect(pool.reloadServer).not.toHaveBeenCalled();
+  });
+  it('filters disabled stale cache from discovery and all management entry points', async () => {
+    const config = createTestConfig();
+    delete config.mcpServers['cartridge-system'];
+    const router = new ToolRouter(createRegistryWithCartridgeTools(), createMockPool(), config);
+    expect(router.getRegistry().all_tools).toEqual({});
+    for (const name of ['auth_test', 'auth_guide', 'reload_server', 'list_server_tools']) {
+      await expect(router.route('gateway__' + name, { server_name: 'cartridge-system' })).rejects.toThrow(/未啟用|已移除/);
+    }
   });
 });

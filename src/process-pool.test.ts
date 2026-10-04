@@ -139,7 +139,7 @@ describe('ProcessPool — 懶啟動', () => {
     expect(client).toBeDefined();
     expect(mockConnect).toHaveBeenCalled();
     expect(pool.getHealthInfo()[0].state).toBe('ready');
-    expect(pool.getHealthInfo()[0].authStatus).toBe('valid');
+    expect(pool.getHealthInfo()[0].authStatus).toBe('unknown');
   });
 
   it('啟動失敗後狀態回到休眠', async () => {
